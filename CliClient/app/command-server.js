@@ -38,6 +38,7 @@ class Command extends BaseCommand {
 			} else {
 				await shim.fsDriver().writeFile(pidPath, process.pid.toString(), 'utf-8');
 				await ClipperServer.instance().start();
+                return 0;
 			}
 		} else if (command === 'status') {
 			this.stdout(runningOnPort ? _('Server is running on port %d', runningOnPort) : _('Server is not running.'));

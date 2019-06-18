@@ -24,6 +24,8 @@ const { cliUtils } = require('./cli-utils.js');
 const Cache = require('lib/Cache');
 const WelcomeUtils = require('lib/WelcomeUtils');
 const RevisionService = require('lib/services/RevisionService');
+const RC_UNSPECIFIED = -1;
+const RC_EXPLICIT_SUCCESS = 0;
 
 class Application extends BaseApplication {
 
@@ -293,6 +295,7 @@ class Application extends BaseApplication {
 	}
 
 	async execCommand(argv) {
+        var rc = RC_UNSPECIFIED;
 		if (!argv.length) return this.execCommand(['help']);
 		// reg.logger().debug('execCommand()', argv);
 		const commandName = argv[0];
@@ -302,12 +305,13 @@ class Application extends BaseApplication {
 		try {
 			if (this.gui().isDummy() && !this.activeCommand_.supportsUi('cli')) throw new Error(_('The command "%s" is only available in GUI mode', this.activeCommand_.name()));			
 			const cmdArgs = cliUtils.makeCommandArgs(this.activeCommand_, argv);
-			await this.activeCommand_.action(cmdArgs);
+			rc = await this.activeCommand_.action(cmdArgs);
 		} catch (error) {
 			outException = error;
 		}
 		this.activeCommand_ = null;
 		if (outException) throw outException;
+        return rc;
 	}
 
 	currentCommand() {
@@ -372,6 +376,7 @@ class Application extends BaseApplication {
 	}
 
 	async start(argv) {
+        var rc;
 		argv = await super.start(argv);
 
 		cliUtils.setStdout((object) => {
@@ -386,7 +391,7 @@ class Application extends BaseApplication {
 			this.currentFolder_ = await Folder.load(Setting.value('activeFolderId'));
 
 			try {
-				await this.execCommand(argv);
+				rc = await this.execCommand(argv);
 			} catch (error) {
 				if (this.showStackTraces_) {
 					console.error(error);
@@ -400,7 +405,13 @@ class Application extends BaseApplication {
 
 			// Need to call exit() explicitely, otherwise Node wait for any timeout to complete
 			// https://stackoverflow.com/questions/18050095
-			process.exit(0);
+            //
+            // Do not exit only when "server start" actually started up the
+            // WebClipper server.
+            if (! (argv[0] == "server" &&  argv[1] == "start" &&
+                rc == RC_EXPLICIT_SUCCESS)) {
+			    process.exit(0);
+            }
 		} else { // Otherwise open the GUI
 			this.initRedux();
 
