@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+CLIENT_DIR=$(dirname $(readlink -f $0))
+
+bash "$CLIENT_DIR/build.sh" && node "$CLIENT_DIR/build/main.js" --profile ~/.config/joplin --env prod "$@"
