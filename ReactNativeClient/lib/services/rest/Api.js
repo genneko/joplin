@@ -513,11 +513,14 @@ class Api {
 
 		const output = {};
 
+		let urlSeen = {};
 		let urlIndex = 0;
 		const promiseProducer = () => {
 			if (urlIndex >= urls.length) return null;
 
 			const url = urls[urlIndex++];
+			if (urlSeen[url]) return null;
+			urlSeen[url] = 1;
 
 			return new Promise(async (resolve, reject) => {
 				const imagePath = await this.downloadImage_(url, allowFileProtocolImages);
