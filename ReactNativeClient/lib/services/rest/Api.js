@@ -18,6 +18,7 @@ const ApiResponse = require('lib/services/rest/ApiResponse');
 const SearchEngineUtils = require('lib/services/SearchEngineUtils');
 const { FoldersScreenUtils } = require('lib/folders-screen-utils.js');
 const uri2path = require('file-uri-to-path');
+const Resource = require('lib/models/Resource');
 
 class ApiError extends Error {
 
