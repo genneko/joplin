@@ -1,4 +1,11 @@
+const { shim } = require('lib/shim.js');
 const { _ } = require('lib/locale');
+
+function sha256(string) {
+	const sjcl = shim.sjclModule;
+	const bitArray = sjcl.hash.sha256.hash(string);
+	return sjcl.codec.hex.fromBits(bitArray);
+}
 
 function dirname(path) {
 	if (!path) throw new Error('Path is empty');
@@ -48,7 +55,11 @@ function safeFilename(e, maxLength = null, allowSpaces = false) {
 	if (!e || !e.replace) return '';
 	const regex = allowSpaces ? /[^a-zA-Z0-9\-_\(\)\. ]/g : /[^a-zA-Z0-9\-_\(\)\.]/g
 	let output = e.replace(regex, '_')
-	return output.substr(0, maxLength);
+	if (output.length > maxLength) {
+		return sha256(output);
+	} else {
+		return output;
+	}
 }
 
 let friendlySafeFilename_blackListChars = '/<>:\'"\\|?*';
