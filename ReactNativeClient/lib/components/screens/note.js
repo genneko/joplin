@@ -75,6 +75,8 @@ class NoteScreenComponent extends BaseScreenComponent {
 			HACK_webviewLoadingState: 0,
 		};
 
+		this.doFocusUpdate_ = false;
+
 		// iOS doesn't support multiline text fields properly so disable it
 		this.enableMultilineTitle_ = Platform.OS !== 'ios';
 
@@ -252,6 +254,8 @@ class NoteScreenComponent extends BaseScreenComponent {
 		}
 
 		this.refreshNoteMetadata();
+
+		this.focusUpdate();
 	}
 
 	onMarkForDownload(event) {
@@ -260,6 +264,13 @@ class NoteScreenComponent extends BaseScreenComponent {
 
 	refreshNoteMetadata(force = null) {
 		return shared.refreshNoteMetadata(this, force);
+	}
+
+	componentDidUpdate() {
+		if (this.doFocusUpdate_) {
+			this.doFocusUpdate_ = false;
+			this.focusUpdate();
+		}
 	}
 
 	componentWillUnmount() {
@@ -276,10 +287,23 @@ class NoteScreenComponent extends BaseScreenComponent {
 	title_changeText(text) {
 		shared.noteComponent_change(this, 'title', text);
 		this.setState({ newAndNoTitleChangeNoteId: null });
+		this.scheduleSave();
 	}
 
 	body_changeText(text) {
 		shared.noteComponent_change(this, 'body', text);
+		this.scheduleSave();
+	}
+
+	scheduleSave() {
+		if (this.scheduleSaveIID_) {
+			clearTimeout(this.scheduleSaveIID_);
+			this.scheduleSaveIID_ = null;
+		}
+
+		this.scheduleSaveIID_ = setTimeout(async () => {
+			await shared.saveNoteButton_press(this);
+		}, 1000);
 	}
 
 	async saveNoteButton_press(folderId = null) {
@@ -580,7 +604,7 @@ class NoteScreenComponent extends BaseScreenComponent {
 		output.push({ title: isTodo ? _('Convert to note') : _('Convert to todo'), onPress: () => { this.toggleIsTodo_onPress(); } });
 		if (isSaved) output.push({ title: _('Copy Markdown link'), onPress: () => { this.copyMarkdownLink_onPress(); } });
 		output.push({ isDivider: true });
-		if (this.props.showAdvancedOptions) output.push({ title: this.state.showNoteMetadata ? _('Hide metadata') : _('Show metadata'), onPress: () => { this.showMetadata_onPress(); } });
+		output.push({ title: this.state.showNoteMetadata ? _('Hide metadata') : _('Show metadata'), onPress: () => { this.showMetadata_onPress(); } });
 		output.push({ title: _('View on map'), onPress: () => { this.showOnMap_onPress(); } });
 		if (hasSource) output.push({ title: _('Go to source URL'), onPress: () => { this.showSource_onPress(); } });
 		output.push({ isDivider: true });
@@ -598,6 +622,16 @@ class NoteScreenComponent extends BaseScreenComponent {
 
 		let height = event.nativeEvent.contentSize.height;
 		this.setState({ titleTextInputHeight: height });
+	}
+
+	focusUpdate() {
+		this.scheduleFocusUpdateIID_ = null;
+		if (!this.state.note) return;
+		let fieldToFocus = !!this.state.note.is_todo ? 'title' : 'body';
+		if (this.state.mode === 'view') fieldToFocus = '';
+
+		if (fieldToFocus === 'title') this.refs.titleTextField.focus();
+		if (fieldToFocus === 'body') this.refs.noteBodyTextField.focus();
 	}
 
 	render() {
@@ -655,20 +689,21 @@ class NoteScreenComponent extends BaseScreenComponent {
 				}}
 			/>
 		} else {
-			const focusBody = !isNew && !!note.title;
+			// autoFocus={fieldToFocus === 'body'}
 
 			// Note: blurOnSubmit is necessary to get multiline to work.
 			// See https://github.com/facebook/react-native/issues/12717#issuecomment-327001997
 			bodyComponent = (
 				<TextInput
-					autoCapitalize="sentences"
-					autoFocus={focusBody}
+					autoCapitalize="sentences"		
 					style={this.styles().bodyTextInput}
+					ref="noteBodyTextField"
 					multiline={true}
 					value={note.body}
 					onChangeText={(text) => this.body_changeText(text)}
 					blurOnSubmit={false}
 					selectionColor={theme.textSelectionColor}
+					placeholder={_('Add body')}
 				/>
 			);
 		}
@@ -681,6 +716,8 @@ class NoteScreenComponent extends BaseScreenComponent {
 				icon: 'md-create',
 				onPress: () => {
 					this.setState({ mode: 'edit' });
+
+					this.doFocusUpdate_ = true;
 				},
 			});
 
@@ -731,14 +768,15 @@ class NoteScreenComponent extends BaseScreenComponent {
 				{ isTodo && <Checkbox style={checkboxStyle} checked={!!Number(note.todo_completed)} onChange={(checked) => { this.todoCheckbox_change(checked) }} /> }
 				<TextInput
 					onContentSizeChange={(event) => this.titleTextInput_contentSizeChange(event)}
-					autoFocus={isNew}
 					multiline={this.enableMultilineTitle_}
+					ref="titleTextField"
 					underlineColorAndroid="#ffffff00"
 					autoCapitalize="sentences"
 					style={titleTextInputStyle}
 					value={note.title}
 					onChangeText={(text) => this.title_changeText(text)}
 					selectionColor={theme.textSelectionColor}
+					placeholder={_('Add title')}
 				/>
 			</View>
 		);
@@ -773,6 +811,8 @@ class NoteScreenComponent extends BaseScreenComponent {
 					showSaveButton={showSaveButton}
 					saveButtonDisabled={saveButtonDisabled}
 					onSaveButtonPress={() => this.saveNoteButton_press()}
+					showSideMenuButton={false}
+					showSearchButton={false}
 				/>
 				{ titleComp }
 				{ bodyComponent }
@@ -805,7 +845,6 @@ const NoteScreen = connect(
 			theme: state.settings.theme,
 			ftsEnabled: state.settings['db.ftsEnabled'],
 			sharedData: state.sharedData,
-			showAdvancedOptions: state.settings.showAdvancedOptions,
 		};
 	}
 )(NoteScreenComponent)

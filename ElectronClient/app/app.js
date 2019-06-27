@@ -239,6 +239,10 @@ class Application extends BaseApplication {
 			Setting.setValue('sidebarVisibility', newState.sidebarVisibility);
 		}
 
+		if (action.type.indexOf('NOTE_SELECT') === 0 || action.type.indexOf('FOLDER_SELECT') === 0) {
+			this.updateMenuItemStates();
+		}
+
 		return result;
 	}
 
@@ -508,12 +512,20 @@ class Application extends BaseApplication {
 
 		function _showAbout() {
 			const p = packageInfo;
+			let gitInfo = '';
+			if ("git" in p) {
+				gitInfo = _('Revision: %s (%s)', p.git.hash, p.git.branch);
+			}
 			let message = [
 				p.description,
 				'',
 				'Copyright © 2016-2019 Laurent Cozic',
 				_('%s %s (%s, %s)', p.name, p.version, Setting.value('env'), process.platform),
 			];
+			if (!!gitInfo) {
+				message.push("\n" + gitInfo);
+				console.info(gitInfo);
+			}
 			bridge().showInfoMessageBox(message.join('\n'), {
 				icon: bridge().electronApp().buildDir() + '/icons/32x32.png',
 			});
@@ -618,20 +630,25 @@ class Application extends BaseApplication {
 
 		const rootMenus = {
 			edit: {
+				id: 'edit',
 				label: _('&Edit'),
 				submenu: [{
+					id: 'edit:copy',
 					label: _('Copy'),
 					role: 'copy',
 					accelerator: 'CommandOrControl+C',
 				}, {
+					id: 'edit:cut',
 					label: _('Cut'),
 					role: 'cut',
 					accelerator: 'CommandOrControl+X',
 				}, {
+					id: 'edit:paste',
 					label: _('Paste'),
 					role: 'paste',
 					accelerator: 'CommandOrControl+V',
 				}, {
+					id: 'edit:selectAll',
 					label: _('Select all'),
 					role: 'selectall',
 					accelerator: 'CommandOrControl+A',
@@ -639,6 +656,7 @@ class Application extends BaseApplication {
 					type: 'separator',
 					screens: ['Main'],
 				}, {
+					id: 'edit:bold',
 					label: _('Bold'),
 					screens: ['Main'],
 					accelerator: 'CommandOrControl+B',
@@ -649,6 +667,7 @@ class Application extends BaseApplication {
 						});
 					},
 				}, {
+					id: 'edit:italic',
 					label: _('Italic'),
 					screens: ['Main'],
 					accelerator: 'CommandOrControl+I',
@@ -659,6 +678,7 @@ class Application extends BaseApplication {
 						});
 					},
 				}, {
+					id: 'edit:link',
 					label: _('Link'),
 					screens: ['Main'],
 					accelerator: 'CommandOrControl+K',
@@ -669,6 +689,7 @@ class Application extends BaseApplication {
 						});
 					},
 				}, {
+					id: 'edit:code',
 					label: _('Code'),
 					screens: ['Main'],
 					accelerator: 'CommandOrControl+`',
@@ -682,6 +703,7 @@ class Application extends BaseApplication {
 					type: 'separator',
 					screens: ['Main'],
 				}, {
+					id: 'edit:insertDateTime',
 					label: _('Insert Date Time'),
 					screens: ['Main'],
 					accelerator: 'CommandOrControl+Shift+T',
@@ -695,6 +717,7 @@ class Application extends BaseApplication {
 					type: 'separator',
 					screens: ['Main'],
 				}, {
+					id: 'edit:commandStartExternalEditing',
 					label: _('Edit in external editor'),
 					screens: ['Main'],
 					accelerator: 'CommandOrControl+E',
@@ -705,29 +728,36 @@ class Application extends BaseApplication {
 						});
 					},
 				}, {
+					id: 'edit:setTags',
 					label: _('Tags'),
 					screens: ['Main'],
 					accelerator: 'CommandOrControl+Alt+T',
 					click: () => {
+						const selectedNoteIds = this.store().getState().selectedNoteIds;
+						if (selectedNoteIds.length !== 1) return;
+
 						this.dispatch({
 							type: 'WINDOW_COMMAND',
 							name: 'setTags',
+							noteId: selectedNoteIds[0],
 						});
 					},
 				}, {
 					type: 'separator',
 					screens: ['Main'],
 				}, {
+					id: 'edit:focusSearch',
 					label: _('Search in all the notes'),
 					screens: ['Main'],
 					accelerator: shim.isMac() ? 'Shift+Command+F' : 'F6',
 					click: () => {
 						this.dispatch({
 							type: 'WINDOW_COMMAND',
-							name: 'focus_search',
+							name: 'focusSearch',
 						});
 					},
 				}, {
+					id: 'edit:showLocalSearch',
 					label: _('Search in current note'),
 					screens: ['Main'],
 					accelerator: 'CommandOrControl+F',
@@ -924,6 +954,19 @@ class Application extends BaseApplication {
 		this.lastMenuScreen_ = screen;
 	}
 
+	updateMenuItemStates() {
+		if (!this.lastMenuScreen_) return;
+		if (!this.store()) return;
+
+		const selectedNoteIds = this.store().getState().selectedNoteIds;
+
+		for (const itemId of ['copy', 'paste', 'cut', 'selectAll', 'bold', 'italic', 'link', 'code', 'insertDateTime', 'commandStartExternalEditing', 'setTags', 'showLocalSearch']) {
+			const menuItem = Menu.getApplicationMenu().getMenuItemById('edit:' + itemId);
+			if (!menuItem) continue;
+			menuItem.enabled = selectedNoteIds.length === 1;
+		}
+	}
+
 	updateTray() {
 		const app = bridge().electronApp();
 
@@ -1091,6 +1134,8 @@ class Application extends BaseApplication {
 		ExternalEditWatcher.instance().dispatch = this.store().dispatch;
 
 		RevisionService.instance().runInBackground();
+
+		this.updateMenuItemStates();
 
 		// Make it available to the console window - useful to call revisionService.collectRevisions()
 		window.revisionService = RevisionService.instance();
