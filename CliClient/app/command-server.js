@@ -49,7 +49,11 @@ class Command extends BaseCommand {
 			}
 			const pid = await shim.fsDriver().readFile(pidPath);
 			if (!pid) return;
-			process.kill(pid, 'SIGTERM');
+			if (pid != process.pid) {
+				this.stdout(_('[PID %d] Server is running on another process (PID %d).', process.pid, pid));
+				return;
+			}
+			await ClipperServer.instance().stop();
 		}
 	}
 
