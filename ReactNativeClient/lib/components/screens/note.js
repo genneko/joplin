@@ -4,10 +4,12 @@ const { connect } = require('react-redux');
 const { uuid } = require('lib/uuid.js');
 const RNFS = require('react-native-fs');
 const Note = require('lib/models/Note.js');
+const ObjectUtils = require('lib/ObjectUtils.js');
 const BaseItem = require('lib/models/BaseItem.js');
 const Setting = require('lib/models/Setting.js');
 const Resource = require('lib/models/Resource.js');
 const Folder = require('lib/models/Folder.js');
+const md5 = require('md5');
 const { BackButtonService } = require('lib/services/back-button.js');
 const NavService = require('lib/services/NavService.js');
 const BaseModel = require('lib/BaseModel.js');
@@ -52,8 +54,6 @@ class NoteScreenComponent extends BaseScreenComponent {
 		this.state = {
 			note: Note.new(),
 			mode: 'view',
-			noteMetadata: '',
-			showNoteMetadata: false,
 			folder: null,
 			lastSavedNote: null,
 			isLoading: true,
@@ -185,14 +185,25 @@ class NoteScreenComponent extends BaseScreenComponent {
 		this.takePhoto_onPress = this.takePhoto_onPress.bind(this);
 		this.cameraView_onPhoto = this.cameraView_onPhoto.bind(this);
 		this.cameraView_onCancel = this.cameraView_onCancel.bind(this);
+		this.properties_onPress = this.properties_onPress.bind(this);
 		this.onMarkForDownload = this.onMarkForDownload.bind(this);
+		this.sideMenuOptions = this.sideMenuOptions.bind(this);
+		this.folderPickerOptions_valueChanged = this.folderPickerOptions_valueChanged.bind(this);
+		this.saveNoteButton_press = this.saveNoteButton_press.bind(this);
+		this.onAlarmDialogAccept = this.onAlarmDialogAccept.bind(this);
+		this.onAlarmDialogReject = this.onAlarmDialogReject.bind(this);
+		this.todoCheckbox_change = this.todoCheckbox_change.bind(this);
+		this.titleTextInput_contentSizeChange = this.titleTextInput_contentSizeChange.bind(this);
+		this.title_changeText = this.title_changeText.bind(this);
 	}
 
 	styles() {
 		const themeId = this.props.theme;
 		const theme = themeStyle(themeId);
 
-		if (this.styles_[themeId]) return this.styles_[themeId];
+		const cacheKey = [themeId, this.state.titleTextInputHeight, this.state.HACK_webviewLoadingState].join('_');
+
+		if (this.styles_[cacheKey]) return this.styles_[cacheKey];
 		this.styles_ = {};
 
 		let styles = {
@@ -212,10 +223,12 @@ class NoteScreenComponent extends BaseScreenComponent {
 				paddingTop: theme.marginTop,
 				paddingBottom: theme.marginBottom,
 			},
-			metadata: {
-				paddingLeft: globalStyle.marginLeft,
-				paddingRight: globalStyle.marginRight,
+			checkbox: {
 				color: theme.color,
+				paddingRight: 10,
+				paddingLeft: theme.marginLeft,
+				paddingTop: 10, // Added for iOS (Not needed for Android??)
+				paddingBottom: 10, // Added for iOS (Not needed for Android??)
 			},
 		};
 
@@ -231,8 +244,23 @@ class NoteScreenComponent extends BaseScreenComponent {
 		styles.titleContainerTodo = Object.assign({}, styles.titleContainer);
 		styles.titleContainerTodo.paddingLeft = 0;
 
-		this.styles_[themeId] = StyleSheet.create(styles);
-		return this.styles_[themeId];
+		styles.titleTextInput = {
+			flex: 1,
+			marginTop: 0,
+			paddingLeft: 0,
+			color: theme.color,
+			backgroundColor: theme.backgroundColor,
+			fontWeight: 'bold',
+			fontSize: theme.fontSize,
+			paddingTop: 10, // Added for iOS (Not needed for Android??)
+			paddingBottom: 10, // Added for iOS (Not needed for Android??)
+		};
+
+		if (this.enableMultilineTitle_) styles.titleTextInput.height = this.state.titleTextInputHeight;
+		if (this.state.HACK_webviewLoadingState === 1) styles.titleTextInput.marginTop = 1;
+
+		this.styles_[cacheKey] = StyleSheet.create(styles);
+		return this.styles_[cacheKey];
 	}
 
 	isModified() {
@@ -253,17 +281,11 @@ class NoteScreenComponent extends BaseScreenComponent {
 			await ResourceFetcher.instance().markForDownload(resourceIds);
 		}
 
-		this.refreshNoteMetadata();
-
 		this.focusUpdate();
 	}
 
 	onMarkForDownload(event) {
 		ResourceFetcher.instance().markForDownload(event.resourceId);
-	}
-
-	refreshNoteMetadata(force = null) {
-		return shared.refreshNoteMetadata(this, force);
 	}
 
 	componentDidUpdate() {
@@ -479,6 +501,8 @@ class NoteScreenComponent extends BaseScreenComponent {
 		this.setState({ note: newNote });
 
 		this.refreshResource(resource);
+
+		this.scheduleSave();
 	}
 
 	async attachPhoto_onPress() {
@@ -512,6 +536,8 @@ class NoteScreenComponent extends BaseScreenComponent {
 
 	toggleIsTodo_onPress() {
 		shared.toggleIsTodo_onPress(this);
+
+		this.scheduleSave();
 	}
 
 	tags_onPress() {
@@ -525,6 +551,15 @@ class NoteScreenComponent extends BaseScreenComponent {
 			message: this.state.note.title + '\n\n' + this.state.note.body,
 			title: this.state.note.title,
 		});
+	}
+
+	properties_onPress() {
+		this.props.dispatch({
+			type: 'NOTE_SIDE_MENU_OPTIONS_SET',
+			options: this.sideMenuOptions(),
+		});
+
+		this.props.dispatch({ type: 'SIDE_MENU_OPEN' });
 	}
 
 	setAlarm_onPress() {
@@ -542,10 +577,6 @@ class NoteScreenComponent extends BaseScreenComponent {
 
 	onAlarmDialogReject() {
 		this.setState({ alarmDialogShown: false });
-	}
-
-	showMetadata_onPress() {
-		shared.showMetadata_onPress(this);
 	}
 
 	async showOnMap_onPress() {
@@ -576,11 +607,34 @@ class NoteScreenComponent extends BaseScreenComponent {
 		Clipboard.setString(Note.markdownTag(note));
 	}
 
+	sideMenuOptions() {
+		const note = this.state.note;
+		if (!note) return [];
+
+		const output = [];
+
+		const createdDateString = time.formatMsToLocal(note.user_created_time);
+		const updatedDateString = time.formatMsToLocal(note.user_updated_time);
+
+		output.push({ title: _('Created: %s', createdDateString) });
+		output.push({ title: _('Updated: %s', updatedDateString) });
+		output.push({ isDivider: true });
+
+		output.push({ title: _('View on map'), onPress: () => { this.showOnMap_onPress(); } });
+		if (!!note.source_url) output.push({ title: _('Go to source URL'), onPress: () => { this.showSource_onPress(); } });
+
+		return output;
+	}
+
 	menuOptions() {
 		const note = this.state.note;
 		const isTodo = note && !!note.is_todo;
 		const isSaved = note && note.id;
-		const hasSource = note && note.source_url;
+
+		const cacheKey = md5([isTodo, isSaved].join('_'));
+		if (!this.menuOptionsCache_) this.menuOptionsCache_ = {};
+
+		if (this.menuOptionsCache_[cacheKey]) return this.menuOptionsCache_[cacheKey];
 
 		let output = [];
 
@@ -589,10 +643,17 @@ class NoteScreenComponent extends BaseScreenComponent {
 		let canAttachPicture = true;
 		if (Platform.OS === 'android' && Platform.Version < 21) canAttachPicture = false;
 		if (canAttachPicture) {
-			output.push({ title: _('Take photo'), onPress: () => { this.takePhoto_onPress(); } });
-			output.push({ title: _('Attach photo'), onPress: () => { this.attachPhoto_onPress(); } });
-			output.push({ title: _('Attach any file'), onPress: () => { this.attachFile_onPress(); } });
-			output.push({ isDivider: true });
+			output.push({ title: _('Attach...'), onPress: async () => {
+				const buttonId = await dialogs.pop(this, _('Choose an option'), [
+					{ text: _('Take photo'), id: 'takePhoto' },
+					{ text: _('Attach photo'), id: 'attachPhoto' },
+					{ text: _('Attach any file'), id: 'attachFile' },
+				]);
+
+				if (buttonId === 'takePhoto') this.takePhoto_onPress();
+				if (buttonId === 'attachPhoto') this.attachPhoto_onPress();
+				if (buttonId === 'attachFile') this.attachFile_onPress();
+			}});
 		}
 
 		if (isTodo) {
@@ -603,12 +664,11 @@ class NoteScreenComponent extends BaseScreenComponent {
 		if (isSaved) output.push({ title: _('Tags'), onPress: () => { this.tags_onPress(); } });
 		output.push({ title: isTodo ? _('Convert to note') : _('Convert to todo'), onPress: () => { this.toggleIsTodo_onPress(); } });
 		if (isSaved) output.push({ title: _('Copy Markdown link'), onPress: () => { this.copyMarkdownLink_onPress(); } });
-		output.push({ isDivider: true });
-		output.push({ title: this.state.showNoteMetadata ? _('Hide metadata') : _('Show metadata'), onPress: () => { this.showMetadata_onPress(); } });
-		output.push({ title: _('View on map'), onPress: () => { this.showOnMap_onPress(); } });
-		if (hasSource) output.push({ title: _('Go to source URL'), onPress: () => { this.showSource_onPress(); } });
-		output.push({ isDivider: true });
+		output.push({ title: _('Properties'), onPress: () => { this.properties_onPress(); } });
 		output.push({ title: _('Delete'), onPress: () => { this.deleteNote_onPress(); } });
+
+		this.menuOptionsCache_ = {};
+		this.menuOptionsCache_[cacheKey] = output;
 
 		return output;
 	}
@@ -632,6 +692,39 @@ class NoteScreenComponent extends BaseScreenComponent {
 
 		if (fieldToFocus === 'title') this.refs.titleTextField.focus();
 		if (fieldToFocus === 'body') this.refs.noteBodyTextField.focus();
+	}
+
+	async folderPickerOptions_valueChanged(itemValue, itemIndex) {
+		const note = this.state.note;
+
+		if (!note.id) {
+			await this.saveNoteButton_press(itemValue);
+		} else {
+			await Note.moveToFolder(note.id, itemValue);
+		}
+
+		note.parent_id = itemValue;
+
+		const folder = await Folder.load(note.parent_id);
+
+		this.setState({
+			lastSavedNote: Object.assign({}, note),
+			note: note,
+			folder: folder,
+		});
+	}
+
+	folderPickerOptions() {
+		const options = {
+			enabled: true,
+			selectedFolderId: this.state.folder ? this.state.folder.id : null,
+			onValueChange: this.folderPickerOptions_valueChanged,
+		};
+
+		if (this.folderPickerOptions_ && options.selectedFolderId === this.folderPickerOptions_.selectedFolderId) return this.folderPickerOptions_;
+
+		this.folderPickerOptions_ = options;
+		return this.folderPickerOptions_;
 	}
 
 	render() {
@@ -721,7 +814,7 @@ class NoteScreenComponent extends BaseScreenComponent {
 				},
 			});
 
-			if (this.state.mode == 'edit') return null;//<ActionButton style={{display:'none'}}/>;
+			if (this.state.mode == 'edit') return null;
 
 			return <ActionButton multiStates={true} buttons={buttons} buttonIndex={0} />
 		}
@@ -735,46 +828,20 @@ class NoteScreenComponent extends BaseScreenComponent {
 
 		const titleContainerStyle = isTodo ? this.styles().titleContainerTodo : this.styles().titleContainer;
 
-		let titleTextInputStyle = {
-			flex: 1,
-			marginTop: 0,
-			paddingLeft: 0,
-			color: theme.color,
-			backgroundColor: theme.backgroundColor,
-			fontWeight: 'bold',
-			fontSize: theme.fontSize,
-			paddingTop: 10, // Added for iOS (Not needed for Android??)
-			paddingBottom: 10, // Added for iOS (Not needed for Android??)
-		};
-
-		if (this.enableMultilineTitle_) titleTextInputStyle.height = this.state.titleTextInputHeight;
-
-		let checkboxStyle = {
-			color: theme.color,
-			paddingRight: 10,
-			paddingLeft: theme.marginLeft,
-			paddingTop: 10, // Added for iOS (Not needed for Android??)
-			paddingBottom: 10, // Added for iOS (Not needed for Android??)
-		}
-
-		if (this.state.HACK_webviewLoadingState === 1) {
-			titleTextInputStyle.marginTop = 1;
-		}
-
-		const dueDate = isTodo && note.todo_due ? new Date(note.todo_due) : null;
+		const dueDate = Note.dueDateObject(note);
 
 		const titleComp = (
 			<View style={titleContainerStyle}>
-				{ isTodo && <Checkbox style={checkboxStyle} checked={!!Number(note.todo_completed)} onChange={(checked) => { this.todoCheckbox_change(checked) }} /> }
+				{ isTodo && <Checkbox style={this.styles().checkbox} checked={!!Number(note.todo_completed)} onChange={this.todoCheckbox_change} /> }
 				<TextInput
-					onContentSizeChange={(event) => this.titleTextInput_contentSizeChange(event)}
+					onContentSizeChange={this.titleTextInput_contentSizeChange}
 					multiline={this.enableMultilineTitle_}
 					ref="titleTextField"
 					underlineColorAndroid="#ffffff00"
 					autoCapitalize="sentences"
-					style={titleTextInputStyle}
+					style={this.styles().titleTextInput}
 					value={note.title}
-					onChangeText={(text) => this.title_changeText(text)}
+					onChangeText={this.title_changeText}
 					selectionColor={theme.textSelectionColor}
 					placeholder={_('Add title')}
 				/>
@@ -786,44 +853,23 @@ class NoteScreenComponent extends BaseScreenComponent {
 		return (
 			<View style={this.rootStyle(this.props.theme).root}>
 				<ScreenHeader
-					folderPickerOptions={{
-						enabled: true,
-						selectedFolderId: folder ? folder.id : null,
-						onValueChange: async (itemValue, itemIndex) => {
-							if (!note.id) {
-								await this.saveNoteButton_press(itemValue);
-							} else {
-								await Note.moveToFolder(note.id, itemValue);
-							}
-
-							note.parent_id = itemValue;
-
-							const folder = await Folder.load(note.parent_id);
-
-							this.setState({
-								lastSavedNote: Object.assign({}, note),
-								note: note,
-								folder: folder,
-							});
-						},
-					}}
+					folderPickerOptions={this.folderPickerOptions()}
 					menuOptions={this.menuOptions()}
 					showSaveButton={showSaveButton}
 					saveButtonDisabled={saveButtonDisabled}
-					onSaveButtonPress={() => this.saveNoteButton_press()}
+					onSaveButtonPress={this.saveNoteButton_press}
 					showSideMenuButton={false}
 					showSearchButton={false}
 				/>
 				{ titleComp }
 				{ bodyComponent }
 				{ actionButtonComp }
-				{ this.state.showNoteMetadata && <Text style={this.styles().metadata}>{this.state.noteMetadata}</Text> }
 
 				<SelectDateTimeDialog
 					shown={this.state.alarmDialogShown}
 					date={dueDate}
-					onAccept={(date) => this.onAlarmDialogAccept(date) }
-					onReject={() => this.onAlarmDialogReject() }
+					onAccept={this.onAlarmDialogAccept}
+					onReject={this.onAlarmDialogReject}
 				/>
 
 				<DialogBox ref={dialogbox => { this.dialogbox = dialogbox }}/>

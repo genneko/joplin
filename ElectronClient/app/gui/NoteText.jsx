@@ -62,8 +62,6 @@ class NoteTextComponent extends React.Component {
 
 		this.state = {
 			note: null,
-			noteMetadata: '',
-			showNoteMetadata: false,
 			folder: null,
 			lastSavedNote: null,
 			isLoading: true,
@@ -644,10 +642,6 @@ class NoteTextComponent extends React.Component {
 		return false;
 	}
 
-	refreshNoteMetadata(force = null) {
-		return shared.refreshNoteMetadata(this, force);
-	}
-
 	async noteRevisionViewer_onBack() {
 		this.setState({ showRevisions: false });
 
@@ -664,10 +658,6 @@ class NoteTextComponent extends React.Component {
 	toggleIsTodo_onPress() {
 		shared.toggleIsTodo_onPress(this);
 		this.scheduleSave();
-	}
-
-	showMetadata_onPress() {
-		shared.showMetadata_onPress(this);
 	}
 
 	async webview_ipcMessage(event) {
@@ -863,7 +853,7 @@ class NoteTextComponent extends React.Component {
 			this.editor_.editor.renderer.on('afterRender', this.onAfterEditorRender_);
 
 			const cancelledKeys = [];
-			const letters = ['F', 'T', 'P', 'Q', 'L', ',', 'G'];
+			const letters = ['F', 'T', 'P', 'Q', 'L', ',', 'G', 'K'];
 			for (let i = 0; i < letters.length; i++) {
 				const l = letters[i];
 				cancelledKeys.push('Ctrl+' + l);
@@ -1702,6 +1692,7 @@ class NoteTextComponent extends React.Component {
 			backgroundColor: theme.backgroundColor,
 			border: '1px solid',
 			borderColor: theme.dividerColor,
+			fontSize: theme.fontSize,
 		};
 
 		const toolbarStyle = {

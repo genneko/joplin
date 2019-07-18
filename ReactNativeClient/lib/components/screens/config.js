@@ -1,5 +1,5 @@
 const React = require('react'); const Component = React.Component;
-const { Platform, TouchableOpacity, Linking, View, Switch, StyleSheet, Text, Button, ScrollView, TextInput } = require('react-native');
+const { Platform, TouchableOpacity, Linking, View, Switch, StyleSheet, Text, Button, ScrollView, TextInput, Alert } = require('react-native');
 const { connect } = require('react-redux');
 const { ScreenHeader } = require('lib/components/screen-header.js');
 const { _, setLocale } = require('lib/locale.js');
@@ -14,8 +14,10 @@ const NavService = require('lib/services/NavService.js');
 const VersionInfo = require('react-native-version-info').default;
 const { ReportService } = require('lib/services/report.js');
 const { time } = require('lib/time-utils');
+const SearchEngine = require('lib/services/SearchEngine');
 const RNFS = require('react-native-fs');
 
+import { PermissionsAndroid } from 'react-native';
 import Slider from '@react-native-community/slider';
 
 class ConfigScreenComponent extends BaseScreenComponent {
@@ -42,7 +44,22 @@ class ConfigScreenComponent extends BaseScreenComponent {
 			NavService.go('EncryptionConfig');
 		}
 
-		this.saveButton_press = () => {
+		this.saveButton_press = async () => {
+			if (
+				this.state.changedSettingKeys.includes('sync.target')
+				&& this.state.settings['sync.target'] === SyncTargetRegistry.nameToId('filesystem')
+				&& !await this.checkFilesystemPermission()
+			) {
+				Alert.alert(
+					_('Warning'),
+					_(
+						'Joplin does not have permission to access "%s". ' +
+						'Either choose a different sync target, ' +
+						'or give Joplin the "Storage" permission.',
+						this.state.settings['sync.2.path'],
+					));
+				// Save settings anyway, even if permission has not been granted
+			}
 			return shared.saveSettings(this);
 		};
 
@@ -78,9 +95,39 @@ class ConfigScreenComponent extends BaseScreenComponent {
 			this.setState({ creatingReport: false });
 		}
 
+		this.fixSearchEngineIndexButtonPress_ = async () => {
+			this.setState({ fixingSearchIndex: true });
+			await SearchEngine.instance().rebuildIndex();
+			this.setState({ fixingSearchIndex: false });
+		}
+
 		this.logButtonPress_ = () => {
 			NavService.go('Log');
 		}
+	}
+
+	async checkFilesystemPermission() {
+		if (Platform.OS !== 'android') {
+			// Not implemented yet
+			return true;
+		}
+		const hasPermission = await PermissionsAndroid.check(
+			PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE);
+		if (hasPermission) {
+			return true;
+		}
+		const requestResult = await PermissionsAndroid.request(
+			PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+			{
+				title: _('Permission to write to external storage'),
+				message: _(
+					'In order to use file system synchronization your ' +
+					'permission to write to external storage is required.'
+				),
+				buttonPositive: _('OK'),
+			},
+		);
+		return (requestResult === PermissionsAndroid.RESULTS.GRANTED);
 	}
 
 	UNSAFE_componentWillMount() {
@@ -191,6 +238,15 @@ class ConfigScreenComponent extends BaseScreenComponent {
 	renderButton(key, title, clickHandler, options = null) {
 		if (!options) options = {};
 
+		let descriptionComp = null;
+		if (options.description) {
+			descriptionComp = (
+				<View style={{flex:1, marginTop: 10}}>
+					<Text style={this.styles().descriptionText}>{options.description}</Text>
+				</View>
+			);
+		}
+
 		return (
 			<View key={key} style={this.styles().settingContainer}>
 				<View style={{flex:1, flexDirection: 'column'}}>
@@ -198,6 +254,7 @@ class ConfigScreenComponent extends BaseScreenComponent {
 						<Button title={title} onPress={clickHandler} disabled={!!options.disabled}/>
 					</View>
 					{ options.statusComp }
+					{ descriptionComp }
 				</View>
 			</View>
 		);
@@ -338,6 +395,7 @@ class ConfigScreenComponent extends BaseScreenComponent {
 		settingComps.push(this.renderButton('status_button', _('Sync Status'), this.syncStatusButtonPress_));
 		settingComps.push(this.renderButton('log_button', _('Log'), this.logButtonPress_));
 		settingComps.push(this.renderButton('export_report_button', this.state.creatingReport ? _('Creating report...') : _('Export Debug Report'), this.exportDebugButtonPress_, { disabled: this.state.creatingReport }));
+		settingComps.push(this.renderButton('fix_search_engine_index', this.state.fixingSearchIndex ? _('Fixing search index...') : _('Fix search index'), this.fixSearchEngineIndexButtonPress_, { disabled: this.state.fixingSearchIndex, description: _('Use this to rebuild the search index if there is a problem with search. It may take some times depending on the number of notes.') }));
 
 		settingComps.push(this.renderHeader('moreInfo', _('More information')));
 
@@ -404,6 +462,8 @@ class ConfigScreenComponent extends BaseScreenComponent {
 				<ScreenHeader
 					title={_('Configuration')}
 					showSaveButton={true}
+					showSearchButton={false}
+					showSideMenuButton={false}
 					saveButtonDisabled={!this.state.changedSettingKeys.length}
 					onSaveButtonPress={this.saveButton_press}
 				/>
