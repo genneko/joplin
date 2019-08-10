@@ -525,6 +525,10 @@ msgstr "Tast `Joplin help` for alm. info."
 msgid "Fatal error:"
 msgstr "Kritisk fejl:"
 
+#, javascript-format
+msgid "All potential ports are in use - please report the issue at %s"
+msgstr ""
+
 msgid ""
 "The application has been authorised - you may now close this browser tab."
 msgstr "Denne app er godkendt - du kan nu lukke dette faneblad."
@@ -622,6 +626,26 @@ msgstr "Krypterings muligheder"
 msgid "Web clipper options"
 msgstr ""
 
+msgid "Create note from template"
+msgstr ""
+
+msgid "Create to-do from template"
+msgstr ""
+
+msgid "Insert template"
+msgstr ""
+
+#, fuzzy
+msgid "Open template directory"
+msgstr "Joplin eksport mappe"
+
+msgid "Refresh templates"
+msgstr ""
+
+#, fuzzy, javascript-format
+msgid "Revision: %s (%s)"
+msgstr "%s %s (%s)"
+
 #, javascript-format
 msgid "%s %s (%s, %s)"
 msgstr "%s %s (%s, %s)"
@@ -638,6 +662,9 @@ msgstr ""
 
 msgid "Check for updates..."
 msgstr "Checker om der er opdateringer.."
+
+msgid "Templates"
+msgstr ""
 
 msgid "Import"
 msgstr "Importer"
@@ -969,6 +996,9 @@ msgstr "Omdøb"
 msgid "Set alarm:"
 msgstr "Indstil alarm:"
 
+msgid "Template file:"
+msgstr ""
+
 msgid "Layout"
 msgstr "Layout"
 
@@ -1005,6 +1035,9 @@ msgstr ""
 #, fuzzy
 msgid "Note History"
 msgstr "Notesbøger"
+
+msgid "Markup"
+msgstr ""
 
 msgid "Previous versions of this note"
 msgstr ""
@@ -1162,17 +1195,6 @@ msgstr "Slet"
 
 msgid "Rename"
 msgstr "Omdøb"
-
-msgid "Notebooks"
-msgstr "Notesbøger"
-
-#, fuzzy, javascript-format
-msgid "Decrypting items: %d/%d"
-msgstr "Hentede emner: %d/%d"
-
-#, fuzzy, javascript-format
-msgid "Fetching resources: %d/%d"
-msgstr "Ressourcer: %d/%d"
 
 msgid "Please select where the sync status should be exported to"
 msgstr "Vælg hvor sync status skal eksporteres til"
@@ -1455,6 +1477,12 @@ msgstr "Lyst"
 msgid "Dark"
 msgstr "Mørkt"
 
+msgid "Solarized Light"
+msgstr ""
+
+msgid "Solarized Dark"
+msgstr ""
+
 msgid "Uncompleted to-dos on top"
 msgstr "Ufærdige opgaver øverst"
 
@@ -1593,9 +1621,6 @@ msgid ""
 msgstr ""
 "Editor der bruges til at åbne note. Hvis ingen valgt/udfyldt, vil auto-"
 "funktion søge efter standard editor."
-
-msgid "Show advanced options"
-msgstr "Vis avancerede indstillinger"
 
 msgid "Custom TLS certificates"
 msgstr ""
@@ -1776,18 +1801,6 @@ msgstr "Der er ingen noter. Opret note ved at klikke på (+) knappen."
 msgid "Delete these notes?"
 msgstr "Slet disse noter?"
 
-msgid "Log"
-msgstr "Log"
-
-msgid "Export Debug Report"
-msgstr "Eksporter undersøgelses rapport"
-
-msgid "Encryption Config"
-msgstr "Krypterings indstillinger"
-
-msgid "Configuration"
-msgstr "Indstillinger"
-
 msgid "Move to notebook..."
 msgstr "Flyt til notesbog..."
 
@@ -1812,8 +1825,35 @@ msgstr "Vælg dato"
 msgid "Confirm"
 msgstr "Bekræft"
 
-msgid "Cancel synchronisation"
-msgstr "Afbryd synkronisering"
+#, fuzzy, javascript-format
+msgid "Notebook: %s"
+msgstr "Notesbøger"
+
+#, fuzzy
+msgid "Encrypted notebooks cannot be renamed"
+msgstr "Krypteret emner kan ikke rettes"
+
+#, fuzzy
+msgid "New Notebook"
+msgstr "Ny notesbog"
+
+msgid "Configuration"
+msgstr "Indstillinger"
+
+#, fuzzy, javascript-format
+msgid "Decrypting items: %d/%d"
+msgstr "Hentede emner: %d/%d"
+
+#, fuzzy, javascript-format
+msgid "Fetching resources: %d/%d"
+msgstr "Ressourcer: %d/%d"
+
+#, fuzzy
+msgid "All notes"
+msgstr "note"
+
+msgid "Notebooks"
+msgstr "Notesbøger"
 
 #, fuzzy
 msgid "Checking... Please wait."
@@ -1850,6 +1890,50 @@ msgstr "Nye tags:"
 
 msgid "Type new tags or select from list"
 msgstr "Indtast nye tags eller vælg fra listen"
+
+msgid "Warning"
+msgstr ""
+
+msgid ""
+"In order to use file system synchronisation your permission to write to "
+"external storage is required."
+msgstr ""
+
+#, fuzzy
+msgid "Information"
+msgstr "Indstillinger"
+
+msgid "Encryption Config"
+msgstr "Krypterings indstillinger"
+
+#, fuzzy
+msgid "Tools"
+msgstr "Værktøjer"
+
+#, fuzzy
+msgid "Sync Status"
+msgstr "Status"
+
+msgid "Log"
+msgstr "Log"
+
+#, fuzzy
+msgid "Creating report..."
+msgstr "Opretter ny %s..."
+
+msgid "Export Debug Report"
+msgstr "Eksporter undersøgelses rapport"
+
+msgid "Fixing search index..."
+msgstr ""
+
+msgid "Fix search index"
+msgstr ""
+
+msgid ""
+"Use this to rebuild the search index if there is a problem with search. It "
+"may take a long time depending on the number of notes."
+msgstr ""
 
 #, fuzzy
 msgid "More information"
@@ -1913,6 +1997,10 @@ msgstr "Notesbogen kan ikke gemmes: %s"
 msgid "Edit notebook"
 msgstr "Rediger notesbog"
 
+#, fuzzy
+msgid "Enter notebook title"
+msgstr "Notesbogs titel:"
+
 msgid "Show all"
 msgstr "Vis alt"
 
@@ -1944,6 +2032,24 @@ msgstr ""
 msgid "Unsupported image type: %s"
 msgstr "Ulovlig billedtype: %s"
 
+#, fuzzy, javascript-format
+msgid "Updated: %s"
+msgstr "Opdateret %d."
+
+msgid "View on map"
+msgstr "Vis på kort"
+
+msgid "Go to source URL"
+msgstr ""
+
+#, fuzzy
+msgid "Attach..."
+msgstr "Søg"
+
+#, fuzzy
+msgid "Choose an option"
+msgstr "Vis avancerede indstillinger"
+
 #, fuzzy
 msgid "Take photo"
 msgstr "Vedhæft foto"
@@ -1963,23 +2069,18 @@ msgstr "Konverter til note"
 msgid "Convert to todo"
 msgstr "Konverter til opgave"
 
-msgid "Hide metadata"
-msgstr "Skjul metadata"
+msgid "Properties"
+msgstr ""
 
-msgid "Show metadata"
-msgstr "Vis metadata"
-
-msgid "View on map"
-msgstr "Vis på kort"
-
-msgid "Go to source URL"
+msgid "Add body"
 msgstr ""
 
 msgid "Edit"
 msgstr "Ret"
 
-msgid "Delete notebook"
-msgstr "Slet notesbog"
+#, fuzzy
+msgid "Add title"
+msgstr "Samlet"
 
 msgid "Login with OneDrive"
 msgstr "Log på med OneDrive"
@@ -1987,18 +2088,31 @@ msgstr "Log på med OneDrive"
 msgid "Search"
 msgstr "Søg"
 
-msgid ""
-"Click on the (+) button to create a new note or notebook. Click on the side "
-"menu to access your existing notebooks."
-msgstr ""
-"Klik på (+) knappen for at oprette ny note eller notesbog. Klik på side menu "
-"for at åbne eksisterende notesbøger."
+#~ msgid "Cancel synchronisation"
+#~ msgstr "Afbryd synkronisering"
 
-msgid "You currently have no notebook. Create one by clicking on (+) button."
-msgstr "Du har ingen notesbøger. Opret en ved at klikke på (+) knappen."
+#~ msgid "Hide metadata"
+#~ msgstr "Skjul metadata"
 
-msgid "Welcome"
-msgstr "Velkommen"
+#~ msgid "Show metadata"
+#~ msgstr "Vis metadata"
+
+#~ msgid "Delete notebook"
+#~ msgstr "Slet notesbog"
+
+#~ msgid ""
+#~ "Click on the (+) button to create a new note or notebook. Click on the "
+#~ "side menu to access your existing notebooks."
+#~ msgstr ""
+#~ "Klik på (+) knappen for at oprette ny note eller notesbog. Klik på side "
+#~ "menu for at åbne eksisterende notesbøger."
+
+#~ msgid ""
+#~ "You currently have no notebook. Create one by clicking on (+) button."
+#~ msgstr "Du har ingen notesbøger. Opret en ved at klikke på (+) knappen."
+
+#~ msgid "Welcome"
+#~ msgstr "Velkommen"
 
 #~ msgid "Separate each tag by a comma."
 #~ msgstr "Adskil hver mærke med komma."

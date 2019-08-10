@@ -475,6 +475,10 @@ msgstr ""
 msgid "Fatal error:"
 msgstr ""
 
+#, javascript-format
+msgid "All potential ports are in use - please report the issue at %s"
+msgstr ""
+
 msgid ""
 "The application has been authorised - you may now close this browser tab."
 msgstr ""
@@ -557,6 +561,25 @@ msgstr ""
 msgid "Web clipper options"
 msgstr ""
 
+msgid "Create note from template"
+msgstr ""
+
+msgid "Create to-do from template"
+msgstr ""
+
+msgid "Insert template"
+msgstr ""
+
+msgid "Open template directory"
+msgstr ""
+
+msgid "Refresh templates"
+msgstr ""
+
+#, javascript-format
+msgid "Revision: %s (%s)"
+msgstr ""
+
 #, javascript-format
 msgid "%s %s (%s, %s)"
 msgstr ""
@@ -571,6 +594,9 @@ msgid "Preferences..."
 msgstr ""
 
 msgid "Check for updates..."
+msgstr ""
+
+msgid "Templates"
 msgstr ""
 
 msgid "Import"
@@ -890,6 +916,9 @@ msgstr ""
 msgid "Set alarm:"
 msgstr ""
 
+msgid "Template file:"
+msgstr ""
+
 msgid "Layout"
 msgstr ""
 
@@ -922,6 +951,9 @@ msgid "URL"
 msgstr ""
 
 msgid "Note History"
+msgstr ""
+
+msgid "Markup"
 msgstr ""
 
 msgid "Previous versions of this note"
@@ -1076,17 +1108,6 @@ msgid "Delete"
 msgstr ""
 
 msgid "Rename"
-msgstr ""
-
-msgid "Notebooks"
-msgstr ""
-
-#, javascript-format
-msgid "Decrypting items: %d/%d"
-msgstr ""
-
-#, javascript-format
-msgid "Fetching resources: %d/%d"
 msgstr ""
 
 msgid "Please select where the sync status should be exported to"
@@ -1356,6 +1377,12 @@ msgstr ""
 msgid "Dark"
 msgstr ""
 
+msgid "Solarized Light"
+msgstr ""
+
+msgid "Solarized Dark"
+msgstr ""
+
 msgid "Uncompleted to-dos on top"
 msgstr ""
 
@@ -1485,9 +1512,6 @@ msgstr ""
 msgid ""
 "The editor command (may include arguments) that will be used to open a note. "
 "If none is provided it will try to auto-detect the default editor."
-msgstr ""
-
-msgid "Show advanced options"
 msgstr ""
 
 msgid "Custom TLS certificates"
@@ -1639,7 +1663,7 @@ msgid "%s: %d notes"
 msgstr ""
 
 msgid "Coming alarms"
-msgstr ""
+msgstr "Scheduled alarms"
 
 #, javascript-format
 msgid "On %s: %s"
@@ -1655,18 +1679,6 @@ msgid "There are currently no notes. Create one by clicking on the (+) button."
 msgstr ""
 
 msgid "Delete these notes?"
-msgstr ""
-
-msgid "Log"
-msgstr ""
-
-msgid "Export Debug Report"
-msgstr ""
-
-msgid "Encryption Config"
-msgstr ""
-
-msgid "Configuration"
 msgstr ""
 
 msgid "Move to notebook..."
@@ -1691,8 +1703,32 @@ msgstr ""
 msgid "Confirm"
 msgstr ""
 
-msgid "Cancel synchronisation"
-msgstr "Cancel synchronization"
+#, javascript-format
+msgid "Notebook: %s"
+msgstr ""
+
+msgid "Encrypted notebooks cannot be renamed"
+msgstr ""
+
+msgid "New Notebook"
+msgstr ""
+
+msgid "Configuration"
+msgstr ""
+
+#, javascript-format
+msgid "Decrypting items: %d/%d"
+msgstr ""
+
+#, javascript-format
+msgid "Fetching resources: %d/%d"
+msgstr ""
+
+msgid "All notes"
+msgstr ""
+
+msgid "Notebooks"
+msgstr ""
 
 msgid "Checking... Please wait."
 msgstr ""
@@ -1730,6 +1766,46 @@ msgid "New tags:"
 msgstr ""
 
 msgid "Type new tags or select from list"
+msgstr ""
+
+msgid "Warning"
+msgstr ""
+
+msgid ""
+"In order to use file system synchronisation your permission to write to "
+"external storage is required."
+msgstr ""
+
+msgid "Information"
+msgstr ""
+
+msgid "Encryption Config"
+msgstr ""
+
+msgid "Tools"
+msgstr ""
+
+msgid "Sync Status"
+msgstr ""
+
+msgid "Log"
+msgstr ""
+
+msgid "Creating report..."
+msgstr ""
+
+msgid "Export Debug Report"
+msgstr ""
+
+msgid "Fixing search index..."
+msgstr ""
+
+msgid "Fix search index"
+msgstr ""
+
+msgid ""
+"Use this to rebuild the search index if there is a problem with search. It "
+"may take a long time depending on the number of notes."
 msgstr ""
 
 msgid "More information"
@@ -1794,6 +1870,9 @@ msgstr ""
 msgid "Edit notebook"
 msgstr ""
 
+msgid "Enter notebook title"
+msgstr ""
+
 msgid "Show all"
 msgstr ""
 
@@ -1825,6 +1904,22 @@ msgstr ""
 msgid "Unsupported image type: %s"
 msgstr ""
 
+#, javascript-format
+msgid "Updated: %s"
+msgstr ""
+
+msgid "View on map"
+msgstr ""
+
+msgid "Go to source URL"
+msgstr ""
+
+msgid "Attach..."
+msgstr ""
+
+msgid "Choose an option"
+msgstr ""
+
 msgid "Take photo"
 msgstr ""
 
@@ -1843,22 +1938,16 @@ msgstr ""
 msgid "Convert to todo"
 msgstr ""
 
-msgid "Hide metadata"
+msgid "Properties"
 msgstr ""
 
-msgid "Show metadata"
-msgstr ""
-
-msgid "View on map"
-msgstr ""
-
-msgid "Go to source URL"
+msgid "Add body"
 msgstr ""
 
 msgid "Edit"
 msgstr ""
 
-msgid "Delete notebook"
+msgid "Add title"
 msgstr ""
 
 msgid "Login with OneDrive"
@@ -1867,13 +1956,5 @@ msgstr ""
 msgid "Search"
 msgstr ""
 
-msgid ""
-"Click on the (+) button to create a new note or notebook. Click on the side "
-"menu to access your existing notebooks."
-msgstr ""
-
-msgid "You currently have no notebook. Create one by clicking on (+) button."
-msgstr ""
-
-msgid "Welcome"
-msgstr ""
+#~ msgid "Cancel synchronisation"
+#~ msgstr "Cancel synchronization"
