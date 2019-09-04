@@ -4,8 +4,7 @@
 #
 prog=$(basename $0)
 bindir=$(dirname $(readlink -f $0))
-realpath=$(readlink -f $0)
-JOPLINDIR=$HOME/app/joplin
+JOPLINDIR=$(readlink -f $bindir/..)
 APPDIR=$JOPLINDIR/ElectronClient/app
 
 echoerr() {
@@ -26,7 +25,7 @@ show_config(){
 Encoding=UTF-8
 Version=1.0
 Type=Application
-Exec=$realpath
+Exec=$bindir/$prog
 Icon=$JOPLINDIR/Assets/LinuxIcons/16x16.png
 Name=Joplin(Desktop)
 Comment=Joplin Desktop(Electron) App
