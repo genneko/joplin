@@ -20,7 +20,7 @@
     ],
     "owner": "Laurent Cozic"
   },
-  "version": "1.0.141",
+  "version": "1.0.146",
   "bin": {
     "joplin": "./main.js"
   },
@@ -51,6 +51,7 @@
     "md5": "^2.2.1",
     "mime": "^2.0.3",
     "moment": "^2.24.0",
+    "multiparty": "^4.2.1",
     "node-emoji": "^1.8.1",
     "node-fetch": "^1.7.1",
     "node-persist": "^2.1.0",
@@ -59,6 +60,7 @@
     "query-string": "4.3.4",
     "read-chunk": "^2.1.0",
     "redux": "^3.7.2",
+    "request": "^2.88.0",
     "sax": "^1.2.2",
     "server-destroy": "^1.0.1",
     "sharp": "^0.22.1",
@@ -70,6 +72,7 @@
     "syswide-cas": "^5.2.0",
     "tar": "^4.4.10",
     "tcp-port-used": "^0.1.2",
+    "terminal-kit": "^1.30.0",
     "tkwidgets": "^0.5.26",
     "url-parse": "^1.4.7",
     "uuid": "^3.0.1",
@@ -82,7 +85,6 @@
     "jasmine": "^2.6.0"
   },
   "scripts": {
-    "test": "jasmine",
-    "postinstall": "cd .. && npm i"
+    "test": "jasmine"
   }
 }
