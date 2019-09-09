@@ -101,6 +101,7 @@
     "highlight.js": "^9.15.6",
     "html-entities": "^1.2.1",
     "html-minifier": "^4.0.0",
+    "https-proxy-agent": "^2.2.1",
     "image-type": "^3.0.0",
     "joplin-turndown": "^4.0.17",
     "joplin-turndown-plugin-gfm": "^1.0.9",

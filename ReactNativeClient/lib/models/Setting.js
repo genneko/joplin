@@ -417,6 +417,7 @@ class Setting extends BaseModel {
 
 			'welcome.wasBuilt': { value: false, type: Setting.TYPE_BOOL, public: false },
 			'welcome.enabled': { value: true, type: Setting.TYPE_BOOL, public: false },
+			'net.proxy': { value: '', type: Setting.TYPE_STRING, public: true, appTypes: ['desktop', 'cli'], label: () => _('Proxy') },
 		};
 
 		return this.metadata_;
