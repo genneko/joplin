@@ -1,4 +1,4 @@
-const { execCommand, githubRelease, handleCommitHook, githubOauthToken } = require('./tool-utils.js');
+const { execCommand } = require('./tool-utils.js');
 const path = require('path');
 const fs = require('fs-extra');
 const moment = require('moment');
@@ -32,6 +32,7 @@ async function insertChangelog(tag, changelog) {
 		'##',
 		'[' + tag + '](https://github.com/laurent22/joplin/releases/tag/' + tag + ')',
 		'-',
+		// eslint-disable-next-line no-useless-escape
 		moment.utc().format('YYYY-MM-DD\THH:mm:ss') + 'Z',
 	];
 
@@ -49,32 +50,22 @@ async function insertChangelog(tag, changelog) {
 // Start with node Tools/release-cli.js --changelog-from cli-v1.0.126
 // to specify from where the changelog should be created
 async function main() {
-	const argv = require('yargs').argv;
-
 	process.chdir(appDir);
-
-	const packageJson = await fs.readFile('package.json', 'UTF-8'); 
-	const packageConf = JSON.parse(packageJson);
-
-	const previousVersion = 'v' + packageConf.version;
-	let changelogFrom = 'cli-' + previousVersion;
-
-	if (argv.changelogFrom) changelogFrom = argv.changelogFrom;
 
 	const newVersion = await execCommand('npm version patch');
 	console.info('Building ' + newVersion + '...');
 	const newTag = 'cli-' + newVersion;
-	
+
 	await execCommand('touch app/main.js');
 	await execCommand('bash build.sh');
 	await execCommand('cp package.json build/');
 	await execCommand('cp ../README.md build/');
-	
+
 	process.chdir(appDir + '/build');
 
 	await execCommand('npm publish');
 
-	const changelog = await execCommand('node ' + rootDir + '/Tools/git-changelog ' + changelogFrom);
+	const changelog = await execCommand('node ' + rootDir + '/Tools/git-changelog ' + newTag);
 
 	const newChangelog = await insertChangelog(newTag, changelog);
 

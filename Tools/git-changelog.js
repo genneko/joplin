@@ -1,4 +1,4 @@
-"use strict"
+'use strict';
 
 // Supported commit formats:
 
@@ -6,28 +6,7 @@
 
 require('app-module-path').addPath(__dirname + '/../ReactNativeClient');
 
-const rootDir = __dirname + '/..';
-const { basename, dirname, filename, fileExtension } = require(rootDir + '/ReactNativeClient/lib/path-utils.js');
-const fs = require('fs-extra');
 const { execCommand } = require('./tool-utils.js');
-const { sprintf } = require('sprintf-js');
-
-async function gitTags() {
-	const r = await execCommand('git tag --format="%(objectname) %(refname:short)" --sort=-creatordate');
-
-	const output = [];
-	const lines = r.split('\n');
-	for (const line of lines) {
-		const s = line.split(' ');
-		if (s.length !== 2) throw new Error('Unexpected log line format: ' + line);
-		output.push({
-			hash: s[0].trim(),
-			name: s[1].trim(),
-		});
-	}
-
-	return output;
-}
 
 async function gitLog(sinceTag) {
 	let lines = await execCommand('git log --pretty=format:"%H:%s" ' + sinceTag + '..HEAD');
@@ -37,30 +16,13 @@ async function gitLog(sinceTag) {
 	for (const line of lines) {
 		const splitted = line.split(':');
 		const commit = splitted[0];
-		const message = line.substr(commit.length + 1).trim();;
-		
+		const message = line.substr(commit.length + 1).trim();
+
 		output.push({
 			commit: commit,
 			message: message,
 		});
 	}
-
-	return output;
-}
-
-async function gitLogSinceTag(logs, tagHash) {
-	const output = [];
-	let found = false;
-
-	for (const log of logs) {
-		if (log.commit === tagHash) {
-			found = true;
-			break;
-		}
-		output.push(log);
-	}
-
-	if (!found) throw new Error('Could not find tag hash: ' + tagHash);
 
 	return output;
 }
@@ -112,7 +74,7 @@ function filterLogs(logs, platform) {
 
 function formatCommitMessage(msg) {
 	let output = '';
-	
+
 	const splitted = msg.split(':');
 
 	const isPlatformPrefix = prefix => {
@@ -121,7 +83,7 @@ function formatCommitMessage(msg) {
 			if (['android', 'mobile', 'ios', 'desktop', 'cli', 'clipper', 'all'].indexOf(p) >= 0) return true;
 		}
 		return false;
-	}
+	};
 
 	if (splitted.length) {
 		const platform = splitted[0].trim().toLowerCase();
@@ -144,11 +106,10 @@ function formatCommitMessage(msg) {
 		if (msg.indexOf('improve') === 0) return 'improved';
 
 		return 'improved';
-	}
+	};
 
 	const parseCommitMessage = (msg) => {
 		const parts = msg.split(':');
-		const defaultType = 'improved';
 
 		if (parts.length === 1) {
 			return {
@@ -165,7 +126,7 @@ function formatCommitMessage(msg) {
 		let type = null;
 
 		// eg. "All: Resolves #712: New: Support for note history (#1415)"
-		// "Resolves" doesn't tell us if it's new or improved so check the 
+		// "Resolves" doesn't tell us if it's new or improved so check the
 		// third token (which in this case is "new").
 		if (t.indexOf('resolves') === 0 && ['new', 'improved', 'fixed'].indexOf(parts[0].trim().toLowerCase()) >= 0) {
 			t = parts[0].trim().toLowerCase();
@@ -178,7 +139,7 @@ function formatCommitMessage(msg) {
 		if (t.indexOf('improved') === 0) type = 'improved';
 
 		if (!type) type = detectType(message);
-	
+
 		let issueNumber = output.match(/#(\d+)/);
 		issueNumber = issueNumber && issueNumber.length >= 2 ? issueNumber[1] : null;
 
@@ -187,13 +148,13 @@ function formatCommitMessage(msg) {
 			message: message,
 			issueNumber: issueNumber,
 		};
-	}
+	};
 
 	const commitMessage = parseCommitMessage(output);
 
 	output = capitalizeFirstLetter(commitMessage.type) + ': ' + capitalizeFirstLetter(commitMessage.message);
 	if (commitMessage.issueNumber) {
-		const formattedIssueNum = '(#' + commitMessage.issueNumber + ')'
+		const formattedIssueNum = '(#' + commitMessage.issueNumber + ')';
 		if (output.indexOf(formattedIssueNum) < 0) output += ' ' + formattedIssueNum;
 	}
 
@@ -211,17 +172,50 @@ function createChangeLog(logs) {
 }
 
 function capitalizeFirstLetter(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
+	return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function decreaseTagVersion(tag) {
+	const s = tag.split('.');
+	let num = Number(s.pop());
+	num--;
+	if (num < 0) throw new Error('Cannot decrease tag version: ' + tag);
+	s.push('' + num);
+	return s.join('.');
+}
+
+// This function finds the first relevant tag starting from the given tag.
+// The first "relevant tag" is the one that exists, and from which there are changes.
+async function findFirstRelevantTag(baseTag) {
+	let tag = decreaseTagVersion(baseTag);
+	while (true) {
+		try {
+			const logs = await gitLog(tag);
+			if (logs.length) return tag;
+		} catch (error) {
+			if (error.message.indexOf('unknown revision') >= 0) {
+				// We skip the error - it means this particular tag has never been created
+			} else {
+				throw error;
+			}
+		}
+
+		tag = decreaseTagVersion(tag);
+	}
 }
 
 async function main() {
 	const argv = require('yargs').argv;
-	if (!argv._.length) throw new Error('Tag name must be specified');
+	if (!argv._.length) throw new Error('Tag name must be specified. Provide the tag of the new version and git-changelog will walk backward to find the changes to the previous relevant tag.');
 
-	const sinceTagName = argv._[0];
-	const platform = platformFromTag(sinceTagName);
+	const fromTagName = argv._[0];
 
-	const logsSinceTags = await gitLog(sinceTagName);
+	const platform = platformFromTag(fromTagName);
+
+	const toTagName = await findFirstRelevantTag(fromTagName);
+
+	const logsSinceTags = await gitLog(toTagName);
+
 	const filteredLogs = filterLogs(logsSinceTags, platform);
 
 	let changelog = createChangeLog(filteredLogs);

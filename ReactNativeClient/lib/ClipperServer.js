@@ -1,15 +1,13 @@
-const { netUtils } = require('lib/net-utils');
-const urlParser = require("url");
+const urlParser = require('url');
 const Setting = require('lib/models/Setting');
 const { Logger } = require('lib/logger.js');
-const randomClipperPort = require('lib/randomClipperPort');
+const { randomClipperPort, startPort } = require('lib/randomClipperPort');
 const enableServerDestroy = require('server-destroy');
 const Api = require('lib/services/rest/Api');
 const ApiResponse = require('lib/services/rest/ApiResponse');
 const multiparty = require('multiparty');
 
 class ClipperServer {
-
 	constructor() {
 		this.logger_ = new Logger();
 		this.startState_ = 'idle';
@@ -72,7 +70,14 @@ class ClipperServer {
 			if (!inUse) return state.port;
 		}
 
-		throw new Error('All potential ports are in use or not available.')
+		throw new Error('All potential ports are in use or not available.');
+	}
+
+	async isRunning() {
+		const tcpPortUsed = require('tcp-port-used');
+		const port = Setting.value('api.port') ? Setting.value('api.port') : startPort(Setting.value('env'));
+		const inUse = await tcpPortUsed.check(port);
+		return inUse ? port : 0;
 	}
 
 	async start() {
@@ -80,8 +85,10 @@ class ClipperServer {
 
 		this.setStartState('starting');
 
+		const settingPort = Setting.value('api.port');
+
 		try {
-			const p = await this.findAvailablePort();
+			const p = settingPort ? settingPort : await this.findAvailablePort();
 			this.setPort(p);
 		} catch (error) {
 			this.setStartState('idle');
@@ -92,51 +99,54 @@ class ClipperServer {
 		this.server_ = require('http').createServer();
 
 		this.server_.on('request', async (request, response) => {
-
-			const writeCorsHeaders = (code, contentType = "application/json", additionalHeaders = null) => {
-				const headers = Object.assign({}, {
-					"Content-Type": contentType,
-					'Access-Control-Allow-Origin': '*',
-					'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, PATCH, DELETE',
-					'Access-Control-Allow-Headers': 'X-Requested-With,content-type',
-				}, additionalHeaders ? additionalHeaders : {});
+			const writeCorsHeaders = (code, contentType = 'application/json', additionalHeaders = null) => {
+				const headers = Object.assign(
+					{},
+					{
+						'Content-Type': contentType,
+						'Access-Control-Allow-Origin': '*',
+						'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, PATCH, DELETE',
+						'Access-Control-Allow-Headers': 'X-Requested-With,content-type',
+					},
+					additionalHeaders ? additionalHeaders : {}
+				);
 				response.writeHead(code, headers);
-			}
+			};
 
 			const writeResponseJson = (code, object) => {
 				writeCorsHeaders(code);
 				response.write(JSON.stringify(object));
 				response.end();
-			}
+			};
 
 			const writeResponseText = (code, text) => {
 				writeCorsHeaders(code, 'text/plain');
 				response.write(text);
 				response.end();
-			}
+			};
 
 			const writeResponseInstance = (code, instance) => {
-    			if (instance.type === 'attachment') {
-    				const filename = instance.attachmentFilename ? instance.attachmentFilename : 'file';
-    				writeCorsHeaders(code, instance.contentType ? instance.contentType : 'application/octet-stream', {
-    					'Content-disposition': 'attachment; filename=' + filename,
-    					'Content-Length': instance.body.length,
-    				});
-    				response.end(instance.body);
-    			} else {
-    				throw new Error('Not implemented');
-    			}
-			}
+				if (instance.type === 'attachment') {
+					const filename = instance.attachmentFilename ? instance.attachmentFilename : 'file';
+					writeCorsHeaders(code, instance.contentType ? instance.contentType : 'application/octet-stream', {
+						'Content-disposition': 'attachment; filename=' + filename,
+						'Content-Length': instance.body.length,
+					});
+					response.end(instance.body);
+				} else {
+					throw new Error('Not implemented');
+				}
+			};
 
 			const writeResponse = (code, response) => {
 				if (response instanceof ApiResponse) {
-        			writeResponseInstance(code, response);
+					writeResponseInstance(code, response);
 				} else if (typeof response === 'string') {
 					writeResponseText(code, response);
 				} else {
 					writeResponseJson(code, response);
 				}
-			}
+			};
 
 			this.logger().info('Request: ' + request.method + ' ' + request.url);
 
@@ -155,7 +165,7 @@ class ClipperServer {
 
 					writeResponse(httpCode, { error: msg.join(': ') });
 				}
-			}
+			};
 
 			const contentType = request.headers['content-type'] ? request.headers['content-type'] : '';
 
@@ -164,25 +174,21 @@ class ClipperServer {
 				response.end();
 			} else {
 				if (contentType.indexOf('multipart/form-data') === 0) {
-				    const form = new multiparty.Form();
+					const form = new multiparty.Form();
 
-				    form.parse(request, function(error, fields, files) {
-				    	if (error) {
+					form.parse(request, function(error, fields, files) {
+						if (error) {
 							writeResponse(error.httpCode ? error.httpCode : 500, error.message);
 							return;
 						} else {
-							execRequest(
-								request,
-								fields && fields.props && fields.props.length ? fields.props[0] : '',
-								files && files.data ? files.data : []
-							);
+							execRequest(request, fields && fields.props && fields.props.length ? fields.props[0] : '', files && files.data ? files.data : []);
 						}
-				    });
+					});
 				} else {
 					if (request.method === 'POST' || request.method === 'PUT') {
 						let body = '';
 
-						request.on('data', (data) => {
+						request.on('data', data => {
 							body += data;
 						});
 
@@ -203,6 +209,10 @@ class ClipperServer {
 		this.server_.listen(this.port_, '127.0.0.1');
 
 		this.setStartState('started');
+
+		// We return an empty promise that never resolves so that it's possible to `await` the server indefinitely.
+		// This is used only in command-server.js
+		return new Promise(() => {});
 	}
 
 	async stop() {
@@ -211,7 +221,6 @@ class ClipperServer {
 		this.setStartState('idle');
 		this.setPort(null);
 	}
-
 }
 
 module.exports = ClipperServer;
