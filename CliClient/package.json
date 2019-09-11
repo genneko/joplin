@@ -41,6 +41,7 @@
     "fs-extra": "^5.0.0",
     "html-entities": "^1.2.1",
     "html-minifier": "^3.5.15",
+    "https-proxy-agent": "^2.2.1",
     "image-data-uri": "^2.0.0",
     "image-type": "^3.0.0",
     "joplin-turndown": "^4.0.17",
