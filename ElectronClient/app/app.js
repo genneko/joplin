@@ -1061,7 +1061,11 @@ class Application extends BaseApplication {
 
 	updateEditorFont() {
 		const fontFamilies = [];
-		if (Setting.value('style.editor.fontFamily')) fontFamilies.push('"' + Setting.value('style.editor.fontFamily') + '"');
+		if (Setting.value('style.editor.fontFamily')) {
+			Setting.value('style.editor.fontFamily').split(',').forEach(function(family){
+				fontFamilies.push('"' + family.trim().replace(/["']/g, '') + '"');
+			});
+		}
 		fontFamilies.push('monospace');
 
 		// The '*' and '!important' parts are necessary to make sure Russian text is displayed properly
