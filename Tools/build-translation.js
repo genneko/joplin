@@ -18,7 +18,7 @@ const cliLocalesDir = cliDir + '/locales';
 const rnDir = rootDir + '/ReactNativeClient';
 const electronDir = rootDir + '/ElectronClient/app';
 
-const { execCommand, isMac, insertContentIntoFile } = require('./tool-utils.js');
+const { execCommand, isMac, isFreeBSD, insertContentIntoFile } = require('./tool-utils.js');
 const { countryDisplayName, countryCodeOnly } = require('lib/locale.js');
 
 function parsePoFile(filePath) {
@@ -74,7 +74,7 @@ function executablePath(file) {
 
 async function removePoHeaderDate(filePath) {
 	let sedPrefix = 'sed -i';
-	if (isMac()) sedPrefix += ' ""'; // Note: on macOS it has to be 'sed -i ""' (BSD quirk)
+	if (isMac() || isFreeBSD()) sedPrefix += ' ""'; // Note: on macOS/FreeBSD it has to be 'sed -i ""' (BSD quirk)
 	await execCommand(sedPrefix + ' -e\'/POT-Creation-Date:/d\' "' + filePath + '"');
 	await execCommand(sedPrefix + ' -e\'/PO-Revision-Date:/d\' "' + filePath + '"');
 }

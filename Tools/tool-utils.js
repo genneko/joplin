@@ -151,6 +151,10 @@ toolUtils.isMac = () => {
 	return process && process.platform === 'darwin';
 };
 
+toolUtils.isFreeBSD = () => {
+	return process && process.platform === 'freebsd';
+};
+
 toolUtils.insertContentIntoFile = async function (filePath, markerOpen, markerClose, contentToInsert) {
 	const fs = require('fs-extra');
 	let content = await fs.readFile(filePath, 'utf-8');
