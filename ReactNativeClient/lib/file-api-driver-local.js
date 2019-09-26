@@ -16,7 +16,7 @@ const { basicDelta } = require('lib/file-api');
 class FileApiDriverLocal {
 	fsErrorToJsError_(error, path = null) {
 		let msg = error.toString();
-		if (path !== null) msg += '. Path: ' + path;
+		if (path !== null) msg += `. Path: ${path}`;
 		let output = new Error(msg);
 		if (error.code) output.code = error.code;
 		return output;
@@ -77,7 +77,7 @@ class FileApiDriverLocal {
 		}
 	}
 
-	async list(path, options) {
+	async list(path) {
 		try {
 			const stats = await this.fsDriver().readDirStats(path);
 			const output = this.metadataFromStats_(stats);

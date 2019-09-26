@@ -53,7 +53,7 @@ class NoteSearchBarComponent extends React.Component {
 			color: theme.color,
 		};
 
-		const icon = <i style={iconStyle} className={'fa ' + iconName}></i>;
+		const icon = <i style={iconStyle} className={`fa ${iconName}`}></i>;
 
 		return (
 			<a href="#" style={searchButton} onClick={clickHandler}>
@@ -88,15 +88,15 @@ class NoteSearchBarComponent extends React.Component {
 		}
 	}
 
-	previousButton_click(event) {
+	previousButton_click() {
 		if (this.props.onPrevious) this.props.onPrevious();
 	}
 
-	nextButton_click(event) {
+	nextButton_click() {
 		if (this.props.onNext) this.props.onNext();
 	}
 
-	closeButton_click(event) {
+	closeButton_click() {
 		if (this.props.onClose) this.props.onClose();
 	}
 

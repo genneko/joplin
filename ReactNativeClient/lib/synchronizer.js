@@ -3,6 +3,7 @@ const Folder = require('lib/models/Folder.js');
 const Note = require('lib/models/Note.js');
 const Resource = require('lib/models/Resource.js');
 const ItemChange = require('lib/models/ItemChange.js');
+const Setting = require('lib/models/Setting.js');
 const ResourceLocalState = require('lib/models/ResourceLocalState.js');
 const MasterKey = require('lib/models/MasterKey.js');
 const BaseModel = require('lib/BaseModel.js');
@@ -102,13 +103,13 @@ class Synchronizer {
 		if (local) {
 			let s = [];
 			s.push(local.id);
-			line.push('(Local ' + s.join(', ') + ')');
+			line.push(`(Local ${s.join(', ')})`);
 		}
 
 		if (remote) {
 			let s = [];
 			s.push(remote.id ? remote.id : remote.path);
-			line.push('(Remote ' + s.join(', ') + ')');
+			line.push(`(Remote ${s.join(', ')})`);
 		}
 
 		this.logger().debug(line.join(': '));
@@ -130,14 +131,14 @@ class Synchronizer {
 			if (n == 'finished') continue;
 			if (n == 'state') continue;
 			if (n == 'completedTime') continue;
-			this.logger().info(n + ': ' + (report[n] ? report[n] : '-'));
+			this.logger().info(`${n}: ${report[n] ? report[n] : '-'}`);
 		}
 		let folderCount = await Folder.count();
 		let noteCount = await Note.count();
 		let resourceCount = await Resource.count();
-		this.logger().info('Total folders: ' + folderCount);
-		this.logger().info('Total notes: ' + noteCount);
-		this.logger().info('Total resources: ' + resourceCount);
+		this.logger().info(`Total folders: ${folderCount}`);
+		this.logger().info(`Total notes: ${noteCount}`);
+		this.logger().info(`Total resources: ${resourceCount}`);
 
 		if (report.errors && report.errors.length) {
 			this.logger().warn('There was some errors:');
@@ -158,7 +159,7 @@ class Synchronizer {
 		this.logSyncOperation('cancelling', null, null, '');
 		this.cancelling_ = true;
 
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			const iid = setInterval(() => {
 				if (this.state() == 'idle') {
 					clearInterval(iid);
@@ -214,7 +215,7 @@ class Synchronizer {
 
 		this.dispatch({ type: 'SYNC_STARTED' });
 
-		this.logSyncOperation('starting', null, null, 'Starting synchronisation to target ' + syncTargetId + '... [' + synchronizationId + ']');
+		this.logSyncOperation('starting', null, null, `Starting synchronisation to target ${syncTargetId}... [${synchronizationId}]`);
 
 		const handleCannotSyncItem = async (ItemClass, syncTargetId, item, cannotSyncReason, itemLocation = null) => {
 			await ItemClass.saveSyncDisabled(syncTargetId, item, cannotSyncReason, itemLocation);
@@ -222,7 +223,7 @@ class Synchronizer {
 		};
 
 		const resourceRemotePath = resourceId => {
-			return this.resourceDirName_ + '/' + resourceId;
+			return `${this.resourceDirName_}/${resourceId}`;
 		};
 
 		try {
@@ -302,14 +303,14 @@ class Synchronizer {
 							} catch (error) {
 								if (error.code === 'rejectedByTarget') {
 									this.progressReport_.errors.push(error);
-									this.logger().warn('Rejected by target: ' + path + ': ' + error.message);
+									this.logger().warn(`Rejected by target: ${path}: ${error.message}`);
 									completeItemProcessing(path);
 									continue;
 								} else {
 									throw error;
 								}
 							}
-							if (!remoteContent) throw new Error('Got metadata for path but could not fetch content: ' + path);
+							if (!remoteContent) throw new Error(`Got metadata for path but could not fetch content: ${path}`);
 							remoteContent = await BaseItem.unserialize(remoteContent);
 
 							if (remoteContent.updated_time > local.sync_time) {
@@ -508,6 +509,8 @@ class Synchronizer {
 						allItemIdsHandler: async () => {
 							return BaseItem.syncedItemIds(syncTargetId);
 						},
+
+						wipeOutFailSafe: Setting.value('sync.wipeOutFailSafe'),
 					});
 
 					let remotes = listResult.items;
@@ -572,10 +575,10 @@ class Synchronizer {
 						} catch (error) {
 							if (error.code === 'rejectedByTarget') {
 								this.progressReport_.errors.push(error);
-								this.logger().warn('Rejected by target: ' + path + ': ' + error.message);
+								this.logger().warn(`Rejected by target: ${path}: ${error.message}`);
 								action = null;
 							} else {
-								error.message = 'On file ' + path + ': ' + error.message;
+								error.message = `On file ${path}: ${error.message}`;
 								throw error;
 							}
 						}
@@ -588,7 +591,7 @@ class Synchronizer {
 
 						if (action == 'createLocal' || action == 'updateLocal') {
 							if (content === null) {
-								this.logger().warn('Remote has been deleted between now and the delta() call? In that case it will be handled during the next sync: ' + path);
+								this.logger().warn(`Remote has been deleted between now and the delta() call? In that case it will be handled during the next sync: ${path}`);
 								continue;
 							}
 							content = ItemClass.filter(content);
@@ -613,7 +616,7 @@ class Synchronizer {
 
 							if (creatingNewResource) {
 								if (content.size >= this.maxResourceSize()) {
-									await handleCannotSyncItem(ItemClass, syncTargetId, content, 'File "' + content.title + '" is larger than allowed ' + this.maxResourceSize() + ' bytes. Beyond this limit, the mobile app would crash.', BaseItem.SYNC_ITEM_LOCATION_REMOTE);
+									await handleCannotSyncItem(ItemClass, syncTargetId, content, `File "${content.title}" is larger than allowed ${this.maxResourceSize()} bytes. Beyond this limit, the mobile app would crash.`, BaseItem.SYNC_ITEM_LOCATION_REMOTE);
 									continue;
 								}
 
@@ -695,7 +698,7 @@ class Synchronizer {
 				}
 			} // DELTA STEP
 		} catch (error) {
-			if (error && ['cannotEncryptEncrypted', 'noActiveMasterKey', 'processingPathTwice'].indexOf(error.code) >= 0) {
+			if (error && ['cannotEncryptEncrypted', 'noActiveMasterKey', 'processingPathTwice', 'failSafe'].indexOf(error.code) >= 0) {
 				// Only log an info statement for this since this is a common condition that is reported
 				// in the application, and needs to be resolved by the user.
 				// Or it's a temporary issue that will be resolved on next sync.
@@ -718,7 +721,7 @@ class Synchronizer {
 
 		this.progressReport_.completedTime = time.unixMs();
 
-		this.logSyncOperation('finished', null, null, 'Synchronisation finished [' + synchronizationId + ']');
+		this.logSyncOperation('finished', null, null, `Synchronisation finished [${synchronizationId}]`);
 
 		await this.logSyncSummary(this.progressReport_);
 

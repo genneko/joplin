@@ -55,7 +55,7 @@ function shimInit() {
 				buffer = nativeImage.toJPEG(90);
 			}
 
-			if (!buffer) throw new Error('Cannot resize image because mime type "' + mime + '" is not supported: ' + targetPath);
+			if (!buffer) throw new Error(`Cannot resize image because mime type "${mime}" is not supported: ${targetPath}`);
 
 			await shim.fsDriver().writeFile(targetPath, buffer, 'buffer');
 		} else {
@@ -70,7 +70,7 @@ function shimInit() {
 			// For Electron
 			const nativeImage = require('electron').nativeImage;
 			let image = nativeImage.createFromPath(filePath);
-			if (image.isEmpty()) throw new Error('Image is invalid or does not exist: ' + filePath);
+			if (image.isEmpty()) throw new Error(`Image is invalid or does not exist: ${filePath}`);
 
 			const size = image.getSize();
 
@@ -169,7 +169,7 @@ function shimInit() {
 		}
 
 		const itDoes = await shim.fsDriver().waitTillExists(targetPath);
-		if (!itDoes) throw new Error('Resource file was not created: ' + targetPath);
+		if (!itDoes) throw new Error(`Resource file was not created: ${targetPath}`);
 
 		const fileStat = await shim.fsDriver().stat(targetPath);
 		resource.size = fileStat.size;
@@ -199,7 +199,7 @@ function shimInit() {
 			newBody.push(Resource.markdownTag(resource));
 		} else {
 			let filename = escapeLinkText(basename(filePath)); // to get same filename as standard drag and drop
-			let fileURL = '[' + filename + '](' + toFileProtocolPath(filePath) + ')';
+			let fileURL = `[${filename}](${toFileProtocolPath(filePath)})`;
 			newBody.push(fileURL);
 		}
 
@@ -259,7 +259,7 @@ function shimInit() {
 
 	shim.fetch = async function(url, options = null) {
 		const validatedUrl = urlValidator.isUri(url);
-		if (!validatedUrl) throw new Error('Not a valid URL: ' + url);
+		if (!validatedUrl) throw new Error(`Not a valid URL: ${url}`);
 
 		options = shim.addProxyAgent_(options);
 
@@ -293,7 +293,7 @@ function shimInit() {
 					return response.statusMessage;
 				},
 				json: () => {
-					return { message: response.statusCode + ': ' + response.statusMessage };
+					return { message: `${response.statusCode}: ${response.statusMessage}` };
 				},
 				status: response.statusCode,
 				headers: response.headers,
@@ -305,7 +305,7 @@ function shimInit() {
 			host: url.hostname,
 			port: url.port,
 			method: method,
-			path: url.pathname + (url.query ? '?' + url.query : ''),
+			path: url.pathname + (url.query ? `?${url.query}` : ''),
 			headers: headers,
 		};
 
