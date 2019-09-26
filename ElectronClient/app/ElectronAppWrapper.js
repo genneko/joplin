@@ -39,7 +39,7 @@ class ElectronAppWrapper {
 		const stateOptions = {
 			defaultWidth: 800,
 			defaultHeight: 600,
-			file: 'window-state-' + this.env_ + '.json',
+			file: `window-state-${this.env_}.json`,
 		};
 
 		if (this.profilePath_) stateOptions.path = this.profilePath_;
@@ -115,7 +115,7 @@ class ElectronAppWrapper {
 	async waitForElectronAppReady() {
 		if (this.electronApp().isReady()) return Promise.resolve();
 
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			const iid = setInterval(() => {
 				if (this.electronApp().isReady()) {
 					clearInterval(iid);
@@ -145,9 +145,9 @@ class ElectronAppWrapper {
 
 	buildDir() {
 		if (this.buildDir_) return this.buildDir_;
-		let dir = __dirname + '/build';
+		let dir = `${__dirname}/build`;
 		if (!fs.pathExistsSync(dir)) {
-			dir = dirname(__dirname) + '/build';
+			dir = `${dirname(__dirname)}/build`;
 			if (!fs.pathExistsSync(dir)) throw new Error('Cannot find build dir');
 		}
 
@@ -172,7 +172,7 @@ class ElectronAppWrapper {
 	// Note: this must be called only after the "ready" event of the app has been dispatched
 	createTray(contextMenu) {
 		try {
-			this.tray_ = new Tray(this.buildDir() + '/icons/' + this.trayIconFilename_());
+			this.tray_ = new Tray(`${this.buildDir()}/icons/${this.trayIconFilename_()}`);
 			this.tray_.setToolTip(this.electronApp_.getName());
 			this.tray_.setContextMenu(contextMenu);
 
@@ -202,7 +202,7 @@ class ElectronAppWrapper {
 		}
 
 		// Someone tried to open a second instance - focus our window instead
-		this.electronApp_.on('second-instance', (event, commandLine, workingDirectory) => {
+		this.electronApp_.on('second-instance', () => {
 			const win = this.window();
 			if (!win) return;
 			if (win.isMinimized()) win.restore();

@@ -26,7 +26,7 @@ globalStyle.marginRight = globalStyle.margin;
 globalStyle.marginLeft = globalStyle.margin;
 globalStyle.marginTop = globalStyle.margin;
 globalStyle.marginBottom = globalStyle.margin;
-globalStyle.htmlMarginLeft = ((globalStyle.marginLeft / 10) * 0.6).toFixed(2) + 'em';
+globalStyle.htmlMarginLeft = `${((globalStyle.marginLeft / 10) * 0.6).toFixed(2)}em`;
 
 globalStyle.icon = {
 	fontSize: 30,
@@ -65,7 +65,11 @@ globalStyle.buttonStyle = {
 	maxWidth: 160,
 	paddingLeft: 12,
 	paddingRight: 12,
+	paddingTop: 6,
+	paddingBottom: 6,
 	boxShadow: '0px 1px 1px rgba(0,0,0,0.3)',
+	fontSize: globalStyle.fontSize,
+	borderRadius: 4,
 };
 
 const lightStyle = {
@@ -140,6 +144,8 @@ const darkStyle = {
 
 	editorTheme: 'twilight',
 	codeThemeCss: 'atom-one-dark-reasonable.css',
+
+	highlightedColor: '#0066C7',
 };
 
 // Solarized Styles
@@ -314,6 +320,11 @@ function addExtraStyles(style) {
 
 	style.dropdownList = Object.assign({}, style.inputStyle);
 
+	// In general the highlighted color, used to highlight text or icons, should be the same as selectedColor2
+	// but some times, depending on the theme, it might be too dark or too light, so it can be
+	// specified directly by the theme too.
+	if (!style.highlightedColor) style.highlightedColor = style.selectedColor2;
+
 	return style;
 }
 
@@ -337,7 +348,7 @@ function themeStyle(theme) {
 		textAreaLineHeight: Math.round(globalStyle.textAreaLineHeight * editorFontSize / 12),
 
 		// For WebView - must correspond to the properties above
-		htmlFontSize: Math.round(15 * zoomRatio) + 'px',
+		htmlFontSize: `${Math.round(15 * zoomRatio)}px`,
 		htmlLineHeight: '1.6em', //Math.round(20 * zoomRatio) + 'px'
 
 		htmlCodeFontSize: '.9em',

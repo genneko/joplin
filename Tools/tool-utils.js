@@ -4,7 +4,7 @@ toolUtils.execCommand = function(command) {
 	const exec = require('child_process').exec;
 
 	return new Promise((resolve, reject) => {
-		exec(command, (error, stdout, stderr) => {
+		exec(command, (error, stdout) => {
 			if (error) {
 				if (error.signal == 'SIGTERM') {
 					resolve('Process was killed');
@@ -25,7 +25,7 @@ toolUtils.downloadFile = function(url, targetPath) {
 	return new Promise((resolve, reject) => {
 		const file = fs.createWriteStream(targetPath);
 		https.get(url, function(response) {
-			if (response.statusCode !== 200) reject(new Error('HTTP error ' + response.statusCode));
+			if (response.statusCode !== 200) reject(new Error(`HTTP error ${response.statusCode}`));
 			response.pipe(file);
 			file.on('finish', function() {
 				//file.close();
@@ -71,7 +71,7 @@ toolUtils.fileExists = async function(filePath) {
 	const fs = require('fs-extra');
 
 	return new Promise((resolve, reject) => {
-		fs.stat(filePath, function(err, stat) {
+		fs.stat(filePath, function(err) {
 			if (err == null) {
 				resolve(true);
 			} else if(err.code == 'ENOENT') {
@@ -85,7 +85,7 @@ toolUtils.fileExists = async function(filePath) {
 
 toolUtils.githubOauthToken = async function() {
 	const fs = require('fs-extra');
-	const r = await fs.readFile(__dirname + '/github_oauth_token.txt');
+	const r = await fs.readFile(`${__dirname}/github_oauth_token.txt`);
 	return r.toString();
 };
 
@@ -99,7 +99,7 @@ toolUtils.githubRelease = async function(project, tagName, options = null) {
 
 	const oauthToken = await toolUtils.githubOauthToken();
 
-	const response = await fetch('https://api.github.com/repos/laurent22/' + project + '/releases', {
+	const response = await fetch(`https://api.github.com/repos/laurent22/${project}/releases`, {
 		method: 'POST',
 		body: JSON.stringify({
 			tag_name: tagName,
@@ -109,22 +109,22 @@ toolUtils.githubRelease = async function(project, tagName, options = null) {
 		}),
 		headers: {
 			'Content-Type': 'application/json',
-			'Authorization': 'token ' + oauthToken,
+			'Authorization': `token ${oauthToken}`,
 		},
 	});
 
 	const responseText = await response.text();
 
-	if (!response.ok) throw new Error('Cannot create GitHub release: ' + responseText);
+	if (!response.ok) throw new Error(`Cannot create GitHub release: ${responseText}`);
 
 	const responseJson = JSON.parse(responseText);
-	if (!responseJson.url) throw new Error('No URL for release: ' + responseText);
+	if (!responseJson.url) throw new Error(`No URL for release: ${responseText}`);
 
 	return responseJson;
 };
 
 toolUtils.readline = question => {
-	return new Promise((resolve, reject) => {
+	return new Promise((resolve) => {
 		const readline = require('readline');
 
 		const rl = readline.createInterface({
@@ -132,7 +132,7 @@ toolUtils.readline = question => {
 			output: process.stdout,
 		});
 
-		rl.question(question + ' ', answer => {
+		rl.question(`${question} `, answer => {
 			resolve(answer);
 			rl.close();
 		});
@@ -159,7 +159,7 @@ toolUtils.insertContentIntoFile = async function (filePath, markerOpen, markerCl
 	const fs = require('fs-extra');
 	let content = await fs.readFile(filePath, 'utf-8');
 	// [^]* matches any character including new lines
-	const regex = new RegExp(markerOpen + '[^]*?' + markerClose);
+	const regex = new RegExp(`${markerOpen}[^]*?${markerClose}`);
 	content = content.replace(regex, markerOpen + contentToInsert + markerClose);
 	await fs.writeFile(filePath, content);
 };

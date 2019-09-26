@@ -79,7 +79,7 @@ const DecryptionWorker = require('lib/services/DecryptionWorker');
 const EncryptionService = require('lib/services/EncryptionService');
 const MigrationService = require('lib/services/MigrationService');
 
-let storeDispatch = function(action) {};
+let storeDispatch = function() {};
 
 const logReducerAction = function(action) {
 	if (['SIDE_MENU_OPEN_PERCENT', 'SYNC_REPORT_UPDATE'].indexOf(action.type) >= 0) return;
@@ -155,7 +155,7 @@ const generalMiddleware = store => next => async (action) => {
 
 let navHistory = [];
 
-function historyCanGoBackTo(route, nextRoute) {
+function historyCanGoBackTo(route) {
 	if (route.routeName === 'Note') return false;
 	if (route.routeName === 'Folder') return false;
 
@@ -344,7 +344,7 @@ const appReducer = (state = appDefaultState, action) => {
 
 		}
 	} catch (error) {
-		error.message = 'In reducer: ' + error.message + ' Action: ' + JSON.stringify(action);
+		error.message = `In reducer: ${error.message} Action: ${JSON.stringify(action)}`;
 		throw error;
 	}
 
@@ -387,7 +387,7 @@ async function initialize(dispatch) {
 	BaseService.logger_ = mainLogger;
 
 	reg.logger().info('====================================');
-	reg.logger().info('Starting application ' + Setting.value('appId') + ' (' + Setting.value('env') + ')');
+	reg.logger().info(`Starting application ${Setting.value('appId')} (${Setting.value('env')})`);
 
 	const dbLogger = new Logger();
 	dbLogger.addTarget('database', { database: logDatabase, source: 'm' });
@@ -466,7 +466,7 @@ async function initialize(dispatch) {
 		Setting.setValue('folders.sortOrder.field', 'title');
 		Setting.setValue('folders.sortOrder.reverse', false);
 
-		reg.logger().info('Sync target: ' + Setting.value('sync.target'));
+		reg.logger().info(`Sync target: ${Setting.value('sync.target')}`);
 
 		setLocale(Setting.value('locale'));
 
@@ -526,7 +526,7 @@ async function initialize(dispatch) {
 			});
 		}
 	} catch (error) {
-		alert('Initialization error: ' + error.message);
+		alert(`Initialization error: ${error.message}`);
 		reg.logger().error('Initialization error:', error);
 	}
 

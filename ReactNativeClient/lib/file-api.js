@@ -107,12 +107,13 @@ class FileApi {
 	}
 
 	// DRIVER MUST RETURN PATHS RELATIVE TO `path`
+	// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
 	async list(path = '', options = null) {
 		if (!options) options = {};
 		if (!('includeHidden' in options)) options.includeHidden = false;
 		if (!('context' in options)) options.context = null;
 
-		this.logger().debug('list ' + this.baseDir());
+		this.logger().debug(`list ${this.baseDir()}`);
 
 		const result = await tryAndRepeat(() => this.driver_.list(this.baseDir(), options), this.requestRepeatCount());
 
@@ -129,18 +130,18 @@ class FileApi {
 
 	// Deprectated
 	setTimestamp(path, timestampMs) {
-		this.logger().debug('setTimestamp ' + this.fullPath_(path));
+		this.logger().debug(`setTimestamp ${this.fullPath_(path)}`);
 		return tryAndRepeat(() => this.driver_.setTimestamp(this.fullPath_(path), timestampMs), this.requestRepeatCount());
 		//return this.driver_.setTimestamp(this.fullPath_(path), timestampMs);
 	}
 
 	mkdir(path) {
-		this.logger().debug('mkdir ' + this.fullPath_(path));
+		this.logger().debug(`mkdir ${this.fullPath_(path)}`);
 		return tryAndRepeat(() => this.driver_.mkdir(this.fullPath_(path)), this.requestRepeatCount());
 	}
 
 	async stat(path) {
-		this.logger().debug('stat ' + this.fullPath_(path));
+		this.logger().debug(`stat ${this.fullPath_(path)}`);
 
 		const output = await tryAndRepeat(() => this.driver_.stat(this.fullPath_(path)), this.requestRepeatCount());
 
@@ -158,28 +159,28 @@ class FileApi {
 	get(path, options = null) {
 		if (!options) options = {};
 		if (!options.encoding) options.encoding = 'utf8';
-		this.logger().debug('get ' + this.fullPath_(path));
+		this.logger().debug(`get ${this.fullPath_(path)}`);
 		return tryAndRepeat(() => this.driver_.get(this.fullPath_(path), options), this.requestRepeatCount());
 	}
 
 	async put(path, content, options = null) {
-		this.logger().debug('put ' + this.fullPath_(path), options);
+		this.logger().debug(`put ${this.fullPath_(path)}`, options);
 
 		if (options && options.source === 'file') {
-			if (!(await this.fsDriver().exists(options.path))) throw new JoplinError('File not found: ' + options.path, 'fileNotFound');
+			if (!(await this.fsDriver().exists(options.path))) throw new JoplinError(`File not found: ${options.path}`, 'fileNotFound');
 		}
 
 		return tryAndRepeat(() => this.driver_.put(this.fullPath_(path), content, options), this.requestRepeatCount());
 	}
 
 	delete(path) {
-		this.logger().debug('delete ' + this.fullPath_(path));
+		this.logger().debug(`delete ${this.fullPath_(path)}`);
 		return tryAndRepeat(() => this.driver_.delete(this.fullPath_(path)), this.requestRepeatCount());
 	}
 
 	// Deprectated
 	move(oldPath, newPath) {
-		this.logger().debug('move ' + this.fullPath_(oldPath) + ' => ' + this.fullPath_(newPath));
+		this.logger().debug(`move ${this.fullPath_(oldPath)} => ${this.fullPath_(newPath)}`);
 		return tryAndRepeat(() => this.driver_.move(this.fullPath_(oldPath), this.fullPath_(newPath)), this.requestRepeatCount());
 	}
 
@@ -193,7 +194,7 @@ class FileApi {
 	}
 
 	delta(path, options = null) {
-		this.logger().debug('delta ' + this.fullPath_(path));
+		this.logger().debug(`delta ${this.fullPath_(path)}`);
 		return tryAndRepeat(() => this.driver_.delta(this.fullPath_(path), options), this.requestRepeatCount());
 	}
 }
@@ -246,6 +247,13 @@ async function basicDelta(path, getDirStatFn, options) {
 		});
 		newContext.statIdsCache = newContext.statsCache.filter(item => BaseItem.isSystemPath(item.path)).map(item => BaseItem.pathToId(item.path));
 		newContext.statIdsCache.sort(); // Items must be sorted to use binary search below
+
+		// At this point statIdsCache contains the list of all the item IDs on the sync target.
+		// If it's empty, it's most likely a configuration error or bug. For example, if the
+		// user moves their Nextcloud directory, or if a network drive gets disconnected and
+		// returns an empty dir instead of an error. In that case, we don't wipe out the user
+		// data, unless they have switched off the fail-safe.
+		if (options.wipeOutFailSafe && !newContext.statIdsCache.length) throw new JoplinError('Fail-safe: The delta operation was interrupted because the sync target appears to be empty. To override this behaviour disable the "Wipe out fail-safe" option in the settings.', 'failSafe');
 	}
 
 	let output = [];

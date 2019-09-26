@@ -11,7 +11,7 @@ const { BaseScreenComponent } = require('lib/components/base-screen.js');
 const parseUri = require('lib/parseUri');
 
 class OneDriveLoginScreenComponent extends BaseScreenComponent {
-	static navigationOptions(options) {
+	static navigationOptions() {
 		return { header: null };
 	}
 
@@ -59,7 +59,7 @@ class OneDriveLoginScreenComponent extends BaseScreenComponent {
 				this.props.dispatch({ type: 'NAV_BACK' });
 				reg.scheduleSync(0);
 			} catch (error) {
-				alert('Could not login to OneDrive. Please try again\n\n' + error.message + '\n\n' + url);
+				alert(`Could not login to OneDrive. Please try again\n\n${error.message}\n\n${url}`);
 			}
 
 			this.authCode_ = null;
@@ -116,7 +116,7 @@ class OneDriveLoginScreenComponent extends BaseScreenComponent {
 	}
 }
 
-const OneDriveLoginScreen = connect(state => {
+const OneDriveLoginScreen = connect(() => {
 	return {};
 })(OneDriveLoginScreenComponent);
 

@@ -1,5 +1,6 @@
 const stringPadding = require('string-padding');
 const stringToStream = require('string-to-stream');
+const resourceUtils = require('lib/resourceUtils.js');
 
 const BLOCK_OPEN = '[[BLOCK_OPEN]]';
 const BLOCK_CLOSE = '[[BLOCK_CLOSE]]';
@@ -295,12 +296,6 @@ function collapseWhiteSpaceAndAppend(lines, state, text) {
 	return lines;
 }
 
-const imageMimeTypes = ['image/cgm', 'image/fits', 'image/g3fax', 'image/gif', 'image/ief', 'image/jp2', 'image/jpeg', 'image/jpm', 'image/jpx', 'image/naplps', 'image/png', 'image/prs.btif', 'image/prs.pti', 'image/t38', 'image/tiff', 'image/tiff-fx', 'image/vnd.adobe.photoshop', 'image/vnd.cns.inf2', 'image/vnd.djvu', 'image/vnd.dwg', 'image/vnd.dxf', 'image/vnd.fastbidsheet', 'image/vnd.fpx', 'image/vnd.fst', 'image/vnd.fujixerox.edmics-mmr', 'image/vnd.fujixerox.edmics-rlc', 'image/vnd.globalgraphics.pgb', 'image/vnd.microsoft.icon', 'image/vnd.mix', 'image/vnd.ms-modi', 'image/vnd.net-fpx', 'image/vnd.sealed.png', 'image/vnd.sealedmedia.softseal.gif', 'image/vnd.sealedmedia.softseal.jpg', 'image/vnd.svf', 'image/vnd.wap.wbmp', 'image/vnd.xiff'];
-
-function isImageMimeType(m) {
-	return imageMimeTypes.indexOf(m) >= 0;
-}
-
 function tagAttributeToMdText(attr) {
 	// HTML attributes may contain newlines so remove them.
 	// https://github.com/laurent22/joplin/issues/1583
@@ -318,14 +313,14 @@ function addResourceTag(lines, resource, alt = '') {
 	if (!alt) alt = '';
 
 	alt = tagAttributeToMdText(alt);
-	if (isImageMimeType(resource.mime)) {
+	if (resourceUtils.isImageMimeType(resource.mime)) {
 		lines.push('![');
 		lines.push(alt);
-		lines.push('](:/' + resource.id + ')');
+		lines.push(`](:/${resource.id})`);
 	} else {
 		lines.push('[');
 		lines.push(alt);
-		lines.push('](:/' + resource.id + ')');
+		lines.push(`](:/${resource.id})`);
 	}
 
 	return lines;
@@ -382,7 +377,7 @@ function attributeToLowerCase(node) {
 	return output;
 }
 
-function isSpanWithStyle(attributes, state) {
+function isSpanWithStyle(attributes) {
 	if (attributes != undefined) {
 		if ('style' in attributes) {
 			return true;
@@ -417,7 +412,7 @@ function enexXmlToMdArray(stream, resources) {
 		}
 	};
 
-	return new Promise((resolve, reject) => {
+	return new Promise((resolve) => {
 		let state = {
 			inCode: [],
 			inPre: false,
@@ -439,7 +434,6 @@ function enexXmlToMdArray(stream, resources) {
 
 		saxStream.on('error', function(e) {
 			console.warn(e);
-			//reject(e);
 		});
 
 		const unwrapInnerText = text => {
@@ -457,7 +451,7 @@ function enexXmlToMdArray(stream, resources) {
 				}
 
 				if (nextLine) {
-					output += line + ' ';
+					output += `${line} `;
 				} else {
 					output += line;
 				}
@@ -548,9 +542,9 @@ function enexXmlToMdArray(stream, resources) {
 
 				const indent = '    '.repeat(state.lists.length - 1);
 				if (container.tag == 'ul') {
-					section.lines.push(indent + '- ');
+					section.lines.push(`${indent}- `);
 				} else {
-					section.lines.push(indent + container.counter + '. ');
+					section.lines.push(`${indent + container.counter}. `);
 					container.counter++;
 				}
 			} else if (isStrongTag(n)) {
@@ -566,7 +560,7 @@ function enexXmlToMdArray(stream, resources) {
 					// Many (most?) img tags don't have no source associated, especially when they were imported from HTML
 					let s = '![';
 					if (nodeAttributes.alt) s += tagAttributeToMdText(nodeAttributes.alt);
-					s += '](' + nodeAttributes.src + ')';
+					s += `](${nodeAttributes.src})`;
 					section.lines.push(s);
 				}
 			} else if (isAnchor(n)) {
@@ -578,7 +572,7 @@ function enexXmlToMdArray(stream, resources) {
 				section.lines.push('*');
 			} else if (n == 'en-todo') {
 				let x = nodeAttributes && nodeAttributes.checked && nodeAttributes.checked.toLowerCase() == 'true' ? 'X' : ' ';
-				section.lines.push('- [' + x + '] ');
+				section.lines.push(`- [${x}] `);
 			} else if (n == 'hr') {
 				// Needs to be surrounded by new lines so that it's properly rendered as a line when converting to HTML
 				section.lines.push(NEWLINE);
@@ -688,7 +682,7 @@ function enexXmlToMdArray(stream, resources) {
 					}
 
 					if (!found) {
-						console.warn('Hash with no associated resource: ' + hash);
+						console.warn(`Hash with no associated resource: ${hash}`);
 					}
 				}
 
@@ -709,7 +703,7 @@ function enexXmlToMdArray(stream, resources) {
 			} else if (['font', 'sup', 'cite', 'abbr', 'small', 'tt', 'sub', 'colgroup', 'col', 'ins', 'caption', 'var', 'map', 'area'].indexOf(n) >= 0) {
 				// Inline tags that can be ignored in Markdown
 			} else {
-				console.warn('Unsupported start tag: ' + n);
+				console.warn(`Unsupported start tag: ${n}`);
 			}
 		});
 
@@ -753,10 +747,10 @@ function enexXmlToMdArray(stream, resources) {
 					if (codeLines.length > 1) {
 						for (let i = 0; i < codeLines.length; i++) {
 							if (i > 0) section.lines.push('\n');
-							section.lines.push('\t' + codeLines[i]);
+							section.lines.push(`\t${codeLines[i]}`);
 						}
 					} else {
-						section.lines.push('`' + codeLines.join('') + '`');
+						section.lines.push(`\`${codeLines.join('')}\``);
 					}
 
 					if (section && section.parent) section = section.parent;
@@ -813,7 +807,7 @@ function enexXmlToMdArray(stream, resources) {
 						section.lines.pop();
 					} else {
 						section.lines.push('(L)');
-						section.lines.push('](' + url + ')');
+						section.lines.push(`](${url})`);
 					}
 				} else if (!previous || previous == url) {
 					section.lines.pop();
@@ -878,7 +872,7 @@ function enexXmlToMdArray(stream, resources) {
 
 						section.lines = trimTextStartAndEndSpaces(section.lines);
 
-						section.lines.push('](' + url + ')');
+						section.lines.push(`](${url})`);
 					}
 				}
 			} else if (isListTag(n)) {
@@ -897,11 +891,11 @@ function enexXmlToMdArray(stream, resources) {
 			} else if (isIgnoredEndTag(n)) {
 				// Skip
 			} else {
-				console.warn('Unsupported end tag: ' + n);
+				console.warn(`Unsupported end tag: ${n}`);
 			}
 		});
 
-		saxStream.on('attribute', function(attr) {});
+		saxStream.on('attribute', function() {});
 
 		saxStream.on('end', function() {
 			resolve({
@@ -1021,15 +1015,15 @@ function drawTable(table) {
 			lines.push(BLOCK_CLOSE);
 		} else {
 			if (emptyHeader) {
-				lines.push('| ' + emptyHeader.join(' | ') + ' |');
-				lines.push('| ' + headerLine.join(' | ') + ' |');
+				lines.push(`| ${emptyHeader.join(' | ')} |`);
+				lines.push(`| ${headerLine.join(' | ')} |`);
 				headerDone = true;
 			}
 
-			lines.push('| ' + line.join(' | ') + ' |');
+			lines.push(`| ${line.join(' | ')} |`);
 
 			if (!headerDone) {
-				lines.push('| ' + headerLine.join(' | ') + ' |');
+				lines.push(`| ${headerLine.join(' | ')} |`);
 				headerDone = true;
 			}
 		}
@@ -1037,7 +1031,7 @@ function drawTable(table) {
 
 	lines.push(BLOCK_CLOSE);
 
-	return flatRender ? lines : lines.join('<<<<:D>>>>' + NEWLINE + '<<<<:D>>>>').split('<<<<:D>>>>');
+	return flatRender ? lines : lines.join(`<<<<:D>>>>${NEWLINE}<<<<:D>>>>`).split('<<<<:D>>>>');
 }
 
 function postProcessMarkdown(lines) {
