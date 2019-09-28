@@ -38,6 +38,7 @@ shim.platformName = function() {
 	if (shim.isWindows()) return 'win32';
 	if (shim.isLinux()) return 'linux';
 	if (shim.isFreeBSD()) return 'freebsd';
+	if (process && process.platform) return process.platform;
 	throw new Error('Cannot determine platform');
 };
 
@@ -202,6 +203,10 @@ shim.injectedJs = name => '';
 
 shim.loadCssFromJs = name => {
 	throw new Error('Not implemented');
+};
+
+shim.isTestingEnv = () => {
+	return false;
 };
 
 module.exports = { shim };
