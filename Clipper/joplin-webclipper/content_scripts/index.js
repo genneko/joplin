@@ -83,14 +83,18 @@
 	}
 
 	function getAnchorNames(element) {
-		const anchors = element.getElementsByTagName('a');
 		const output = [];
-		for (let i = 0; i < anchors.length; i++) {
-			const anchor = anchors[i];
-			if (anchor.id) {
-				output.push(anchor.id);
-			} else if (anchor.name) {
-				output.push(anchor.name);
+		// Anchor names are normally in A tags but can be in SPAN too
+		// https://github.com/laurent22/joplin-turndown/commit/45f4ee6bf15b8804bdc2aa1d7ecb2f8cb594b8e5#diff-172b8b2bc3ba160589d3a7eeb4913687R232
+		for (const tagName of ['a', 'span']) {
+			const anchors = element.getElementsByTagName(tagName);
+			for (let i = 0; i < anchors.length; i++) {
+				const anchor = anchors[i];
+				if (anchor.id) {
+					output.push(anchor.id);
+				} else if (anchor.name) {
+					output.push(anchor.name);
+				}
 			}
 		}
 		return output;
@@ -134,11 +138,17 @@
 					const src = absoluteUrl(imageSrc(node));
 					node.setAttribute('src', src);
 					if (!(src in imageIndexes)) imageIndexes[src] = 0;
-					const imageSize = imageSizes[src][imageIndexes[src]];
-					imageIndexes[src]++;
-					if (imageSize && convertToMarkup === 'markdown') {
-						node.width = imageSize.width;
-						node.height = imageSize.height;
+
+					if (!imageSizes[src]) {
+						// This seems to concern dynamic images that don't really such as Gravatar, etc.
+						console.warn('Found an image for which the size had not been fetched:', src);
+					} else {
+						const imageSize = imageSizes[src][imageIndexes[src]];
+						imageIndexes[src]++;
+						if (imageSize && convertToMarkup === 'markdown') {
+							node.width = imageSize.width;
+							node.height = imageSize.height;
+						}
 					}
 				}
 

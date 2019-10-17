@@ -124,7 +124,6 @@ function shimInit() {
 
 		const { uuid } = require('lib/uuid.js');
 		const { basename, fileExtension, safeFileExtension } = require('lib/path-utils.js');
-		const mime = require('mime/lite');
 
 		if (!(await fs.pathExists(filePath))) throw new Error(_('Cannot access %s', filePath));
 
@@ -134,7 +133,7 @@ function shimInit() {
 
 		let resource = Resource.new();
 		resource.id = resourceId;
-		resource.mime = mime.getType(filePath);
+		resource.mime = mimeUtils.fromFilename(filePath);
 		resource.title = basename(filePath);
 
 		let fileExt = safeFileExtension(fileExtension(filePath));
@@ -275,7 +274,7 @@ function shimInit() {
 	shim.fetchBlob = async function(url, options) {
 		if (!options || !options.path) throw new Error('fetchBlob: target file path is missing');
 		if (!options.method) options.method = 'GET';
-		//if (!('maxRetry' in options)) options.maxRetry = 5;
+		// if (!('maxRetry' in options)) options.maxRetry = 5;
 
 		const urlParse = require('url').parse;
 

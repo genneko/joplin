@@ -48,6 +48,7 @@ require('brace/theme/chrome');
 require('brace/theme/solarized_light');
 require('brace/theme/solarized_dark');
 require('brace/theme/twilight');
+require('brace/theme/dracula');
 
 const NOTE_TAG_BAR_FEATURE_ENABLED = false;
 
@@ -690,10 +691,13 @@ class NoteTextComponent extends React.Component {
 	}
 
 	async noteRevisionViewer_onBack() {
-		this.setState({ showRevisions: false });
-
-		this.lastSetHtml_ = '';
-		this.scheduleReloadNote(this.props);
+		// When coming back from the revision viewer, the webview has been
+		// unmounted so will need to reload. We set webviewReady to false
+		// to make sure everything is reloaded as expected.
+		this.setState({ showRevisions: false, webviewReady: false }, () => {
+			this.lastSetHtml_ = '';
+			this.scheduleReloadNote(this.props);
+		});
 	}
 
 	title_changeText(event) {
@@ -1209,7 +1213,7 @@ class NoteTextComponent extends React.Component {
 
 		setTimeout(() => {
 			if (target === 'pdf') {
-				this.webviewRef_.current.wrappedInstance.printToPDF({ printBackground: true }, (error, data) => {
+				this.webviewRef_.current.wrappedInstance.printToPDF({ printBackground: true, pageSize: Setting.value('export.pdfPageSize'), landscape: Setting.value('export.pdfPageOrientation') === 'landscape' }, (error, data) => {
 					restoreSettings();
 
 					if (error) {
@@ -1369,9 +1373,16 @@ class NoteTextComponent extends React.Component {
 
 			const r = this.selectionRange_;
 
+			// Because some insertion strings will have newlines, we'll need to account for them
+			const str1Split = string1.split(/\r?\n/);
+
+			// Add the number of newlines to the row
+			// and add the length of the final line to the column (for strings with no newlines this is the string length)
 			const newRange = {
-				start: { row: r.start.row, column: r.start.column + string1.length },
-				end: { row: r.end.row, column: r.end.column + string1.length },
+				start: { row: r.start.row + str1Split.length - 1,
+					column: r.start.column + str1Split[str1Split.length - 1].length },
+				end: { row: r.end.row + str1Split.length - 1,
+					column: r.end.column + str1Split[str1Split.length - 1].length },
 			};
 
 			if (replacementText) {
@@ -1444,7 +1455,18 @@ class NoteTextComponent extends React.Component {
 	}
 
 	commandTextCode() {
-		this.wrapSelectionWithStrings('`', '`');
+		const selection = this.textOffsetSelection();
+		let string = this.state.note.body.substr(selection.start, selection.end - selection.start);
+
+		// Look for newlines
+		let match = string.match(/\r?\n/);
+
+		if (match && match.length > 0) {
+			// Follow the same newline style
+			this.wrapSelectionWithStrings(`\`\`\`${match[0]}`, `${match[0]}\`\`\``);
+		} else {
+			this.wrapSelectionWithStrings('`', '`');
+		}
 	}
 
 	commandTemplate(value) {
@@ -1524,7 +1546,7 @@ class NoteTextComponent extends React.Component {
 		menu.popup(bridge().window());
 	}
 
-	createToolbarItems(note) {
+	createToolbarItems(note, editorIsVisible) {
 		const toolbarItems = [];
 		if (note && this.state.folder && ['Search', 'Tag'].includes(this.props.notesParentType)) {
 			toolbarItems.push({
@@ -1559,7 +1581,7 @@ class NoteTextComponent extends React.Component {
 			});
 		}
 
-		if (note.markup_language === Note.MARKUP_LANGUAGE_MARKDOWN) {
+		if (note.markup_language === Note.MARKUP_LANGUAGE_MARKDOWN && editorIsVisible) {
 			toolbarItems.push({
 				tooltip: _('Bold'),
 				iconName: 'fa-bold',
@@ -1821,7 +1843,7 @@ class NoteTextComponent extends React.Component {
 		if (this.props.selectedNoteIds.length > 1) {
 			return this.renderMultiNotes(rootStyle);
 		} else if (!note || !!note.encryption_applied) {
-			//|| (note && !this.props.newNote && this.props.noteId && note.id !== this.props.noteId)) { // note.id !== props.noteId is when the note has not been loaded yet, and the previous one is still in the state
+			// || (note && !this.props.newNote && this.props.noteId && note.id !== this.props.noteId)) { // note.id !== props.noteId is when the note has not been loaded yet, and the previous one is still in the state
 			return this.renderNoNotes(rootStyle);
 		}
 
@@ -1961,7 +1983,8 @@ class NoteTextComponent extends React.Component {
 			}
 		}
 
-		const toolbarItems = this.createToolbarItems(note);
+		const editorIsVisible = visiblePanes.indexOf('editor') >= 0;
+		const toolbarItems = this.createToolbarItems(note, editorIsVisible);
 
 		const toolbar = <Toolbar style={toolbarStyle} items={toolbarItems} />;
 
