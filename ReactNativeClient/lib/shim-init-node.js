@@ -382,10 +382,6 @@ function shimInit() {
 		bridge().openExternal(url);
 	};
 
-	shim.isTestingEnv = () => {
-		return process.env.NODE_ENV === 'testing';
-	};
-
 	shim.waitForFrame = () => {};
 }
 
