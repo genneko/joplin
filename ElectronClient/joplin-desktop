@@ -12,7 +12,7 @@ echoerr() {
 }
 
 usage_exit(){
-        echoerr "usage: $prog"
+        echoerr "usage: $prog [-D]"
         echoerr "       $prog -c > $HOME/.local/share/applications/userapp-Joplin.desktop"
         echoerr "       $prog -h"
         echoerr
@@ -35,14 +35,21 @@ __DATA__
 	exit 0
 }
 
-while getopts "ch" opt
+debug=0
+while getopts "cDh" opt
 do
         case "$opt" in
                 c) show_config ;;
+                D) debug=1 ;;
                 h|*) usage_exit ;;
         esac
 done
 shift $(( $OPTIND - 1 ))
 
 cd $APPDIR
-electron . > /dev/null 2>&1
+if [ $debug == 1 ]; then
+	electron . --env dev --log-level debug --no-welcome --open-dev-tools "$@"
+else
+	electron . "$@" > /dev/null 2>&1
+fi
+
