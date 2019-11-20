@@ -24,7 +24,8 @@ https://github.com/laurent22/joplin/blob/master/{{{sourceMarkdownFile}}}
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="https://joplinapp.org/css/bootstrap.min.css">
 	<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
-	<link rel="stylesheet" href="https://joplinapp.org/css/fontawesome-all.min.css"> 
+	<!-- <link rel="stylesheet" href="https://joplinapp.org/css/fontawesome-all.min.css">  -->
+	<link rel="stylesheet" href="https://joplinapp.org/css/fork-awesome.min.css"> 
 	<script src="https://joplinapp.org/js/jquery-3.2.1.slim.min.js"></script>
 	<style>
 	body {
@@ -238,6 +239,15 @@ https://github.com/laurent22/joplin/blob/master/{{{sourceMarkdownFile}}}
 	h6:hover a.heading-anchor {
 		opacity: 1;
 	}
+
+	.bottom-links {
+		display: flex;
+		justify-content: center;
+		border-top: 1px solid #d4d4d4;
+		margin-top: 30px;
+		padding-top: 25px;
+	}
+
 	@media all and (min-width: 400px) {
 		.nav-right .share-btn {
 			display: inline-block;
@@ -455,7 +465,14 @@ function markdownToHtml(md, templateParams) {
 		}
 	});
 
-	return Mustache.render(headerHtml, templateParams) + markdownIt.render(md) + scriptHtml + footerHtml;
+	const improveDocHtml = `
+		<div class="bottom-links">
+			<a href="https://github.com/laurent22/joplin/blob/master/{{{sourceMarkdownFile}}}">
+				<i class="fa fa-github"></i> Improve this doc
+			</a>
+		</div>`;
+
+	return Mustache.render(headerHtml, templateParams) + markdownIt.render(md) + Mustache.render(improveDocHtml, templateParams) + scriptHtml + footerHtml;
 }
 
 let tocMd_ = null;
