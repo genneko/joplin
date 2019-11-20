@@ -1061,10 +1061,9 @@ class Application extends BaseApplication {
 
 	updateEditorFont() {
 		const fontFamilies = [];
-		if (Setting.value('style.editor.fontFamily')) {
-			Setting.value('style.editor.fontFamily').split(',').forEach(function(family){
-				fontFamilies.push('"' + family.trim().replace(/["']/g, '') + '"');
-			});
+		let value = '';
+		if ((value = Setting.value('style.editor.fontFamily')) !== null && value.length > 0) {
+			value.split(',').forEach(family => fontFamilies.push('"' + family.trim().replace(/['"]/g, '') + '"'));
 		}
 		fontFamilies.push('monospace');
 
