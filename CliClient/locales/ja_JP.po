@@ -15,8 +15,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 1.8.4\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"POT-Creation-Date: \n"
-"PO-Revision-Date: \n"
 
 msgid "To delete a tag, untag the associated notes."
 msgstr "タグを削除するには、関連するノートからタグを外してください。"
@@ -2157,6 +2155,17 @@ msgstr "OneDriveログイン"
 msgid "Search"
 msgstr "検索"
 
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "復元されたノート"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "共有"
+
+#~ msgid "All potential ports are in use - please report the issue at %s"
+#~ msgstr "使用候補のポートはすべて利用中です - 問題を %s に報告してください"
+
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "同期作業はすでに実行中です。状態: %s"
 
@@ -2177,9 +2186,6 @@ msgstr "検索"
 
 #~ msgid "Note has been saved."
 #~ msgstr "ノートは保存されました。"
-
-#~ msgid "All potential ports are in use - please report the issue at %s"
-#~ msgstr "使用候補のポートはすべて利用中です - 問題を %s に報告してください"
 
 #~ msgid "Sidebar"
 #~ msgstr "サイドバー"

@@ -429,8 +429,9 @@ msgstr "Starting synchronization..."
 msgid "Downloading resources..."
 msgstr ""
 
+#, fuzzy
 msgid "Cancelling... Please wait."
-msgstr ""
+msgstr "Cancelling background synchronization... Please wait."
 
 msgid ""
 "<tag-command> can be \"add\", \"remove\", \"list\", or \"notetags\" to "
@@ -1258,8 +1259,9 @@ msgstr ""
 msgid "Encrypted"
 msgstr ""
 
+#, fuzzy
 msgid "Encrypted items cannot be modified"
-msgstr ""
+msgstr "Some items cannot be synchronized."
 
 msgid "title"
 msgstr ""
@@ -1714,8 +1716,9 @@ msgstr ""
 msgid "Item \"%s\" could not be downloaded: %s"
 msgstr ""
 
+#, fuzzy
 msgid "Items that cannot be decrypted"
-msgstr ""
+msgstr "Items that cannot be synchronized"
 
 msgid ""
 "Joplin failed to decrypt these items multiple times, possibly because they "

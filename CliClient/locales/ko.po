@@ -2156,6 +2156,18 @@ msgstr "OneDrive 로그인"
 msgid "Search"
 msgstr "검색"
 
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "복구된 노트들"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "공유"
+
+#~ msgid "All potential ports are in use - please report the issue at %s"
+#~ msgstr ""
+#~ "모든 가능한 포트들이 사용중에 있습니다 - %s 에 대한 문제를 알려주세요"
+
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "동기화가 이미 진행되고 있습니다. 상태: %s"
 
@@ -2174,10 +2186,6 @@ msgstr "검색"
 
 #~ msgid "Note has been saved."
 #~ msgstr "노트가 저장되었습니다."
-
-#~ msgid "All potential ports are in use - please report the issue at %s"
-#~ msgstr ""
-#~ "모든 가능한 포트들이 사용중에 있습니다 - %s 에 대한 문제를 알려주세요"
 
 #~ msgid "Sidebar"
 #~ msgstr "사이드바"

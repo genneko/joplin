@@ -700,8 +700,9 @@ msgstr "Joplin نسخة %s"
 msgid "Make a donation"
 msgstr "تبرَّع"
 
+#, fuzzy
 msgid "Toggle development tools"
-msgstr ""
+msgstr "قائمة ملاحظات"
 
 #, javascript-format
 msgid "Open %s"
@@ -2162,6 +2163,14 @@ msgstr "تسجيل الدخول عبر OneDrive"
 
 msgid "Search"
 msgstr "بحث"
+
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "مشاركة"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "مشاركة"
 
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "المزامنة قيد التقدم بالفعل. الحال: %s"

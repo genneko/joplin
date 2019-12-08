@@ -697,8 +697,9 @@ msgstr ""
 msgid "Toggle note list"
 msgstr "Zifratua gaitu"
 
+#, fuzzy
 msgid "Toggle editor layout"
-msgstr ""
+msgstr "Zifratua gaitu"
 
 msgid "Focus"
 msgstr ""
@@ -722,8 +723,9 @@ msgstr "Evernotetik esportatutako fitxategiak"
 msgid "Make a donation"
 msgstr "Web orria eta dokumentazioa (en)"
 
+#, fuzzy
 msgid "Toggle development tools"
-msgstr ""
+msgstr "Zifratua gaitu"
 
 #, fuzzy, javascript-format
 msgid "Open %s"
@@ -1032,8 +1034,9 @@ msgstr ""
 msgid "Previous versions of this note"
 msgstr ""
 
+#, fuzzy
 msgid "Note properties"
-msgstr ""
+msgstr "Koadernoaren izenburua: "
 
 #, javascript-format
 msgid "The note \"%s\" has been successfully restored to the notebook \"%s\"."
@@ -1838,8 +1841,9 @@ msgstr ""
 msgid "Please specify the notebook where the notes should be imported to."
 msgstr "Aukeratu nora esportatu sinkronizazioaren egoera, mesedez"
 
+#, fuzzy
 msgid "Restored Notes"
-msgstr ""
+msgstr "Oharrak ezabatu?"
 
 msgid "Items that cannot be synchronised"
 msgstr "Itemok ezin sinkronizatu"
@@ -2220,10 +2224,6 @@ msgstr "Bilatu"
 
 #~ msgid "Note has been saved."
 #~ msgstr "Oharra gorde da."
-
-#, fuzzy
-#~ msgid "Note title"
-#~ msgstr "Koadernoaren izenburua: "
 
 #, fuzzy
 #~ msgid "Note body"

@@ -689,8 +689,9 @@ msgstr ""
 msgid "Toggle note list"
 msgstr "Bilješka je promijenjena:"
 
+#, fuzzy
 msgid "Toggle editor layout"
-msgstr ""
+msgstr "Bilješka je promijenjena:"
 
 #, fuzzy
 msgid "Focus"
@@ -715,8 +716,9 @@ msgstr "Evernote izvozne datoteke"
 msgid "Make a donation"
 msgstr "Website i dokumentacija"
 
+#, fuzzy
 msgid "Toggle development tools"
-msgstr ""
+msgstr "Bilješka je promijenjena:"
 
 #, fuzzy, javascript-format
 msgid "Open %s"
@@ -1012,8 +1014,9 @@ msgstr ""
 msgid "Previous versions of this note"
 msgstr ""
 
+#, fuzzy
 msgid "Note properties"
-msgstr ""
+msgstr "Naslov bilježnice:"
 
 #, javascript-format
 msgid "The note \"%s\" has been successfully restored to the notebook \"%s\"."
@@ -1806,8 +1809,9 @@ msgstr ""
 msgid "Please specify the notebook where the notes should be imported to."
 msgstr "Odaberi lokaciju za izvoz statusa sinkronizacije"
 
+#, fuzzy
 msgid "Restored Notes"
-msgstr ""
+msgstr "Obriši bilješke?"
 
 msgid "Items that cannot be synchronised"
 msgstr "Stavke koje se ne mogu sinkronizirati"
@@ -2185,10 +2189,6 @@ msgstr "Traži"
 
 #~ msgid "Note has been saved."
 #~ msgstr "Bilješka je spremljena."
-
-#, fuzzy
-#~ msgid "Note title"
-#~ msgstr "Naslov bilježnice:"
 
 #, fuzzy
 #~ msgid "Note body"

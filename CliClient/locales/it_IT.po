@@ -2196,6 +2196,18 @@ msgstr "Accedi a OneDrive"
 msgid "Search"
 msgstr "Cerca"
 
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "Ripristina note"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "Condividi"
+
+#~ msgid "All potential ports are in use - please report the issue at %s"
+#~ msgstr ""
+#~ "Tutte le potenziali porte sono in uso - prego riportare il problema a %s"
+
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "La sincronizzazione è già in corso. Stato: %s"
 
@@ -2215,10 +2227,6 @@ msgstr "Cerca"
 
 #~ msgid "Note has been saved."
 #~ msgstr "La nota è stata salvata."
-
-#~ msgid "All potential ports are in use - please report the issue at %s"
-#~ msgstr ""
-#~ "Tutte le potenziali porte sono in uso - prego riportare il problema a %s"
 
 #~ msgid "Sidebar"
 #~ msgstr "Barra laterale"

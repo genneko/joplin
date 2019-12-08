@@ -2161,6 +2161,14 @@ msgstr "Přihlásit se pomocí OneDrive"
 msgid "Search"
 msgstr "Hledání"
 
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "Obnovené Poznámky"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "Sdílet"
+
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "Synchronizace již probíhá. Stav: %s"
 

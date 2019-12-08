@@ -688,8 +688,9 @@ msgstr "Joplin 官方網站"
 msgid "Make a donation"
 msgstr "捐助"
 
+#, fuzzy
 msgid "Toggle development tools"
-msgstr ""
+msgstr "啟用加密"
 
 #, javascript-format
 msgid "Open %s"
@@ -990,8 +991,9 @@ msgstr ""
 msgid "Previous versions of this note"
 msgstr ""
 
+#, fuzzy
 msgid "Note properties"
-msgstr ""
+msgstr "記事本標題:"
 
 #, javascript-format
 msgid "The note \"%s\" has been successfully restored to the notebook \"%s\"."
@@ -2134,6 +2136,14 @@ msgstr "以 OneDrive 登錄"
 msgid "Search"
 msgstr "搜尋"
 
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "分享"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "分享"
+
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "同步已在進行中。狀態: %s"
 
@@ -2154,10 +2164,6 @@ msgstr "搜尋"
 
 #~ msgid "Note has been saved."
 #~ msgstr "記事已被儲存。"
-
-#, fuzzy
-#~ msgid "Note title"
-#~ msgstr "記事本標題:"
 
 #, fuzzy
 #~ msgid "Note body"

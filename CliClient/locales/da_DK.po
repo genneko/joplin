@@ -2172,6 +2172,14 @@ msgstr "Log på med OneDrive"
 msgid "Search"
 msgstr "Søg"
 
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "Gendannede noter"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "Del"
+
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "Synkronisering er allerede i gang: Tilstand: %s"
 

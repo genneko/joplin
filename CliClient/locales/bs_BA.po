@@ -18,7 +18,8 @@ msgstr ""
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
 msgid "To delete a tag, untag the associated notes."
-msgstr "Da izbrišete oznaku, prvo je uklonite iz bilješki kojima je dodijeljena."
+msgstr ""
+"Da izbrišete oznaku, prvo je uklonite iz bilješki kojima je dodijeljena."
 
 msgid "Please select the note or notebook to be deleted first."
 msgstr "Prvo odaberite bilješku ili bilježnicu koju želite izbrisati"
@@ -366,8 +367,8 @@ msgid ""
 "Delete notebook? All notes and sub-notebooks within this notebook will also "
 "be deleted."
 msgstr ""
-"Izbrisati bilježnicu? Sve bilješke i bilježnice unutar ove bilježnice također "
-"će biti izbrisane."
+"Izbrisati bilježnicu? Sve bilješke i bilježnice unutar ove bilježnice "
+"također će biti izbrisane."
 
 msgid "Deletes the notes matching <note-pattern>."
 msgstr "Briše bilješke <note-pattern>."
@@ -486,8 +487,8 @@ msgstr ""
 "<tag-command> može biti \"add\", \"remove\", \"list\" ili \"notetags\", "
 "kojima se dodjeljuje ili uklanja [tag] iz [note], odnosno prikazuje popis "
 "bilješki kojima je dodijeljen [tag] ili oznake koje su dodijeljene [note]. "
-"Komanda `tag list` može se koristiti za prikazivanje svih oznaka (koristite "
-"-l za detaljni prikaz)."
+"Komanda `tag list` može se koristiti za prikazivanje svih oznaka (koristite -"
+"l za detaljni prikaz)."
 
 #, javascript-format
 msgid "Invalid command: \"%s\""
@@ -2190,6 +2191,14 @@ msgstr "Prijavite se preko OneDrivea"
 
 msgid "Search"
 msgstr "Traži"
+
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "Rekonstruisane bilješke"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "Dijeli"
 
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "Sinhronizovanje je u toku. Status: %s"

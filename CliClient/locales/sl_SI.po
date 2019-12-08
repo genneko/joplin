@@ -720,8 +720,9 @@ msgstr "Joplin spletna stran"
 msgid "Make a donation"
 msgstr "Doniraj"
 
+#, fuzzy
 msgid "Toggle development tools"
-msgstr ""
+msgstr "Omogoči enkripcijo"
 
 #, javascript-format
 msgid "Open %s"
@@ -1033,8 +1034,9 @@ msgstr ""
 msgid "Previous versions of this note"
 msgstr ""
 
+#, fuzzy
 msgid "Note properties"
-msgstr ""
+msgstr "Naslov beležnice:"
 
 #, javascript-format
 msgid "The note \"%s\" has been successfully restored to the notebook \"%s\"."
@@ -2216,10 +2218,6 @@ msgstr "Išči"
 
 #~ msgid "Note has been saved."
 #~ msgstr "Zabeležka je bila shranjena."
-
-#, fuzzy
-#~ msgid "Note title"
-#~ msgstr "Naslov beležnice:"
 
 #, fuzzy
 #~ msgid "Note body"

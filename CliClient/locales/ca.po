@@ -731,8 +731,9 @@ msgstr "Fitxer d'exportació del Joplin"
 msgid "Make a donation"
 msgstr "Donatius"
 
+#, fuzzy
 msgid "Toggle development tools"
-msgstr ""
+msgstr "Activa el xifratge"
 
 #, javascript-format
 msgid "Open %s"
@@ -1046,8 +1047,9 @@ msgstr ""
 msgid "Previous versions of this note"
 msgstr ""
 
+#, fuzzy
 msgid "Note properties"
-msgstr ""
+msgstr "Títol del bloc de notes:"
 
 #, javascript-format
 msgid "The note \"%s\" has been successfully restored to the notebook \"%s\"."
@@ -2209,6 +2211,14 @@ msgstr "Inicia sessió amb OneDrive"
 msgid "Search"
 msgstr "Cerca"
 
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "Comparteix"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "Comparteix"
+
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "La sincronització ja és en procés. Estat: %s"
 
@@ -2231,10 +2241,6 @@ msgstr "Cerca"
 
 #~ msgid "Note has been saved."
 #~ msgstr "S'ha desat la nota."
-
-#, fuzzy
-#~ msgid "Note title"
-#~ msgstr "Títol del bloc de notes:"
 
 #, fuzzy
 #~ msgid "Note body"

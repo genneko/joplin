@@ -698,8 +698,9 @@ msgstr ""
 msgid "Toggle note list"
 msgstr "Schakel encryptie in"
 
+#, fuzzy
 msgid "Toggle editor layout"
-msgstr ""
+msgstr "Schakel encryptie in"
 
 msgid "Focus"
 msgstr ""
@@ -723,8 +724,9 @@ msgstr "Exporteer Evernote bestanden"
 msgid "Make a donation"
 msgstr "Website en documentatie"
 
+#, fuzzy
 msgid "Toggle development tools"
-msgstr ""
+msgstr "Schakel encryptie in"
 
 #, fuzzy, javascript-format
 msgid "Open %s"
@@ -1035,8 +1037,9 @@ msgstr ""
 msgid "Previous versions of this note"
 msgstr ""
 
+#, fuzzy
 msgid "Note properties"
-msgstr ""
+msgstr "Notitieboek titel:"
 
 #, javascript-format
 msgid "The note \"%s\" has been successfully restored to the notebook \"%s\"."
@@ -1838,8 +1841,9 @@ msgstr ""
 msgid "Please specify the notebook where the notes should be imported to."
 msgstr "Selecteer waar de synchronisatie status naar geëxporteerd moet worden"
 
+#, fuzzy
 msgid "Restored Notes"
-msgstr ""
+msgstr "Notities verwijderen?"
 
 msgid "Items that cannot be synchronised"
 msgstr "Items die niet gesynchroniseerd kunnen worden"
@@ -2223,10 +2227,6 @@ msgstr "Zoeken"
 
 #~ msgid "Note has been saved."
 #~ msgstr "Notitie is opgeslaan."
-
-#, fuzzy
-#~ msgid "Note title"
-#~ msgstr "Notitieboek titel:"
 
 #, fuzzy
 #~ msgid "Note body"
