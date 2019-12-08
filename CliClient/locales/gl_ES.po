@@ -716,8 +716,9 @@ msgstr "Sitio web de Joplin"
 msgid "Make a donation"
 msgstr "Doar"
 
+#, fuzzy
 msgid "Toggle development tools"
-msgstr ""
+msgstr "Activar cifrado"
 
 #, javascript-format
 msgid "Open %s"
@@ -1021,8 +1022,9 @@ msgstr ""
 msgid "Previous versions of this note"
 msgstr ""
 
+#, fuzzy
 msgid "Note properties"
-msgstr ""
+msgstr "Título do caderno:"
 
 #, javascript-format
 msgid "The note \"%s\" has been successfully restored to the notebook \"%s\"."
@@ -2201,10 +2203,6 @@ msgstr "Buscar"
 
 #~ msgid "Note has been saved."
 #~ msgstr "A nota foi gardada."
-
-#, fuzzy
-#~ msgid "Note title"
-#~ msgstr "Título do caderno:"
 
 #, fuzzy
 #~ msgid "Note body"

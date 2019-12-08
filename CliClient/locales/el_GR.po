@@ -2229,6 +2229,14 @@ msgstr "Είσοδος με Onedrive"
 msgid "Search"
 msgstr "Εύρεση"
 
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "Ανακτημένες σημειώσεις"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "Κοινοποίηση"
+
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "Ο συγχρονισμός είναι ήδη σε εξέλιξη. Κατάσταση: %s"
 

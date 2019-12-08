@@ -1873,9 +1873,9 @@ msgstr ""
 msgid "Sync status (synced items / total items)"
 msgstr "Статус синхронизације (синхронизоване ставке / укупно ставки)"
 
-#, javascript-format
+#, fuzzy, javascript-format
 msgid "%s: %d/%d"
-msgstr ""
+msgstr "Укупно: %d/%d"
 
 #, javascript-format
 msgid "Total: %d/%d"
@@ -2204,6 +2204,14 @@ msgstr "Пријави се са УванДрајвом"
 
 msgid "Search"
 msgstr "Претрага"
+
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "Повраћене белешке"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "Подели"
 
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "Синхронизација је већ у току. Стање: %s"

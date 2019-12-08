@@ -2115,6 +2115,17 @@ msgstr "通过 OneDrive 登录"
 msgid "Search"
 msgstr "搜索"
 
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "已恢复的笔记"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "分享"
+
+#~ msgid "All potential ports are in use - please report the issue at %s"
+#~ msgstr "所有默认端口都已经被使用中-请在%s反馈这个问题"
+
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "已经在同步。状态：%s"
 
@@ -2135,9 +2146,6 @@ msgstr "搜索"
 
 #~ msgid "Note has been saved."
 #~ msgstr "笔记已被保存。"
-
-#~ msgid "All potential ports are in use - please report the issue at %s"
-#~ msgstr "所有默认端口都已经被使用中-请在%s反馈这个问题"
 
 #~ msgid "Sidebar"
 #~ msgstr "边栏"

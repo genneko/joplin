@@ -22,8 +22,9 @@ msgstr ""
 "Pentru a șterge o eticheta, ștergeți eticheta respectivă din cadrul "
 "notițelor aferente."
 
+#, fuzzy
 msgid "Please select the note or notebook to be deleted first."
-msgstr ""
+msgstr "Selectați prima dată un caiet de notițe."
 
 msgid "Press Ctrl+D or type \"exit\" to exit the application"
 msgstr "Apăsați Ctrl+D ori scrieți \"exit\" pentru a ieși din aplicație"
@@ -50,8 +51,9 @@ msgstr "N"
 msgid "y"
 msgstr "y"
 
+#, fuzzy
 msgid "Cancelling background synchronisation... Please wait."
-msgstr ""
+msgstr "Se anulează... Vă rugăm să așteptați."
 
 #, javascript-format
 msgid "No such command: %s"
@@ -187,8 +189,9 @@ msgstr "Format la destinație: %s"
 msgid "Exports only the given note."
 msgstr ""
 
+#, fuzzy
 msgid "Exports only the given notebook."
-msgstr ""
+msgstr "Notițele pot fi create numai în cadrul unui caiet de notițe."
 
 msgid "Displays a geolocation URL for the note."
 msgstr ""
@@ -635,8 +638,9 @@ msgstr ""
 msgid "Toggle note list"
 msgstr "Activați criptarea"
 
+#, fuzzy
 msgid "Toggle editor layout"
-msgstr ""
+msgstr "Activați criptarea"
 
 msgid "Focus"
 msgstr ""
@@ -659,8 +663,9 @@ msgstr "Website Joplin"
 msgid "Make a donation"
 msgstr "Faceți o donație"
 
+#, fuzzy
 msgid "Toggle development tools"
-msgstr ""
+msgstr "Activați criptarea"
 
 #, javascript-format
 msgid "Open %s"
@@ -926,12 +931,18 @@ msgstr ""
 msgid "Set the password"
 msgstr "Setați parola"
 
+#, fuzzy
 msgid "No notes in here. Create one by clicking on \"New note\"."
 msgstr ""
+"Nu aveți niciun caiet de notițe creat. Creați unul făcând click pe butonnul "
+"(+)."
 
+#, fuzzy
 msgid ""
 "There is currently no notebook. Create one by clicking on \"New notebook\"."
 msgstr ""
+"Nu aveți niciun caiet de notițe creat. Creați unul făcând click pe butonnul "
+"(+)."
 
 msgid "Location"
 msgstr ""
@@ -949,8 +960,9 @@ msgstr ""
 msgid "Previous versions of this note"
 msgstr ""
 
+#, fuzzy
 msgid "Note properties"
-msgstr ""
+msgstr "Titlul caietului de notițe:"
 
 #, javascript-format
 msgid "The note \"%s\" has been successfully restored to the notebook \"%s\"."
@@ -1051,8 +1063,9 @@ msgstr "Linie orizontală"
 msgid "Click to stop external editing"
 msgstr "Faceți click pentru a opri editarea în aplicația externă"
 
+#, fuzzy
 msgid "Watching..."
-msgstr ""
+msgstr "Se amână..."
 
 msgid "to-do"
 msgstr "sarcină"
@@ -1067,8 +1080,9 @@ msgstr "Se crează un %s..."
 msgid "Refresh"
 msgstr "Reîncărcați"
 
+#, fuzzy
 msgid "Clear"
-msgstr ""
+msgstr "Setați alarma"
 
 msgid "OneDrive Login"
 msgstr "Autentificare OneDrive"
@@ -2045,8 +2059,9 @@ msgstr "Atașați orice fișier"
 msgid "Share"
 msgstr "Distribuie"
 
+#, fuzzy
 msgid "Convert to note"
-msgstr ""
+msgstr "Mutați în caietul de notițe..."
 
 msgid "Convert to todo"
 msgstr ""
@@ -2072,6 +2087,14 @@ msgid "Search"
 msgstr "Caută"
 
 #, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "Distribuie"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "Distribuie"
+
+#, fuzzy
 #~ msgid "Confirm master password:"
 #~ msgstr "Setați parola"
 
@@ -2085,10 +2108,6 @@ msgstr "Caută"
 
 #~ msgid "Note has been saved."
 #~ msgstr "Notița a fost salvată."
-
-#, fuzzy
-#~ msgid "Note title"
-#~ msgstr "Titlul caietului de notițe:"
 
 #, fuzzy
 #~ msgid "Note body"
@@ -2134,12 +2153,6 @@ msgstr "Caută"
 
 #~ msgid "Delete notebook"
 #~ msgstr "Ștergeți caiet de notițe"
-
-#~ msgid ""
-#~ "You currently have no notebook. Create one by clicking on (+) button."
-#~ msgstr ""
-#~ "Nu aveți niciun caiet de notițe creat. Creați unul făcând click pe "
-#~ "butonnul (+)."
 
 #~ msgid "Welcome"
 #~ msgstr "Bine ați venit"

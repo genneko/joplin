@@ -2199,6 +2199,17 @@ msgstr "Войти с OneDrive"
 msgid "Search"
 msgstr "Поиск"
 
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "Восстановленные заметки"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "Поделиться"
+
+#~ msgid "All potential ports are in use - please report the issue at %s"
+#~ msgstr "Все возможные порты заняты - пожалуйста, сообщите о проблеме в %s"
+
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "Синхронизация уже выполняется. Состояние: %s"
 
@@ -2221,9 +2232,6 @@ msgstr "Поиск"
 
 #~ msgid "Note has been saved."
 #~ msgstr "Заметка сохранена."
-
-#~ msgid "All potential ports are in use - please report the issue at %s"
-#~ msgstr "Все возможные порты заняты - пожалуйста, сообщите о проблеме в %s"
 
 #~ msgid "Sidebar"
 #~ msgstr "Боковая панель"

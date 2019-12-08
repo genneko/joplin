@@ -724,8 +724,9 @@ msgstr "Plik Joplin Export"
 msgid "Make a donation"
 msgstr "Przekaż datek"
 
+#, fuzzy
 msgid "Toggle development tools"
-msgstr ""
+msgstr "Lista notatek"
 
 #, javascript-format
 msgid "Open %s"
@@ -2218,6 +2219,14 @@ msgstr "Zaloguj z OneDrive"
 
 msgid "Search"
 msgstr "Wyszukaj"
+
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "Przywrócone notatki"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "Udostępnij"
 
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "Synchronizacja w toku. Stan: %s"

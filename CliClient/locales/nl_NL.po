@@ -1725,7 +1725,7 @@ msgid ""
 "pem. Note that if you make changes to the TLS settings, you must save your "
 "changes before clicking on \"Check synchronisation configuration\"."
 msgstr ""
-"Kommagescheiden lijst van paden naar mappen vwaaruit de certificaten moeten "
+"Kommagescheiden lijst van paden naar mappen waaruit de certificaten moeten "
 "worden geladen, of paden naar individuele bestanden. Bijvoorbeeld: /mijn/"
 "cert_map, /overig/aangepast.pem. Let op: als je wijzigingen aanbrengt, dan "
 "moet je ze opslaan voordat je klik op \"Synchronisatie-configuratie "
@@ -2203,6 +2203,17 @@ msgstr "Inloggen met OneDrive"
 msgid "Search"
 msgstr "Zoeken"
 
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "Herstelde notities"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "Delen"
+
+#~ msgid "All potential ports are in use - please report the issue at %s"
+#~ msgstr "Alle potentiële poorten zijn in gebruik - Meld het probleem op %s"
+
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "De synchronisatie loopt al. Status: %s"
 
@@ -2225,9 +2236,6 @@ msgstr "Zoeken"
 
 #~ msgid "Note has been saved."
 #~ msgstr "Notitie is opgeslagen."
-
-#~ msgid "All potential ports are in use - please report the issue at %s"
-#~ msgstr "Alle potentiële poorten zijn in gebruik - Meld het probleem op %s"
 
 #~ msgid "Sidebar"
 #~ msgstr "Zijbalk"

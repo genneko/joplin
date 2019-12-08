@@ -2210,6 +2210,14 @@ msgstr "Вписване в OneDrive"
 msgid "Search"
 msgstr "Търсене"
 
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "Възстановени бележки"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "Сподели"
+
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "Синхронизация вече се извършва. Статус: %s"
 

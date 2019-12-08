@@ -724,8 +724,9 @@ msgstr "Joplin v%s"
 msgid "Make a donation"
 msgstr "Gör en donation"
 
+#, fuzzy
 msgid "Toggle development tools"
-msgstr ""
+msgstr "Anteckningsboken"
 
 #, javascript-format
 msgid "Open %s"
@@ -2212,6 +2213,14 @@ msgstr "Logga in med OneDrive"
 
 msgid "Search"
 msgstr "Sök"
+
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "Dela"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "Dela"
 
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "Synkronisering pågår redan. Tillstånd: %s"

@@ -19,8 +19,9 @@ msgstr ""
 msgid "To delete a tag, untag the associated notes."
 msgstr ""
 
+#, fuzzy
 msgid "Please select the note or notebook to be deleted first."
-msgstr ""
+msgstr "Bonvolu elekti noton unue."
 
 msgid "Press Ctrl+D or type \"exit\" to exit the application"
 msgstr ""
@@ -47,12 +48,13 @@ msgstr "N"
 msgid "y"
 msgstr "j"
 
+#, fuzzy
 msgid "Cancelling background synchronisation... Please wait."
-msgstr ""
+msgstr "Nuligante... Atendu."
 
-#, javascript-format
+#, fuzzy, javascript-format
 msgid "No such command: %s"
-msgstr ""
+msgstr "Fonta aranĝo: %s"
 
 #, javascript-format
 msgid "The command \"%s\" is only available in GUI mode"
@@ -175,15 +177,16 @@ msgid ""
 "complete database including notebooks, notes, tags and resources."
 msgstr ""
 
-#, javascript-format
+#, fuzzy, javascript-format
 msgid "Destination format: %s"
-msgstr ""
+msgstr "Fonta aranĝo: %s"
 
 msgid "Exports only the given note."
 msgstr ""
 
+#, fuzzy
 msgid "Exports only the given notebook."
-msgstr ""
+msgstr "Nur eblas krei notojn ene de notlibro."
 
 msgid "Displays a geolocation URL for the note."
 msgstr ""
@@ -616,8 +619,9 @@ msgstr ""
 msgid "Toggle note list"
 msgstr "Ebligi notan historion"
 
+#, fuzzy
 msgid "Toggle editor layout"
-msgstr ""
+msgstr "Ebligi notan historion"
 
 msgid "Focus"
 msgstr "Fokusi"
@@ -637,8 +641,9 @@ msgstr "Joplin-forumo"
 msgid "Make a donation"
 msgstr ""
 
+#, fuzzy
 msgid "Toggle development tools"
-msgstr ""
+msgstr "Ebligi notan historion"
 
 #, javascript-format
 msgid "Open %s"
@@ -677,8 +682,9 @@ msgstr "Jes"
 msgid "No"
 msgstr "Ne"
 
+#, fuzzy
 msgid "Full Release Notes"
-msgstr ""
+msgstr "Restaŭritaj Notoj"
 
 msgid "Token has been copied to the clipboard!"
 msgstr ""
@@ -906,9 +912,10 @@ msgstr "Elekti pasvorton"
 msgid "No notes in here. Create one by clicking on \"New note\"."
 msgstr "Neniu noto ĉi tie. Por krei noton, alklaku \"Nova noto\"."
 
+#, fuzzy
 msgid ""
 "There is currently no notebook. Create one by clicking on \"New notebook\"."
-msgstr ""
+msgstr "Neniu noto ĉi tie. Por krei noton, alklaku \"Nova noto\"."
 
 msgid "Location"
 msgstr "Loko"
@@ -935,9 +942,9 @@ msgstr ""
 msgid "This note has no history"
 msgstr "Tiu noto ne havas historion"
 
-#, javascript-format
+#, fuzzy, javascript-format
 msgid "Unsupported link or message: %s"
-msgstr ""
+msgstr "Nesubtenata bilda tipo: %s"
 
 msgid "Restore"
 msgstr "Restaŭri"
@@ -992,14 +999,16 @@ msgstr ""
 msgid "List item"
 msgstr ""
 
+#, fuzzy
 msgid "Insert Hyperlink"
-msgstr ""
+msgstr "Hiperligilo"
 
 msgid "Attach file"
 msgstr "Aldoni dosieron"
 
+#, fuzzy
 msgid "Set alarm"
-msgstr ""
+msgstr "Konservi alarmon"
 
 #, javascript-format
 msgid "In: %s"
@@ -1273,9 +1282,9 @@ msgstr ""
 msgid "Cannot copy note to \"%s\" notebook"
 msgstr ""
 
-#, javascript-format
+#, fuzzy, javascript-format
 msgid "Cannot move note to \"%s\" notebook"
-msgstr ""
+msgstr "Movi %d notojn al notlibro \"%s\"?"
 
 #, javascript-format
 msgid ""
@@ -1609,8 +1618,9 @@ msgstr ""
 msgid "General"
 msgstr "Ĝenerala"
 
+#, fuzzy
 msgid "Synchronisation"
-msgstr ""
+msgstr "Sinkronigi"
 
 msgid "Appearance"
 msgstr ""
@@ -2014,6 +2024,14 @@ msgstr "Ensaluti per OneDrive"
 
 msgid "Search"
 msgstr "Serĉi"
+
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "Restaŭritaj Notoj"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "Konigi"
 
 #~ msgid "Confirm master password:"
 #~ msgstr "Konfirmi ĉefan pasvorton:"

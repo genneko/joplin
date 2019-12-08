@@ -33,7 +33,7 @@ msgstr "Pulse Ctrl+D o escriba «salir» para salir de la aplicación"
 #, javascript-format
 msgid "More than one item match \"%s\". Please narrow down your query."
 msgstr ""
-"Hay más de un elemento que coincide con «%s», intente mejorar su consulta."
+"Hay más de un elemento que coincide con «%s». Intente mejorar su consulta."
 
 msgid "No notebook selected."
 msgstr "No se ha seleccionado ninguna libreta."
@@ -87,7 +87,7 @@ msgstr "Adjuntar archivo a la nota."
 
 #, javascript-format
 msgid "Cannot find \"%s\"."
-msgstr "No se puede encontrar \"%s\"."
+msgstr "No se puede encontrar «%s»."
 
 msgid "Displays the given note."
 msgstr "Mostrar la nota dada."
@@ -127,7 +127,7 @@ msgstr "Marca una tarea como hecha."
 
 #, javascript-format
 msgid "Note is not a to-do: \"%s\""
-msgstr "La nota no es una tarea: \"%s\""
+msgstr "La nota no es una tarea: «%s»"
 
 msgid ""
 "Manages E2EE configuration. Commands are `enable`, `disable`, `decrypt`, "
@@ -142,13 +142,11 @@ msgstr "Introduzca la contraseña maestra:"
 msgid "Operation cancelled"
 msgstr "Operación cancelada"
 
-#, fuzzy
 msgid "Confirm password:"
-msgstr "Introduzca la contraseña maestra:"
+msgstr "Confirma la contraseña:"
 
-#, fuzzy
 msgid "Passwords do not match!"
-msgstr "La contraseña no puede estar vacía"
+msgstr "¡Las contraseñas no coinciden!"
 
 msgid ""
 "Starting decryption... Please wait as it may take several minutes depending "
@@ -184,7 +182,7 @@ msgstr "No hay libreta activa."
 
 #, javascript-format
 msgid "Note does not exist: \"%s\". Create it?"
-msgstr "La nota no existe: \"%s\". ¿Crearla?"
+msgstr "La nota no existe: «%s». ¿Crearla?"
 
 msgid "Exits the application."
 msgstr "Sale de la aplicación."
@@ -223,7 +221,7 @@ msgid ""
 "Type `help [command]` for more information about a command; or type `help "
 "all` for the complete usage information."
 msgstr ""
-"Escriba `help [command]` para obtener más información sobre el comando, o "
+"Escriba `help [comando]` para obtener más información sobre el comando, o "
 "escriba `help all` para obtener toda la información acerca del uso del "
 "programa."
 
@@ -252,10 +250,10 @@ msgstr ""
 "utilice las flechas y re pág/av pág."
 
 msgid "To maximise/minimise the console, press \"tc\"."
-msgstr "Para maximizar/minimizar la consola, presione \"tc\"."
+msgstr "Para maximizar/minimizar la consola, presione «tc»."
 
 msgid "To enter command line mode, press \":\""
-msgstr "Para entrar a modo línea de comando, presione \":\""
+msgstr "Para entrar a modo línea de comando, presione «:»"
 
 msgid "To exit command line mode, press ESCAPE"
 msgstr "Para salir de modo línea de comando, presione ESCAPE"
@@ -333,7 +331,7 @@ msgstr ""
 "mostrará unicamente las tareas, mientras `-ttd` mostrará notas y tareas)."
 
 msgid "Either \"text\" or \"json\""
-msgstr "Puede ser \"text\" o \"json\""
+msgstr "Puede ser «text» o «json»"
 
 msgid ""
 "Use long list format. Format is ID, NOTE_COUNT (for notebook), DATE, "
@@ -484,20 +482,21 @@ msgstr "Descargando recursos..."
 msgid "Cancelling... Please wait."
 msgstr "Cancelando... Por favor espere."
 
-#, fuzzy
 msgid ""
 "<tag-command> can be \"add\", \"remove\", \"list\", or \"notetags\" to "
 "assign or remove [tag] from [note], to list notes associated with [tag], or "
 "to list tags associated with [note]. The command `tag list` can be used to "
 "list all the tags (use -l for long option)."
 msgstr ""
-"<tag-command> puede ser \"add\", \"remove\" o \"list\" para asignar o "
-"eliminar [tag] de [note], o para listar las notas asociadas con [tag]. El "
-"comando `tag list` puede ser usado para listar todas las etiquetas."
+"<tag-command> puede ser «add», «remove», «list», o «notetags» para asignar o "
+"eliminar [etiqueta] de [nota], o para listar las notas asociadas con "
+"[etiqueta], o para listar las etiquetas asociadas con [nota]. El comando "
+"`tag list` puede ser usado para listar todas las etiquetas (usa -l para la "
+"opción larga)."
 
 #, javascript-format
 msgid "Invalid command: \"%s\""
-msgstr "Comando inválido: \"%s\""
+msgstr "Comando inválido: «%s»"
 
 msgid ""
 "<todo-command> can either be \"toggle\" or \"clear\". Use \"toggle\" to "
@@ -505,10 +504,10 @@ msgid ""
 "target is a regular note it will be converted to a to-do). Use \"clear\" to "
 "convert the to-do back to a regular note."
 msgstr ""
-"<todo-command> puede ser \"toggle\" o \"clear\". Usa \"toggle\" para cambiar "
-"la tarea dada entre estado completado y sin completar. (Si el objetivo es "
-"una nota regular se convertirá en una tarea). Usa \"clear\" para convertir "
-"la tarea a una nota regular."
+"<todo-command> puede ser «toggle» o «clear». Usa «toggle» para cambiar la "
+"tarea dada entre estado completado y sin completar. (Si el objetivo es una "
+"nota regular se convertirá en una tarea). Usa «clear» para convertir la "
+"tarea a una nota regular."
 
 msgid "Marks a to-do as non-completed."
 msgstr "Marca una tarea como no completada."
@@ -540,7 +539,7 @@ msgstr "Posibles valores: %s."
 
 #, javascript-format
 msgid "Default: %s"
-msgstr "Por  defecto: %s"
+msgstr "Por defecto: %s"
 
 msgid "Possible keys/values:"
 msgstr "Claves/valores posbiles:"
@@ -605,11 +604,11 @@ msgstr ""
 
 #, javascript-format
 msgid "Exporting to \"%s\" as \"%s\" format. Please wait..."
-msgstr "Exportando el formato de \"%s\" a \"%s\". Por favor espere..."
+msgstr "Exportando el formato de «%s» a «%s». Por favor espere..."
 
 #, javascript-format
 msgid "Could not export notes: %s"
-msgstr ""
+msgstr "No se pudo exportar las notas: %s"
 
 msgid "&File"
 msgstr "&Archivo"
@@ -696,9 +695,8 @@ msgstr "Cambia la barra lateral"
 msgid "Layout button sequence"
 msgstr ""
 
-#, fuzzy
 msgid "Toggle note list"
-msgstr "Lista de notas"
+msgstr "Cambia la lista de notas"
 
 msgid "Toggle editor layout"
 msgstr "Cambia el diseño del editor"
@@ -917,9 +915,8 @@ msgid ""
 "how the notes or notebooks were originally encrypted."
 msgstr ""
 "Nota: Solo una clave maestra va a ser utilizar para el cifrado (la marcada "
-"como \"activa\"). Cualquiera de las claves puede ser utilizada para "
-"descifrar, dependiendo de como fueron cifradas originalmente las notas o las "
-"libretas."
+"como «activa»). Cualquiera de las claves puede ser utilizada para descifrar, "
+"dependiendo de como fueron cifradas originalmente las notas o las libretas."
 
 msgid "Missing Master Keys"
 msgstr "No se encuentra la clave maestra"
@@ -1043,7 +1040,7 @@ msgstr "Propiedades de nota"
 
 #, javascript-format
 msgid "The note \"%s\" has been successfully restored to the notebook \"%s\"."
-msgstr "La nota \"%s\" se ha restaurado correctamente en la libreta \"%s\"."
+msgstr "La nota «%s» se ha restaurado correctamente en la libreta «%s»."
 
 msgid "This note has no history"
 msgstr "Esta nota no dispone de historial"
@@ -1060,8 +1057,8 @@ msgid ""
 "Click \"%s\" to restore the note. It will be copied in the notebook named "
 "\"%s\". The current version of the note will not be replaced or modified."
 msgstr ""
-"Pulse \"%s\" para restaurar la nota. Se copiará en la libreta \"%s\". La "
-"versión actual de la nota no se reemplazará ni se modificará."
+"Pulse «%s» para restaurar la nota. Se copiará en la libreta «%s». La versión "
+"actual de la nota no se reemplazará ni se modificará."
 
 msgid "Open..."
 msgstr "Abrir..."
@@ -1087,8 +1084,8 @@ msgid ""
 "This note has no content. Click on \"%s\" to toggle the editor and edit the "
 "note."
 msgstr ""
-"Esta nota no tiene contenido. Pulse en \"%s\" para cambiar al editor y "
-"editar la nota."
+"Esta nota no tiene contenido. Pulse en «%s» para cambiar al editor y editar "
+"la nota."
 
 msgid "Only one note can be printed or exported to PDF at a time."
 msgstr "Solo una nota puede ser impresa o exportada a PDF a la vez."
@@ -1174,9 +1171,8 @@ msgstr "Opciones"
 msgid "Synchronisation Status"
 msgstr "Estado de la sincronización"
 
-#, fuzzy
 msgid "Remove"
-msgstr "¿Borrar?"
+msgstr "Eliminar"
 
 #, javascript-format
 msgid ""
@@ -1184,7 +1180,7 @@ msgid ""
 "\n"
 "All notes and sub-notebooks within this notebook will also be deleted."
 msgstr ""
-"Borrar Libreta \"%s\"?\n"
+"Borrar Libreta «%s»?\n"
 "\n"
 "Todas las notas y sublibretas de esta libreta serán borradas."
 
@@ -1193,14 +1189,13 @@ msgstr "Eliminar"
 
 #, javascript-format
 msgid "Remove tag \"%s\" from all notes?"
-msgstr "Desea borrar las etiquetas pertenecientes a \"%s\" de todas las notas?"
+msgstr "Desea borrar las etiquetas pertenecientes a «%s» de todas las notas?"
 
 msgid "Remove this search from the sidebar?"
 msgstr "¿Desea eliminar esta búsqueda de la barra lateral?"
 
-#, fuzzy
 msgid "New sub-notebook"
-msgstr "Nueva libreta"
+msgstr "Nueva sublibreta"
 
 msgid "Rename"
 msgstr "Renombrar"
@@ -1246,7 +1241,7 @@ msgstr "Copiar el enlace de Markdown"
 
 #, javascript-format
 msgid "Delete note \"%s\"?"
-msgstr "¿Borrar nota \"%s\"?"
+msgstr "¿Borrar nota «%s»?"
 
 #, javascript-format
 msgid "Delete these %d notes?"
@@ -1418,17 +1413,16 @@ msgstr ""
 "Consulte las preguntas frecuentes para obtener más detalles: %s"
 
 msgid "Keyboard Mode"
-msgstr ""
+msgstr "Modo de teclado"
 
-#, fuzzy
 msgid "Default"
-msgstr "Por  defecto: %s"
+msgstr "Por defecto"
 
 msgid "Emacs"
-msgstr ""
+msgstr "Emacs"
 
 msgid "Vim"
-msgstr ""
+msgstr "Vim"
 
 msgid "Synchronisation target"
 msgstr "Destino de sincronización"
@@ -1470,9 +1464,9 @@ msgid ""
 "In \"Auto\", they are downloaded when you open the note. In \"Always\", all "
 "the attachments are downloaded whether you open the note or not."
 msgstr ""
-"En modo \"Manual\", los archivos adjuntos se descargan solamente al pulsar "
-"sobre ellos. En modo \"Auto\", se descargan cuando se abre la nota. En modo "
-"\"Always\", se descargan todos los archivos adjuntos aunque la nota no esté "
+"En modo «Manual», los archivos adjuntos se descargan solamente al pulsar "
+"sobre ellos. En modo «Auto», se descargan cuando se abre la nota. En modo "
+"«Always», se descargan todos los archivos adjuntos aunque la nota no esté "
 "abierta."
 
 msgid "Always"
@@ -1506,7 +1500,7 @@ msgid "Dark"
 msgstr "Oscuro"
 
 msgid "Dracula"
-msgstr ""
+msgstr "Dracula"
 
 msgid "Solarised Light"
 msgstr "Solarised Light"
@@ -1515,30 +1509,27 @@ msgid "Solarised Dark"
 msgstr "Solarised Dark"
 
 msgid "Nord"
-msgstr ""
+msgstr "Nord"
 
-#, fuzzy
 msgid "Show note counts"
-msgstr "Mostrar icono en la bandeja"
+msgstr "Mostrar los recuentos de notas"
 
-#, fuzzy
 msgid "Editor"
-msgstr "Editar"
+msgstr "Editor"
 
-#, fuzzy
 msgid "Viewer"
-msgstr "&Ver"
+msgstr "Visor"
 
 msgid "Split View"
-msgstr ""
+msgstr "Vista dividida"
 
-#, fuzzy, javascript-format
+#, javascript-format
 msgid "%s / %s / %s"
-msgstr "%s = %s (%s)"
+msgstr "%s / %s / %s"
 
 #, javascript-format
 msgid "%s / %s"
-msgstr ""
+msgstr "%s / %s"
 
 msgid "Uncompleted to-dos on top"
 msgstr "Mostrar tareas incompletas al inicio de las listas"
@@ -1573,9 +1564,8 @@ msgstr "Cuando se crear una nota nueva:"
 msgid "Enable soft breaks"
 msgstr "Activar saltos de línea"
 
-#, fuzzy
 msgid "Enable typographer support"
-msgstr "Habilitar el soporte de sintaxis de Fountain"
+msgstr "Habilitar el soporte de tipógrafo"
 
 msgid "Enable math expressions"
 msgstr "Habilitar expresiones matemáticas"
@@ -1602,7 +1592,7 @@ msgid "Enable abbreviation syntax"
 msgstr "Activar sintaxis de abreviaturas"
 
 msgid "Enable markdown emoji"
-msgstr "Activa sintaxis de emojis"
+msgstr "Activar sintaxis de emojis"
 
 msgid "Enable ++insert++ syntax"
 msgstr "Activar sintaxis ++insert++"
@@ -1688,34 +1678,34 @@ msgstr ""
 "defecto."
 
 msgid "Page size for PDF export"
-msgstr ""
+msgstr "Tamaño de página para exportar"
 
 msgid "A4"
-msgstr ""
+msgstr "A4"
 
 msgid "Letter"
-msgstr ""
+msgstr "Carta"
 
 msgid "A3"
-msgstr ""
+msgstr "A3"
 
 msgid "A5"
-msgstr ""
+msgstr "A5"
 
 msgid "Tabloid"
-msgstr ""
+msgstr "Tabloide"
 
 msgid "Legal"
-msgstr ""
+msgstr "Legal"
 
 msgid "Page orientation for PDF export"
-msgstr ""
+msgstr "Orientación de la página para exportar PDF"
 
 msgid "Portrait"
-msgstr ""
+msgstr "Vertical"
 
 msgid "Landscape"
-msgstr ""
+msgstr "Apaisado"
 
 msgid "Custom TLS certificates"
 msgstr "Certificados TLS personalizados"
@@ -1730,7 +1720,7 @@ msgstr ""
 "por comas, o la ruta individual de los certificados. Por ejemplo: /mi/"
 "cert_dir, /otro/personalizado.pem. Tenga en cuenta que si realiza cambios en "
 "la configuración de los certificados debe guardar los cambios antes de "
-"pulsar en \"Comprobar la configuración de sincronización\"."
+"pulsar en «Comprobar la configuración de sincronización»."
 
 msgid "Ignore TLS certificate errors"
 msgstr "Ignorar errores en certificados TLS"
@@ -1793,7 +1783,7 @@ msgstr "Web Clipper"
 
 #, javascript-format
 msgid "The tag \"%s\" already exists. Please choose a different name."
-msgstr "La etiqueta \"%s\" ya existe. Por favor, busque un nuevo nombre."
+msgstr "La etiqueta «%s» ya existe. Por favor, busque un nuevo nombre."
 
 msgid "Joplin Export File"
 msgstr "Archivo de exportación de Joplin"
@@ -1821,7 +1811,7 @@ msgstr "Directorio"
 
 #, javascript-format
 msgid "Cannot load \"%s\" module for format \"%s\""
-msgstr "No se puede cargar el módulo \"%s\" para el formato \"%s\""
+msgstr "No se puede cargar el módulo «%s» para el formato «%s»"
 
 #, javascript-format
 msgid "Please specify import format for %s"
@@ -1832,8 +1822,8 @@ msgid ""
 "This item is currently encrypted: %s \"%s\". Please wait for all items to be "
 "decrypted and try again."
 msgstr ""
-"El elemento se encuentra cifrado: %s \"%s\". Por favor espere a que todos "
-"los elementos estén descifrados y pruebe de nuevo."
+"El elemento se encuentra cifrado: %s «%s». Por favor espere a que todos los "
+"elementos estén descifrados y pruebe de nuevo."
 
 msgid "There is no data to export."
 msgstr "No hay datos para exportar."
@@ -1862,7 +1852,7 @@ msgstr "%s (%s) no se ha podido actualizar: %s"
 
 #, javascript-format
 msgid "Item \"%s\" could not be downloaded: %s"
-msgstr "El elemento \"%s\" no se pudo descargar: %s"
+msgstr "El elemento «%s» no se pudo descargar: %s"
 
 msgid "Items that cannot be decrypted"
 msgstr "Elementos que no se pueden descifrar"
@@ -2104,9 +2094,8 @@ msgstr "Contraseña:"
 msgid "Password cannot be empty"
 msgstr "La contraseña no puede estar vacía"
 
-#, fuzzy
 msgid "Confirm password cannot be empty"
-msgstr "La contraseña no puede estar vacía"
+msgstr "La contraseña de confirmación no puede estar vacía"
 
 msgid "Enable"
 msgstr "Habilitado"
@@ -2147,7 +2136,7 @@ msgstr ""
 
 #, javascript-format
 msgid "Links with protocol \"%s\" are not supported"
-msgstr "Enlazar con el protocolo \"%s\" no es soportado"
+msgstr "Enlazar con el protocolo «%s» no es soportado"
 
 #, javascript-format
 msgid "Unsupported image type: %s"
@@ -2205,6 +2194,18 @@ msgstr "Acceder con OneDrive"
 msgid "Search"
 msgstr "Buscar"
 
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "Notas restauradas"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "Compartir"
+
+#~ msgid "All potential ports are in use - please report the issue at %s"
+#~ msgstr ""
+#~ "Todos los puertos potenciales están en uso - informar la problema en %s"
+
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "La sincronización ya está en progreso. Estado: %s"
 
@@ -2238,7 +2239,7 @@ msgstr "Buscar"
 #~ msgstr "Cuerpo de nota"
 
 #~ msgid "Importing from \"%s\" as \"%s\" format. Please wait..."
-#~ msgstr "Importando el formato de \"%s\" a \"%s\". Por favor espere..."
+#~ msgstr "Importando el formato de «%s» a «%s». Por favor espere..."
 
 #~ msgid "Synchronisation status"
 #~ msgstr "Estado de la sincronización"
@@ -2352,15 +2353,15 @@ msgstr "Buscar"
 #~ msgid ""
 #~ "File \"%s\" will be imported into existing notebook \"%s\". Continue?"
 #~ msgstr ""
-#~ "El archivo \"%s\" será importado dentro de la libreta existente \"%s\". "
+#~ "El archivo «%s» será importado dentro de la libreta existente «%s». "
 #~ "¿Continuar?"
 
 #~ msgid ""
 #~ "New notebook \"%s\" will be created and file \"%s\" will be imported into "
 #~ "it. Continue?"
 #~ msgstr ""
-#~ "Nueva libreta \"%s\" será creada y el archivo \"%s\" será importado "
-#~ "dentro de ella. ¿Continuar?"
+#~ "Nueva libreta «%s» será creada y el archivo «%s» será importado dentro de "
+#~ "ella. ¿Continuar?"
 
 #~ msgid "Import Evernote notes"
 #~ msgstr "Importar notas de Evernote"
