@@ -135,6 +135,14 @@ msgstr "أدخل كلمة المرور الرئيسة:"
 msgid "Operation cancelled"
 msgstr "ألغيت العملية"
 
+#, fuzzy
+msgid "Confirm password:"
+msgstr "أدخل كلمة المرور الرئيسة:"
+
+#, fuzzy
+msgid "Passwords do not match!"
+msgstr "لا يمكن أن تكون كلمة المرور فارغة"
+
 msgid ""
 "Starting decryption... Please wait as it may take several minutes depending "
 "on how much there is to decrypt."
@@ -168,16 +176,6 @@ msgstr "لا يوجد دفتر ملاحظات نشط."
 #, javascript-format
 msgid "Note does not exist: \"%s\". Create it?"
 msgstr "الملاحظة: \"%s\" غير موجودة. تريد إنشائها؟"
-
-msgid "Starting to edit note. Close the editor to get back to the prompt."
-msgstr "بدء تحرير الملاحظة. أغلق المحرر للعودة إلى المحث."
-
-#, javascript-format
-msgid "Error opening note in editor: %s"
-msgstr "حدث خطأ أثناء فتح الملاحظة: %s في المحرر"
-
-msgid "Note has been saved."
-msgstr "تم حفظ الملاحظة."
 
 msgid "Exits the application."
 msgstr "الخروج من التطبيق."
@@ -470,10 +468,12 @@ msgstr "يجري تنزيل الموارد..."
 msgid "Cancelling... Please wait."
 msgstr "الإلغاء جارٍ... فضلاً انتظر."
 
+#, fuzzy
 msgid ""
-"<tag-command> can be \"add\", \"remove\" or \"list\" to assign or remove "
-"[tag] from [note], or to list the notes associated with [tag]. The command "
-"`tag list` can be used to list all the tags (use -l for long option)."
+"<tag-command> can be \"add\", \"remove\", \"list\", or \"notetags\" to "
+"assign or remove [tag] from [note], to list notes associated with [tag], or "
+"to list tags associated with [note]. The command `tag list` can be used to "
+"list all the tags (use -l for long option)."
 msgstr ""
 "<tag-command> (أمر-وسم) يمكن أن يكون \"add\" (أضف) ، \"remove\" (أزل) أو "
 "\"list\" (أسرد) ، وذلك لإضافة [وسم] أو إزالته من [ملاحظة] أو لسرد الملاحظات "
@@ -534,10 +534,6 @@ msgstr "أكتب `joplin help` لمعلومات الاستخدام."
 msgid "Fatal error:"
 msgstr "خطأ فادح:"
 
-#, javascript-format
-msgid "All potential ports are in use - please report the issue at %s"
-msgstr ""
-
 msgid ""
 "The application has been authorised - you may now close this browser tab."
 msgstr "تم التصريح للتطبيق - يمكنك الآن إغلاق تبويب المستعرض هذا."
@@ -589,73 +585,9 @@ msgstr ""
 msgid "Exporting to \"%s\" as \"%s\" format. Please wait..."
 msgstr "التصدير إلى \"%s\" بتنسيق \"%s\". فضلاً انتظر..."
 
-msgid "Sidebar"
-msgstr "الشريط الجانبي"
-
-msgid "Note list"
-msgstr "قائمة ملاحظات"
-
-msgid "Note title"
-msgstr "عنوان الملاحظة"
-
-msgid "Note body"
-msgstr "متن الملاحظة"
-
 #, javascript-format
-msgid "Importing from \"%s\" as \"%s\" format. Please wait..."
-msgstr "الاستيراد من \"%s\" بتنسيق \"%s\". فضلاً انتظر..."
-
-msgid "PDF File"
-msgstr "ملف PDF"
-
-msgid "Synchronisation status"
-msgstr "حالة المزامنة"
-
-msgid "New note"
-msgstr "ملاحظة جديدة"
-
-msgid "New to-do"
-msgstr "قائمة جديدة للمهام"
-
-msgid "New notebook"
-msgstr "دفتر ملاحظات جديد"
-
-msgid "Print"
-msgstr "اطبع"
-
-msgid "General Options"
-msgstr "الخيارات العامة"
-
-msgid "Encryption options"
-msgstr "خيارات التشفير"
-
-msgid "Web clipper options"
-msgstr "خيارات Web clipper"
-
-msgid "Create note from template"
+msgid "Could not export notes: %s"
 msgstr ""
-
-msgid "Create to-do from template"
-msgstr ""
-
-#, fuzzy
-msgid "Insert template"
-msgstr "إدراج التاريخ والوقت"
-
-#, fuzzy
-msgid "Open template directory"
-msgstr "دليل تصدير بيانات Joplin"
-
-msgid "Refresh templates"
-msgstr ""
-
-#, fuzzy, javascript-format
-msgid "Revision: %s (%s)"
-msgstr "%s %s (%s)"
-
-#, javascript-format
-msgid "%s %s (%s, %s)"
-msgstr "%s %s (%s, %s)"
 
 msgid "&File"
 msgstr "&ملف"
@@ -739,6 +671,13 @@ msgstr "&عرض"
 msgid "Toggle sidebar"
 msgstr "تبديل الشريط الجانبي"
 
+msgid "Layout button sequence"
+msgstr ""
+
+#, fuzzy
+msgid "Toggle note list"
+msgstr "قائمة ملاحظات"
+
 msgid "Toggle editor layout"
 msgstr "تبديل تخطيط المحرّر"
 
@@ -761,8 +700,9 @@ msgstr "Joplin نسخة %s"
 msgid "Make a donation"
 msgstr "تبرَّع"
 
+#, fuzzy
 msgid "Toggle development tools"
-msgstr ""
+msgstr "قائمة ملاحظات"
 
 #, javascript-format
 msgid "Open %s"
@@ -800,6 +740,9 @@ msgstr "نعم"
 
 msgid "No"
 msgstr "لا"
+
+msgid "Full Release Notes"
+msgstr ""
 
 msgid "Token has been copied to the clipboard!"
 msgstr "تم نسخ الرمز المميز إلى الحافظة!"
@@ -866,6 +809,9 @@ msgstr ""
 "هذا الرمز المميز للتصريح مطلوب فقط للسماح لتطبيقات طرف ثالث للوصول إلى "
 "Joplin."
 
+msgid "This will open a new screen. Save your current changes?"
+msgstr ""
+
 #, javascript-format
 msgid "Notes and settings are stored in: %s"
 msgstr "الملاحظات و الإعدادات مخزّنة في: %s"
@@ -875,6 +821,9 @@ msgstr "فحص ضبط المزامنة"
 
 msgid "Browse..."
 msgstr "استعراض..."
+
+msgid "Back"
+msgstr "عودة"
 
 msgid "Apply"
 msgstr "تطبيق"
@@ -968,11 +917,17 @@ msgstr "الحالة"
 msgid "Encryption is:"
 msgstr "التشفير هو:"
 
+msgid "Firefox Extension"
+msgstr ""
+
+msgid "Chrome Web Store"
+msgstr ""
+
+msgid "Get it now:"
+msgstr ""
+
 msgid "Usage"
 msgstr "الاستخدام"
-
-msgid "Back"
-msgstr "عودة"
 
 #, javascript-format
 msgid ""
@@ -1002,6 +957,15 @@ msgstr "ضبط منبّه:"
 
 msgid "Template file:"
 msgstr ""
+
+msgid "New note"
+msgstr "ملاحظة جديدة"
+
+msgid "New to-do"
+msgstr "قائمة جديدة للمهام"
+
+msgid "New notebook"
+msgstr "دفتر ملاحظات جديد"
 
 msgid "Layout"
 msgstr "تخطيط"
@@ -1057,6 +1021,10 @@ msgstr ""
 msgid "This note has no history"
 msgstr "جرى تعديل هذه الملاحظة:"
 
+#, javascript-format
+msgid "Unsupported link or message: %s"
+msgstr "رابط أو رسالة غير مدعومان: %s"
+
 msgid "Restore"
 msgstr ""
 
@@ -1086,10 +1054,6 @@ msgid "This attachment is not downloaded or not decrypted yet."
 msgstr "لم يجر تنزيل هذا المرفق أو فك تشفيره حتى الآن."
 
 #, javascript-format
-msgid "Unsupported link or message: %s"
-msgstr "رابط أو رسالة غير مدعومان: %s"
-
-#, javascript-format
 msgid ""
 "This note has no content. Click on \"%s\" to toggle the editor and edit the "
 "note."
@@ -1098,6 +1062,13 @@ msgstr ""
 
 msgid "Only one note can be printed or exported to PDF at a time."
 msgstr "يمكن طباعة ملاحظة واحدة فقط أو تصديرها إلى PDF كل مرة."
+
+msgid "PDF File"
+msgstr "ملف PDF"
+
+#, javascript-format
+msgid "Error opening note in editor: %s"
+msgstr "حدث خطأ أثناء فتح الملاحظة: %s في المحرر"
 
 msgid "strong text"
 msgstr "نص مشدَّد"
@@ -1173,11 +1144,9 @@ msgstr "خيارات"
 msgid "Synchronisation Status"
 msgstr "حالة المزامنة"
 
-msgid "Encryption Options"
-msgstr "خيارات التشفير"
-
-msgid "Clipper Options"
-msgstr "خيارات Clipper"
+#, fuzzy
+msgid "Remove"
+msgstr "إزالة ؟"
 
 #, javascript-format
 msgid ""
@@ -1189,6 +1158,9 @@ msgstr ""
 "\n"
 "سيتم حذف كل الملاحظات و دفاتر الملاحظات الفرعية ضمن هذا الدفتر أيضاً."
 
+msgid "Delete"
+msgstr "حذف"
+
 #, javascript-format
 msgid "Remove tag \"%s\" from all notes?"
 msgstr "إزالة الوسم \"%s\" من كل الملاحظات؟"
@@ -1196,11 +1168,23 @@ msgstr "إزالة الوسم \"%s\" من كل الملاحظات؟"
 msgid "Remove this search from the sidebar?"
 msgstr "حذف هذا البحث من الشريط الجانبي؟"
 
-msgid "Delete"
-msgstr "حذف"
+#, fuzzy
+msgid "New sub-notebook"
+msgstr "دفتر ملاحظات جديد"
 
 msgid "Rename"
 msgstr "إعادة تسمية"
+
+msgid "Notebooks"
+msgstr "دفاتر ملاحظات"
+
+#, javascript-format
+msgid "Decrypting items: %d/%d"
+msgstr "فك تشفير العناصر: %d/%d"
+
+#, javascript-format
+msgid "Fetching resources: %d/%d"
+msgstr "جلب الموارد: %d/%d"
 
 msgid "Please select where the sync status should be exported to"
 msgstr "فضلاً اختر أين سيتم تصدير حالة المزامنة"
@@ -1354,14 +1338,6 @@ msgstr "خامل"
 msgid "In progress"
 msgstr "قيد التقدم"
 
-#, javascript-format
-msgid "Synchronisation is already in progress. State: %s"
-msgstr "المزامنة قيد التقدم بالفعل. الحال: %s"
-
-msgid ""
-"Unknown item type downloaded - please upgrade Joplin to the latest version"
-msgstr ""
-
 msgid "Encrypted"
 msgstr "مشفّر"
 
@@ -1406,6 +1382,19 @@ msgid ""
 msgstr ""
 "تنبيه: إذا غيرت هذا المكان ، تأكد من نسخ كافة المحتويات لديك إليه قبل البدء "
 "بالمزامنة ، وإلا فسيتم حذف كل الملفات! أنظر الأسئلة المتكررة لتفاصيل أكثر: %s"
+
+msgid "Keyboard Mode"
+msgstr ""
+
+#, fuzzy
+msgid "Default"
+msgstr "التلقائية: %s"
+
+msgid "Emacs"
+msgstr ""
+
+msgid "Vim"
+msgstr ""
 
 msgid "Synchronisation target"
 msgstr "وجهة المزامنة"
@@ -1477,10 +1466,39 @@ msgstr "فاتحة"
 msgid "Dark"
 msgstr "غامقة"
 
+msgid "Dracula"
+msgstr ""
+
 msgid "Solarised Light"
 msgstr ""
 
 msgid "Solarised Dark"
+msgstr ""
+
+msgid "Nord"
+msgstr ""
+
+#, fuzzy
+msgid "Show note counts"
+msgstr "إظهار أيقونة لوحة النظام"
+
+#, fuzzy
+msgid "Editor"
+msgstr "تحرير"
+
+#, fuzzy
+msgid "Viewer"
+msgstr "&عرض"
+
+msgid "Split View"
+msgstr ""
+
+#, fuzzy, javascript-format
+msgid "%s / %s / %s"
+msgstr "%s = %s (%s)"
+
+#, javascript-format
+msgid "%s / %s"
 msgstr ""
 
 msgid "Uncompleted to-dos on top"
@@ -1515,6 +1533,9 @@ msgid "When creating a new note:"
 msgstr "عند إنشاء ملاحظة جديدة:"
 
 msgid "Enable soft breaks"
+msgstr ""
+
+msgid "Enable typographer support"
 msgstr ""
 
 #, fuzzy
@@ -1577,6 +1598,10 @@ msgstr "نسبة التكبير العمومية"
 msgid "Editor font size"
 msgstr "حجم خط المحرّر"
 
+#, fuzzy
+msgid "Editor font"
+msgstr "حجم خط المحرّر"
+
 msgid "Editor font family"
 msgstr "نوع خط المحرّر"
 
@@ -1622,6 +1647,36 @@ msgstr ""
 "أمر محرر النصوص (قد يتضمن معامِلات) الذي سيستخدم لفتح ملاحظة. إذا لم يجر "
 "التزويد بأي محرر فسيحاول التطبيق اكتشاف المحرِّر التلقائي آلياً."
 
+msgid "Page size for PDF export"
+msgstr ""
+
+msgid "A4"
+msgstr ""
+
+msgid "Letter"
+msgstr ""
+
+msgid "A3"
+msgstr ""
+
+msgid "A5"
+msgstr ""
+
+msgid "Tabloid"
+msgstr ""
+
+msgid "Legal"
+msgstr ""
+
+msgid "Page orientation for PDF export"
+msgstr ""
+
+msgid "Portrait"
+msgstr ""
+
+msgid "Landscape"
+msgstr ""
+
 msgid "Custom TLS certificates"
 msgstr "شهادات TLS خاصة"
 
@@ -1638,6 +1693,11 @@ msgstr ""
 
 msgid "Ignore TLS certificate errors"
 msgstr "تجاهل أخطاء شهادات TLS"
+
+msgid ""
+"Fail-safe: Do not wipe out local data when sync target is empty (often the "
+"result of a misconfiguration or bug)"
+msgstr ""
 
 msgid ""
 "Specify the port that should be used by the API server. If not set, a "
@@ -1680,6 +1740,14 @@ msgstr ""
 msgid "Application"
 msgstr "التطبيق"
 
+#, fuzzy
+msgid "Encryption"
+msgstr "التشفير هو:"
+
+#, fuzzy
+msgid "Web Clipper"
+msgstr "خيارات Web clipper"
+
 #, javascript-format
 msgid "The tag \"%s\" already exists. Please choose a different name."
 msgstr "الوسم \"%s\" موجود بالفعل. فضلاً إختر اسماً مختلفاً."
@@ -1693,7 +1761,12 @@ msgstr "تنسيق Markdown"
 msgid "Joplin Export Directory"
 msgstr "دليل تصدير بيانات Joplin"
 
-msgid "Evernote Export File"
+#, fuzzy
+msgid "Evernote Export File (as Markdown)"
+msgstr "ملف Evernote المصدَّر"
+
+#, fuzzy
+msgid "Evernote Export File (as HTML)"
 msgstr "ملف Evernote المصدَّر"
 
 msgid "Json Export Directory"
@@ -1850,20 +1923,9 @@ msgstr "دفتر ملاحظات جديد"
 msgid "Configuration"
 msgstr "الضبط"
 
-#, javascript-format
-msgid "Decrypting items: %d/%d"
-msgstr "فك تشفير العناصر: %d/%d"
-
-#, javascript-format
-msgid "Fetching resources: %d/%d"
-msgstr "جلب الموارد: %d/%d"
-
 #, fuzzy
 msgid "All notes"
 msgstr "ملاحظة"
-
-msgid "Notebooks"
-msgstr "دفاتر ملاحظات"
 
 msgid "Checking... Please wait."
 msgstr "التحقق جارٍ... فضلاً انتظر."
@@ -1910,10 +1972,6 @@ msgid ""
 "In order to use file system synchronisation your permission to write to "
 "external storage is required."
 msgstr ""
-
-#, fuzzy
-msgid "Information"
-msgstr "الضبط"
 
 msgid "Encryption Config"
 msgstr "ضبط التشفير"
@@ -1999,6 +2057,10 @@ msgid "Password:"
 msgstr "كلمة المرور:"
 
 msgid "Password cannot be empty"
+msgstr "لا يمكن أن تكون كلمة المرور فارغة"
+
+#, fuzzy
+msgid "Confirm password cannot be empty"
 msgstr "لا يمكن أن تكون كلمة المرور فارغة"
 
 msgid "Enable"
@@ -2103,6 +2165,84 @@ msgid "Search"
 msgstr "بحث"
 
 #, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "مشاركة"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "مشاركة"
+
+#~ msgid "Synchronisation is already in progress. State: %s"
+#~ msgstr "المزامنة قيد التقدم بالفعل. الحال: %s"
+
+#, fuzzy
+#~ msgid "Confirm master password:"
+#~ msgstr "أدخل كلمة المرور الرئيسة:"
+
+#, fuzzy
+#~ msgid "Confirm password"
+#~ msgstr "أدخل كلمة المرور الرئيسة:"
+
+#, fuzzy
+#~ msgid "Missing required argument: note"
+#~ msgstr "المعامل المطلوب %s مفقود"
+
+#~ msgid "Starting to edit note. Close the editor to get back to the prompt."
+#~ msgstr "بدء تحرير الملاحظة. أغلق المحرر للعودة إلى المحث."
+
+#~ msgid "Note has been saved."
+#~ msgstr "تم حفظ الملاحظة."
+
+#~ msgid "Sidebar"
+#~ msgstr "الشريط الجانبي"
+
+#~ msgid "Note title"
+#~ msgstr "عنوان الملاحظة"
+
+#~ msgid "Note body"
+#~ msgstr "متن الملاحظة"
+
+#~ msgid "Importing from \"%s\" as \"%s\" format. Please wait..."
+#~ msgstr "الاستيراد من \"%s\" بتنسيق \"%s\". فضلاً انتظر..."
+
+#~ msgid "Synchronisation status"
+#~ msgstr "حالة المزامنة"
+
+#~ msgid "Print"
+#~ msgstr "اطبع"
+
+#~ msgid "General Options"
+#~ msgstr "الخيارات العامة"
+
+#~ msgid "Encryption options"
+#~ msgstr "خيارات التشفير"
+
+#, fuzzy
+#~ msgid "Insert template"
+#~ msgstr "إدراج التاريخ والوقت"
+
+#, fuzzy
+#~ msgid "Open template directory"
+#~ msgstr "دليل تصدير بيانات Joplin"
+
+#, fuzzy
+#~ msgid "Revision: %s (%s)"
+#~ msgstr "%s %s (%s)"
+
+#~ msgid "%s %s (%s, %s)"
+#~ msgstr "%s %s (%s, %s)"
+
+#~ msgid "Encryption Options"
+#~ msgstr "خيارات التشفير"
+
+#~ msgid "Clipper Options"
+#~ msgstr "خيارات Clipper"
+
+#, fuzzy
+#~ msgid "Information"
+#~ msgstr "الضبط"
+
+#, fuzzy
 #~ msgid "Permission to write to external storage"
 #~ msgstr "الإذن باستخدام الكاميرا"
 
@@ -2144,6 +2284,3 @@ msgstr "بحث"
 #~ msgstr ""
 #~ "المسار الذي ستتم المزامنة معه عند تفعيل مزامنة نظام الملفات. أنظر `sync."
 #~ "target`."
-
-#~ msgid "Remove?"
-#~ msgstr "إزالة ؟"

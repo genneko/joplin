@@ -53,7 +53,7 @@ function shimInit() {
 				buffer = nativeImage.toJPEG(90);
 			}
 
-			if (!buffer) throw new Error('Cannot resize image because mime type "' + mime + '" is not supported: ' + targetPath);
+			if (!buffer) throw new Error(`Cannot resize image because mime type "${mime}" is not supported: ${targetPath}`);
 
 			await shim.fsDriver().writeFile(targetPath, buffer, 'buffer');
 		} else {
@@ -68,7 +68,7 @@ function shimInit() {
 			// For Electron
 			const nativeImage = require('electron').nativeImage;
 			let image = nativeImage.createFromPath(filePath);
-			if (image.isEmpty()) throw new Error('Image is invalid or does not exist: ' + filePath);
+			if (image.isEmpty()) throw new Error(`Image is invalid or does not exist: ${filePath}`);
 
 			const size = image.getSize();
 
@@ -122,7 +122,6 @@ function shimInit() {
 
 		const { uuid } = require('lib/uuid.js');
 		const { basename, fileExtension, safeFileExtension } = require('lib/path-utils.js');
-		const mime = require('mime/lite');
 
 		if (!(await fs.pathExists(filePath))) throw new Error(_('Cannot access %s', filePath));
 
@@ -132,7 +131,7 @@ function shimInit() {
 
 		let resource = Resource.new();
 		resource.id = resourceId;
-		resource.mime = mime.getType(filePath);
+		resource.mime = mimeUtils.fromFilename(filePath);
 		resource.title = basename(filePath);
 
 		let fileExt = safeFileExtension(fileExtension(filePath));
@@ -167,7 +166,7 @@ function shimInit() {
 		}
 
 		const itDoes = await shim.fsDriver().waitTillExists(targetPath);
-		if (!itDoes) throw new Error('Resource file was not created: ' + targetPath);
+		if (!itDoes) throw new Error(`Resource file was not created: ${targetPath}`);
 
 		const fileStat = await shim.fsDriver().stat(targetPath);
 		resource.size = fileStat.size;
@@ -197,7 +196,7 @@ function shimInit() {
 			newBody.push(Resource.markdownTag(resource));
 		} else {
 			let filename = escapeLinkText(basename(filePath)); // to get same filename as standard drag and drop
-			let fileURL = '[' + filename + '](' + toFileProtocolPath(filePath) + ')';
+			let fileURL = `[${filename}](${toFileProtocolPath(filePath)})`;
 			newBody.push(fileURL);
 		}
 
@@ -246,7 +245,7 @@ function shimInit() {
 
 	shim.fetch = async function(url, options = null) {
 		const validatedUrl = urlValidator.isUri(url);
-		if (!validatedUrl) throw new Error('Not a valid URL: ' + url);
+		if (!validatedUrl) throw new Error(`Not a valid URL: ${url}`);
 
 		return shim.fetchWithRetry(() => {
 			return nodeFetch(url, options);
@@ -256,7 +255,7 @@ function shimInit() {
 	shim.fetchBlob = async function(url, options) {
 		if (!options || !options.path) throw new Error('fetchBlob: target file path is missing');
 		if (!options.method) options.method = 'GET';
-		//if (!('maxRetry' in options)) options.maxRetry = 5;
+		// if (!('maxRetry' in options)) options.maxRetry = 5;
 
 		const urlParse = require('url').parse;
 
@@ -274,7 +273,7 @@ function shimInit() {
 					return response.statusMessage;
 				},
 				json: () => {
-					return { message: response.statusCode + ': ' + response.statusMessage };
+					return { message: `${response.statusCode}: ${response.statusMessage}` };
 				},
 				status: response.statusCode,
 				headers: response.headers,
@@ -286,7 +285,7 @@ function shimInit() {
 			host: url.hostname,
 			port: url.port,
 			method: method,
-			path: url.pathname + (url.query ? '?' + url.query : ''),
+			path: url.pathname + (url.query ? `?${url.query}` : ''),
 			headers: headers,
 		};
 

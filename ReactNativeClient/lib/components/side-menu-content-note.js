@@ -35,11 +35,13 @@ class SideMenuContentNoteComponent extends Component {
 				fontSize: 22,
 				color: theme.color,
 			},
+			sideButtonText: {
+				color: theme.color,
+			},
 		};
 
 		styles.sideButton = Object.assign({}, styles.button, { flex: 0 });
 		styles.sideButtonDisabled = Object.assign({}, styles.sideButton, { opacity: 0.6 });
-		styles.sideButtonText = Object.assign({}, styles.buttonText);
 
 		this.styles_[this.props.theme] = StyleSheet.create(styles);
 		return this.styles_[this.props.theme];
@@ -76,7 +78,7 @@ class SideMenuContentNoteComponent extends Component {
 
 		for (const option of options) {
 			if (option.isDivider) {
-				items.push(this.renderDivider('divider_' + dividerIndex++));
+				items.push(this.renderDivider(`divider_${dividerIndex++}`));
 			} else {
 				items.push(this.renderSideBarButton(option.title, option.title, null, option.onPress));
 			}

@@ -15,6 +15,7 @@ const { reg } = require('lib/registry.js');
 const { time } = require('lib/time-utils.js');
 const BaseSyncTarget = require('lib/BaseSyncTarget.js');
 const { shim } = require('lib/shim.js');
+const { uuid } = require('lib/uuid.js');
 const { _, setLocale } = require('lib/locale.js');
 const reduxSharedMiddleware = require('lib/components/shared/reduxSharedMiddleware');
 const os = require('os');
@@ -169,6 +170,12 @@ class BaseApplication {
 				continue;
 			}
 
+			if (arg.indexOf('--remote-debugging-port=') === 0) {
+				// Electron-specific flag used for debugging - ignore it. Electron expects this flag in '--x=y' form, a single string.
+				argv.splice(0, 1);
+				continue;
+			}
+
 			if (arg.length && arg[0] == '-') {
 				throw new JoplinError(_('Unknown flag: %s', arg), 'flagError');
 			} else {
@@ -285,7 +292,7 @@ class BaseApplication {
 		}
 	}
 
-	async decryptionWorker_resourceMetadataButNotBlobDecrypted(event) {
+	async decryptionWorker_resourceMetadataButNotBlobDecrypted() {
 		this.scheduleAutoAddResources();
 	}
 
@@ -439,11 +446,15 @@ class BaseApplication {
 			await this.refreshNotes(newState, refreshNotesUseSelectedNoteId, refreshNotesHash);
 		}
 
-		if (action.type === 'NOTE_UPDATE_ONE') {
+		if (action.type === 'NOTE_UPDATE_ONE' || action.type === 'NOTE_DELETE') {
 			refreshFolders = true;
 		}
 
 		if (this.hasGui() && ((action.type == 'SETTING_UPDATE_ONE' && action.key.indexOf('folders.sortOrder') === 0) || action.type == 'SETTING_UPDATE_ALL')) {
+			refreshFolders = 'now';
+		}
+
+		if (this.hasGui() && ((action.type == 'SETTING_UPDATE_ONE' && action.key == 'showNoteCounts') || action.type == 'SETTING_UPDATE_ALL')) {
 			refreshFolders = 'now';
 		}
 
@@ -509,9 +520,9 @@ class BaseApplication {
 	determineProfileDir(initArgs) {
 		if (initArgs.profileDir) return initArgs.profileDir;
 
-		if (process && process.env && process.env.PORTABLE_EXECUTABLE_DIR) return process.env.PORTABLE_EXECUTABLE_DIR + '/JoplinProfile';
+		if (process && process.env && process.env.PORTABLE_EXECUTABLE_DIR) return `${process.env.PORTABLE_EXECUTABLE_DIR}/JoplinProfile`;
 
-		return os.homedir() + '/.config/' + Setting.value('appName');
+		return `${os.homedir()}/.config/${Setting.value('appName')}`;
 	}
 
 	async testing() {
@@ -548,12 +559,12 @@ class BaseApplication {
 
 		const profileDir = this.determineProfileDir(initArgs);
 		const resourceDirName = 'resources';
-		const resourceDir = profileDir + '/' + resourceDirName;
-		const tempDir = profileDir + '/tmp';
+		const resourceDir = `${profileDir}/${resourceDirName}`;
+		const tempDir = `${profileDir}/tmp`;
 
 		Setting.setConstant('env', initArgs.env);
 		Setting.setConstant('profileDir', profileDir);
-		Setting.setConstant('templateDir', profileDir + '/templates');
+		Setting.setConstant('templateDir', `${profileDir}/templates`);
 		Setting.setConstant('resourceDirName', resourceDirName);
 		Setting.setConstant('resourceDir', resourceDir);
 		Setting.setConstant('tempDir', tempDir);
@@ -567,29 +578,29 @@ class BaseApplication {
 		// Clean up any remaining watched files (they start with "edit-")
 		await shim.fsDriver().removeAllThatStartWith(profileDir, 'edit-');
 
-		const extraFlags = await this.readFlagsFromFile(profileDir + '/flags.txt');
+		const extraFlags = await this.readFlagsFromFile(`${profileDir}/flags.txt`);
 		initArgs = Object.assign(initArgs, extraFlags);
 
-		this.logger_.addTarget('file', { path: profileDir + '/log.txt' });
+		this.logger_.addTarget('file', { path: `${profileDir}/log.txt` });
 		if (Setting.value('env') === 'dev') this.logger_.addTarget('console', { level: Logger.LEVEL_WARN });
 		this.logger_.setLevel(initArgs.logLevel);
 
 		reg.setLogger(this.logger_);
-		reg.dispatch = o => {};
+		reg.dispatch = () => {};
 
-		this.dbLogger_.addTarget('file', { path: profileDir + '/log-database.txt' });
+		this.dbLogger_.addTarget('file', { path: `${profileDir}/log-database.txt` });
 		this.dbLogger_.setLevel(initArgs.logLevel);
 
 		if (Setting.value('env') === 'dev') {
 			this.dbLogger_.setLevel(Logger.LEVEL_INFO);
 		}
 
-		this.logger_.info('Profile directory: ' + profileDir);
+		this.logger_.info(`Profile directory: ${profileDir}`);
 
 		this.database_ = new JoplinDatabase(new DatabaseDriverNode());
 		this.database_.setLogExcludedQueryTypes(['SELECT']);
 		this.database_.setLogger(this.dbLogger_);
-		await this.database_.open({ name: profileDir + '/database.sqlite' });
+		await this.database_.open({ name: `${profileDir}/database.sqlite` });
 
 		// if (Setting.value('env') === 'dev') await this.database_.clearForTesting();
 
@@ -598,9 +609,11 @@ class BaseApplication {
 
 		await Setting.load();
 
+		if (!Setting.value('clientId')) Setting.setValue('clientId', uuid.create());
+
 		if (Setting.value('firstStart')) {
 			const locale = shim.detectAndSetLocale(Setting);
-			reg.logger().info('First start: detected locale as ' + locale);
+			reg.logger().info(`First start: detected locale as ${locale}`);
 
 			if (Setting.value('env') === 'dev') {
 				Setting.setValue('showTrayIcon', 0);

@@ -31,7 +31,7 @@ class Command extends BaseCommand {
 		return markdownUtils.createMarkdownTable(headers, tableFields);
 	}
 
-	async action(args) {
+	async action() {
 		const models = [
 			{
 				type: BaseModel.TYPE_NOTE,
@@ -168,7 +168,7 @@ class Command extends BaseCommand {
 				// });
 			}
 
-			lines.push('# ' + toTitleCase(tableName));
+			lines.push(`# ${toTitleCase(tableName)}`);
 			lines.push('');
 
 			if (model.type === BaseModel.TYPE_FOLDER) {
@@ -181,9 +181,9 @@ class Command extends BaseCommand {
 			lines.push(this.createPropertiesTable(tableFields));
 			lines.push('');
 
-			lines.push('## GET /' + tableName);
+			lines.push(`## GET /${tableName}`);
 			lines.push('');
-			lines.push('Gets all ' + tableName);
+			lines.push(`Gets all ${tableName}`);
 			lines.push('');
 
 			if (model.type === BaseModel.TYPE_FOLDER) {
@@ -191,9 +191,9 @@ class Command extends BaseCommand {
 				lines.push('');
 			}
 
-			lines.push('## GET /' + tableName + '/:id');
+			lines.push(`## GET /${tableName}/:id`);
 			lines.push('');
-			lines.push('Gets ' + singular + ' with ID :id');
+			lines.push(`Gets ${singular} with ID :id`);
 			lines.push('');
 
 			if (model.type === BaseModel.TYPE_TAG) {
@@ -207,6 +207,11 @@ class Command extends BaseCommand {
 				lines.push('## GET /notes/:id/tags');
 				lines.push('');
 				lines.push('Gets all the tags attached to this note.');
+				lines.push('');
+
+				lines.push('## GET /notes/:id/resources');
+				lines.push('');
+				lines.push('Gets all the resources attached to this note.');
 				lines.push('');
 			}
 
@@ -224,9 +229,9 @@ class Command extends BaseCommand {
 				lines.push('');
 			}
 
-			lines.push('## POST /' + tableName);
+			lines.push(`## POST /${tableName}`);
 			lines.push('');
-			lines.push('Creates a new ' + singular);
+			lines.push(`Creates a new ${singular}`);
 			lines.push('');
 
 			if (model.type === BaseModel.TYPE_RESOURCE) {
@@ -270,14 +275,14 @@ class Command extends BaseCommand {
 				lines.push('');
 			}
 
-			lines.push('## PUT /' + tableName + '/:id');
+			lines.push(`## PUT /${tableName}/:id`);
 			lines.push('');
-			lines.push('Sets the properties of the ' + singular + ' with ID :id');
+			lines.push(`Sets the properties of the ${singular} with ID :id`);
 			lines.push('');
 
-			lines.push('## DELETE /' + tableName + '/:id');
+			lines.push(`## DELETE /${tableName}/:id`);
 			lines.push('');
-			lines.push('Deletes the ' + singular + ' with ID :id');
+			lines.push(`Deletes the ${singular} with ID :id`);
 			lines.push('');
 
 			if (model.type === BaseModel.TYPE_TAG) {

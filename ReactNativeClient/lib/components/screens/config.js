@@ -21,7 +21,7 @@ import { PermissionsAndroid } from 'react-native';
 import Slider from '@react-native-community/slider';
 
 class ConfigScreenComponent extends BaseScreenComponent {
-	static navigationOptions(options) {
+	static navigationOptions() {
 		return { header: null };
 	}
 
@@ -68,12 +68,12 @@ class ConfigScreenComponent extends BaseScreenComponent {
 			const logItemCsv = service.csvCreate(logItemRows);
 
 			const itemListCsv = await service.basicItemList({ format: 'csv' });
-			const filePath = RNFS.ExternalDirectoryPath + '/syncReport-' + new Date().getTime() + '.txt';
+			const filePath = `${RNFS.ExternalDirectoryPath}/syncReport-${new Date().getTime()}.txt`;
 
 			const finalText = [logItemCsv, itemListCsv].join('\n================================================================================\n');
 
 			await RNFS.writeFile(filePath, finalText);
-			alert('Debug report exported to ' + filePath);
+			alert(`Debug report exported to ${filePath}`);
 			this.setState({ creatingReport: false });
 		};
 
@@ -194,7 +194,7 @@ class ConfigScreenComponent extends BaseScreenComponent {
 
 		styles.switchSettingControl = Object.assign({}, styles.settingControl);
 		delete styles.switchSettingControl.color;
-		//styles.switchSettingControl.width = '20%';
+		// styles.switchSettingControl.width = '20%';
 		styles.switchSettingControl.flex = 0;
 
 		this.styles_[themeId] = StyleSheet.create(styles);
@@ -269,6 +269,8 @@ class ConfigScreenComponent extends BaseScreenComponent {
 			settingComps.push(this.renderButton('e2ee_config_button', _('Encryption Config'), this.e2eeConfig_));
 		}
 
+		if (!settingComps.length) return null;
+
 		return (
 			<View key={key}>
 				{this.renderHeader(section.name, Setting.sectionNameToLabel(section.name))}
@@ -324,7 +326,7 @@ class ConfigScreenComponent extends BaseScreenComponent {
 								color: theme.color,
 								fontSize: theme.fontSize,
 							}}
-							onValueChange={(itemValue, itemIndex) => {
+							onValueChange={(itemValue) => {
 								updateSettingValue(key, itemValue);
 							}}
 						/>
@@ -364,7 +366,7 @@ class ConfigScreenComponent extends BaseScreenComponent {
 				</View>
 			);
 		} else {
-			//throw new Error('Unsupported setting type: ' + md.type);
+			// throw new Error('Unsupported setting type: ' + md.type);
 		}
 
 		return output;
@@ -452,7 +454,7 @@ class ConfigScreenComponent extends BaseScreenComponent {
 
 		settingComps.push(
 			<View key="version_info_app" style={this.styles().settingContainer}>
-				<Text style={this.styles().settingText}>{'Joplin ' + VersionInfo.appVersion}</Text>
+				<Text style={this.styles().settingText}>{`Joplin ${VersionInfo.appVersion}`}</Text>
 			</View>
 		);
 

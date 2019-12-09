@@ -11,7 +11,7 @@ const { BaseScreenComponent } = require('lib/components/base-screen.js');
 const { _ } = require('lib/locale.js');
 
 class LogScreenComponent extends BaseScreenComponent {
-	static navigationOptions(options) {
+	static navigationOptions() {
 		return { header: null };
 	}
 
@@ -97,7 +97,7 @@ class LogScreenComponent extends BaseScreenComponent {
 
 			return (
 				<View style={this.styles().row}>
-					<Text style={textStyle}>{time.formatMsToLocal(item.timestamp, 'MM-DDTHH:mm:ss') + ': ' + item.message}</Text>
+					<Text style={textStyle}>{`${time.formatMsToLocal(item.timestamp, 'MM-DDTHH:mm:ss')}: ${item.message}`}</Text>
 				</View>
 			);
 		};

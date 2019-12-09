@@ -190,6 +190,10 @@ class SideBarComponent extends React.Component {
 				marginBottom: 10,
 				wordWrap: 'break-word',
 			},
+			noteCount: {
+				paddingLeft: 5,
+				opacity: 0.5,
+			},
 		};
 
 		style.tagItem = Object.assign({}, style.listItem);
@@ -260,16 +264,18 @@ class SideBarComponent extends React.Component {
 	}
 
 	async itemContextMenu(event) {
-		const itemId = event.target.getAttribute('data-id');
+		const itemId = event.currentTarget.getAttribute('data-id');
 		if (itemId === Folder.conflictFolderId()) return;
 
-		const itemType = Number(event.target.getAttribute('data-type'));
+		const itemType = Number(event.currentTarget.getAttribute('data-type'));
 		if (!itemId || !itemType) throw new Error('No data on element');
 
 		let deleteMessage = '';
+		let buttonLabel = _('Remove');
 		if (itemType === BaseModel.TYPE_FOLDER) {
 			const folder = await Folder.load(itemId);
 			deleteMessage = _('Delete notebook "%s"?\n\nAll notes and sub-notebooks within this notebook will also be deleted.', substrWithEllipsis(folder.title, 0, 32));
+			buttonLabel = _('Delete');
 		} else if (itemType === BaseModel.TYPE_TAG) {
 			const tag = await Tag.load(itemId);
 			deleteMessage = _('Remove tag "%s" from all notes?', substrWithEllipsis(tag.title, 0, 32));
@@ -284,11 +290,29 @@ class SideBarComponent extends React.Component {
 			item = BaseModel.byId(this.props.folders, itemId);
 		}
 
+		if (itemType === BaseModel.TYPE_FOLDER && !item.encryption_applied) {
+			menu.append(
+				new MenuItem({
+					label: _('New sub-notebook'),
+					click: () => {
+						this.props.dispatch({
+							type: 'WINDOW_COMMAND',
+							name: 'newSubNotebook',
+							activeFolderId: itemId,
+						});
+					},
+				})
+			);
+		}
+
 		menu.append(
 			new MenuItem({
-				label: _('Delete'),
+				label: buttonLabel,
 				click: async () => {
-					const ok = bridge().showConfirmMessageBox(deleteMessage);
+					const ok = bridge().showConfirmMessageBox(deleteMessage, {
+						buttons: [buttonLabel, _('Cancel')],
+						defaultId: 1,
+					});
 					if (!ok) return;
 
 					if (itemType === BaseModel.TYPE_FOLDER) {
@@ -411,6 +435,10 @@ class SideBarComponent extends React.Component {
 		return this.anchorItemRefs[type][id];
 	}
 
+	noteCountElement(count) {
+		return <div style={this.style().noteCount}>({count})</div>;
+	}
+
 	folderItem(folder, selected, hasChildren, depth) {
 		let style = Object.assign({}, this.style().listItem);
 		if (folder.id === Folder.conflictFolderId()) style = Object.assign(style, this.style().conflictFolder);
@@ -427,7 +455,7 @@ class SideBarComponent extends React.Component {
 		};
 
 		const iconName = this.props.collapsedFolderIds.indexOf(folder.id) >= 0 ? 'fa-plus-square' : 'fa-minus-square';
-		const expandIcon = <i style={expandIconStyle} className={'fa ' + iconName}></i>;
+		const expandIcon = <i style={expandIconStyle} className={`fa ${iconName}`}></i>;
 		const expandLink = hasChildren ? (
 			<a style={expandLinkStyle} href="#" folderid={folder.id} onClick={this.onFolderToggleClick_}>
 				{expandIcon}
@@ -437,6 +465,7 @@ class SideBarComponent extends React.Component {
 		);
 
 		const anchorRef = this.anchorItemRef('folder', folder.id);
+		const noteCount = folder.note_count ? this.noteCountElement(folder.note_count) : '';
 
 		return (
 			<div className="list-item-container" style={containerStyle} key={folder.id} onDragStart={this.onFolderDragStart_} onDragOver={this.onFolderDragOver_} onDrop={this.onFolderDrop_} draggable={true} folderid={folder.id}>
@@ -455,7 +484,7 @@ class SideBarComponent extends React.Component {
 					}}
 					onDoubleClick={this.onFolderToggleClick_}
 				>
-					{itemTitle}
+					{itemTitle} {noteCount}
 				</a>
 			</div>
 		);
@@ -466,6 +495,7 @@ class SideBarComponent extends React.Component {
 		if (selected) style = Object.assign(style, this.style().listItemSelected);
 
 		const anchorRef = this.anchorItemRef('tag', tag.id);
+		const noteCount = Setting.value('showNoteCounts') ? this.noteCountElement(tag.note_count) : '';
 
 		return (
 			<a
@@ -483,7 +513,7 @@ class SideBarComponent extends React.Component {
 					this.tagItem_click(tag);
 				}}
 			>
-				{Tag.displayTitle(tag)}
+				{Tag.displayTitle(tag)} {noteCount}
 			</a>
 		);
 	}
@@ -515,7 +545,7 @@ class SideBarComponent extends React.Component {
 
 	makeHeader(key, label, iconName, extraProps = {}) {
 		const style = this.style().header;
-		const icon = <i style={{ fontSize: style.fontSize, marginRight: 5 }} className={'fa ' + iconName} />;
+		const icon = <i style={{ fontSize: style.fontSize, marginRight: 5 }} className={`fa ${iconName}`} />;
 
 		if (extraProps.toggleblock || extraProps.onClick) {
 			style.cursor = 'pointer';
@@ -603,7 +633,7 @@ class SideBarComponent extends React.Component {
 
 			const focusItem = focusItems[newIndex];
 
-			let actionName = focusItem.type.toUpperCase() + '_SELECT';
+			let actionName = `${focusItem.type.toUpperCase()}_SELECT`;
 
 			this.props.dispatch({
 				type: actionName,
@@ -664,7 +694,7 @@ class SideBarComponent extends React.Component {
 			iconStyle.animation = 'icon-infinite-rotation 1s linear infinite';
 		}
 
-		const icon = <i style={iconStyle} className={'fa ' + iconName} />;
+		const icon = <i style={iconStyle} className={`fa ${iconName}`} />;
 		return (
 			<a
 				className="synchronize-button"
@@ -787,6 +817,7 @@ const mapStateToProps = state => {
 		resourceFetcher: state.resourceFetcher,
 		windowCommand: state.windowCommand,
 		sidebarVisibility: state.sidebarVisibility,
+		noteListVisibility: state.noteListVisibility,
 	};
 };
 

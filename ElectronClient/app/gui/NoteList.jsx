@@ -30,17 +30,22 @@ class NoteListComponent extends React.Component {
 
 		const itemHeight = 34;
 
+		// Note: max-width is used to specifically prevent horizontal scrolling on Linux when the scrollbar is present in the note list.
+		// Pull request: https://github.com/laurent22/joplin/pull/2062
+		const itemWidth = '100%';
+
 		let style = {
 			root: {
 				backgroundColor: theme.backgroundColor,
 			},
 			listItem: {
+				maxWidth: itemWidth,
 				height: itemHeight,
 				boxSizing: 'border-box',
 				display: 'flex',
 				alignItems: 'stretch',
 				backgroundColor: theme.backgroundColor,
-				borderBottom: '1px solid ' + theme.dividerColor,
+				borderBottom: `1px solid ${theme.dividerColor}`,
 			},
 			listItemSelected: {
 				backgroundColor: theme.selectedColor,
@@ -222,7 +227,7 @@ class NoteListComponent extends React.Component {
 		// Need to include "todo_completed" in key so that checkbox is updated when
 		// item is changed via sync.
 		return (
-			<div key={item.id + '_' + item.todo_completed} style={style}>
+			<div key={`${item.id}_${item.todo_completed}`} style={style}>
 				{checkbox}
 				<a
 					ref={ref}
@@ -271,7 +276,7 @@ class NoteListComponent extends React.Component {
 		}
 	}
 
-	componentDidUpdate(prevProps, prevState, snapshot) {
+	componentDidUpdate(prevProps) {
 		if (prevProps.windowCommand !== this.props.windowCommand) {
 			this.doCommand(this.props.windowCommand);
 		}
@@ -393,7 +398,7 @@ class NoteListComponent extends React.Component {
 			const padding = 10;
 			const emptyDivStyle = Object.assign(
 				{
-					padding: padding + 'px',
+					padding: `${padding}px`,
 					fontSize: theme.fontSize,
 					color: theme.color,
 					backgroundColor: theme.backgroundColor,

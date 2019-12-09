@@ -59,6 +59,7 @@ const ResourceFetcher = require('lib/services/ResourceFetcher');
 const SearchEngine = require('lib/services/SearchEngine');
 const WelcomeUtils = require('lib/WelcomeUtils');
 const { themeStyle } = require('lib/components/global-style.js');
+const { uuid } = require('lib/uuid.js');
 
 const SyncTargetRegistry = require('lib/SyncTargetRegistry.js');
 const SyncTargetOneDrive = require('lib/SyncTargetOneDrive.js');
@@ -79,7 +80,7 @@ const DecryptionWorker = require('lib/services/DecryptionWorker');
 const EncryptionService = require('lib/services/EncryptionService');
 const MigrationService = require('lib/services/MigrationService');
 
-let storeDispatch = function(action) {};
+let storeDispatch = function() {};
 
 const logReducerAction = function(action) {
 	if (['SIDE_MENU_OPEN_PERCENT', 'SYNC_REPORT_UPDATE'].indexOf(action.type) >= 0) return;
@@ -155,7 +156,7 @@ const generalMiddleware = store => next => async (action) => {
 
 let navHistory = [];
 
-function historyCanGoBackTo(route, nextRoute) {
+function historyCanGoBackTo(route) {
 	if (route.routeName === 'Note') return false;
 	if (route.routeName === 'Folder') return false;
 
@@ -344,7 +345,7 @@ const appReducer = (state = appDefaultState, action) => {
 
 		}
 	} catch (error) {
-		error.message = 'In reducer: ' + error.message + ' Action: ' + JSON.stringify(action);
+		error.message = `In reducer: ${error.message} Action: ${JSON.stringify(action)}`;
 		throw error;
 	}
 
@@ -387,7 +388,7 @@ async function initialize(dispatch) {
 	BaseService.logger_ = mainLogger;
 
 	reg.logger().info('====================================');
-	reg.logger().info('Starting application ' + Setting.value('appId') + ' (' + Setting.value('env') + ')');
+	reg.logger().info(`Starting application ${Setting.value('appId')} (${Setting.value('env')})`);
 
 	const dbLogger = new Logger();
 	dbLogger.addTarget('database', { database: logDatabase, source: 'm' });
@@ -440,6 +441,8 @@ async function initialize(dispatch) {
 		reg.logger().info('Loading settings...');
 		await Setting.load();
 
+		if (!Setting.value('clientId')) Setting.setValue('clientId', uuid.create());
+
 		if (Setting.value('firstStart')) {
 			let locale = NativeModules.I18nManager.localeIdentifier;
 			if (!locale) locale = defaultLocale();
@@ -466,7 +469,7 @@ async function initialize(dispatch) {
 		Setting.setValue('folders.sortOrder.field', 'title');
 		Setting.setValue('folders.sortOrder.reverse', false);
 
-		reg.logger().info('Sync target: ' + Setting.value('sync.target'));
+		reg.logger().info(`Sync target: ${Setting.value('sync.target')}`);
 
 		setLocale(Setting.value('locale'));
 
@@ -526,7 +529,7 @@ async function initialize(dispatch) {
 			});
 		}
 	} catch (error) {
-		alert('Initialization error: ' + error.message);
+		alert(`Initialization error: ${error.message}`);
 		reg.logger().error('Initialization error:', error);
 	}
 
@@ -634,7 +637,7 @@ class AppComponent extends React.Component {
 					}, 5);
 				}
 
-			} catch(e) {
+			} catch (e) {
 				reg.logger().error('Error in ShareExtension.data', e);
 			}
 		}
@@ -707,10 +710,10 @@ class AppComponent extends React.Component {
 		let menuPosition = 'left';
 
 		if (this.props.routeName === 'Note') {
-			sideMenuContent = <SafeAreaView style={{flex:1, backgroundColor: theme.backgroundColor}}><SideMenuContentNote options={this.props.noteSideMenuOptions}/></SafeAreaView>;
+			sideMenuContent = <SafeAreaView style={{flex: 1, backgroundColor: theme.backgroundColor}}><SideMenuContentNote options={this.props.noteSideMenuOptions}/></SafeAreaView>;
 			menuPosition = 'right';
 		} else {
-			sideMenuContent = <SafeAreaView style={{flex:1, backgroundColor: theme.backgroundColor}}><SideMenuContent/></SafeAreaView>;
+			sideMenuContent = <SafeAreaView style={{flex: 1, backgroundColor: theme.backgroundColor}}><SideMenuContent/></SafeAreaView>;
 		}
 
 		const appNavInit = {
@@ -740,12 +743,12 @@ class AppComponent extends React.Component {
 				}}
 			>
 				<MenuContext style={{ flex: 1 }}>
-					<SafeAreaView style={{flex:0, backgroundColor: theme.raisedBackgroundColor}} />
-					<SafeAreaView style={{flex:1, backgroundColor: theme.backgroundColor}}>
+					<SafeAreaView style={{flex: 0, backgroundColor: theme.raisedBackgroundColor}} />
+					<SafeAreaView style={{flex: 1, backgroundColor: theme.backgroundColor}}>
 						<AppNav screens={appNavInit} />
 					</SafeAreaView>
 					<DropdownAlert ref={ref => this.dropdownAlert_ = ref} tapToCloseEnabled={true} />
-					<Animated.View pointerEvents='none' style={{position:'absolute', backgroundColor:'black', opacity: this.state.sideMenuContentOpacity, width: '100%', height: '100%'}}/>
+					<Animated.View pointerEvents='none' style={{position: 'absolute', backgroundColor: 'black', opacity: this.state.sideMenuContentOpacity, width: '100%', height: '100%'}}/>
 				</MenuContext>
 			</SideMenu>
 		);

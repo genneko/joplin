@@ -24,7 +24,7 @@ const { reg } = require('lib/registry.js');
 const { shim } = require('lib/shim.js');
 const ResourceFetcher = require('lib/services/ResourceFetcher');
 const { BaseScreenComponent } = require('lib/components/base-screen.js');
-const { themeStyle } = require('lib/components/global-style.js');
+const { themeStyle, editorFont } = require('lib/components/global-style.js');
 const { dialogs } = require('lib/dialogs.js');
 const DialogBox = require('react-native-dialogbox').default;
 const { NoteBodyViewer } = require('lib/components/note-body-viewer.js');
@@ -41,7 +41,7 @@ const urlUtils = require('lib/urlUtils');
 import FileViewer from 'react-native-file-viewer';
 
 class NoteScreenComponent extends BaseScreenComponent {
-	static navigationOptions(options) {
+	static navigationOptions() {
 		return { header: null };
 	}
 
@@ -164,14 +164,16 @@ class NoteScreenComponent extends BaseScreenComponent {
 			}
 		};
 
-		this.refreshResource = async resource => {
-			if (!this.state.note || !this.state.note.body) return;
-			const resourceIds = await Note.linkedResourceIds(this.state.note.body);
-			if (resourceIds.indexOf(resource.id) >= 0 && this.refs.noteBodyViewer) {
+		this.refreshResource = async (resource, noteBody = null) => {
+			if (noteBody === null && this.state.note && this.state.note.body) noteBody = this.state.note.body;
+			if (noteBody === null) return;
+
+			const resourceIds = await Note.linkedResourceIds(noteBody);
+			if (resourceIds.indexOf(resource.id) >= 0) {
 				shared.clearResourceCache();
-				const attachedResources = await shared.attachedResources(this.state.note.body);
+				const attachedResources = await shared.attachedResources(noteBody);
 				this.setState({ noteResources: attachedResources }, () => {
-					this.refs.noteBodyViewer.rebuildMd();
+					if (this.refs.noteBodyViewer) this.refs.noteBodyViewer.rebuildMd();
 				});
 			}
 		};
@@ -209,6 +211,7 @@ class NoteScreenComponent extends BaseScreenComponent {
 				color: theme.color,
 				backgroundColor: theme.backgroundColor,
 				fontSize: theme.fontSize,
+				fontFamily: editorFont(this.props.editorFont),
 			},
 			noteBodyViewer: {
 				flex: 1,
@@ -358,7 +361,7 @@ class NoteScreenComponent extends BaseScreenComponent {
 	}
 
 	async pickDocument() {
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			DocumentPicker.show({ filetype: [DocumentPickerUtil.allFiles()] }, (error, res) => {
 				if (error) {
 					// Also returns an error if the user doesn't pick a file
@@ -388,7 +391,7 @@ class NoteScreenComponent extends BaseScreenComponent {
 	}
 
 	showImagePicker(options) {
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			ImagePicker.launchImageLibrary(options, response => {
 				resolve(response);
 			});
@@ -408,12 +411,12 @@ class NoteScreenComponent extends BaseScreenComponent {
 		reg.logger().info('New dimensions ', dimensions);
 
 		const format = mimeType == 'image/png' ? 'PNG' : 'JPEG';
-		reg.logger().info('Resizing image ' + localFilePath);
-		const resizedImage = await ImageResizer.createResizedImage(localFilePath, dimensions.width, dimensions.height, format, 85); //, 0, targetPath);
+		reg.logger().info(`Resizing image ${localFilePath}`);
+		const resizedImage = await ImageResizer.createResizedImage(localFilePath, dimensions.width, dimensions.height, format, 85); // , 0, targetPath);
 
 		const resizedImagePath = resizedImage.uri;
 		reg.logger().info('Resized image ', resizedImagePath);
-		reg.logger().info('Moving ' + resizedImagePath + ' => ' + targetPath);
+		reg.logger().info(`Moving ${resizedImagePath} => ${targetPath}`);
 
 		await RNFS.copyFile(resizedImagePath, targetPath);
 
@@ -461,8 +464,8 @@ class NoteScreenComponent extends BaseScreenComponent {
 			mimeType = 'image/jpg';
 		}
 
-		reg.logger().info('Got file: ' + localFilePath);
-		reg.logger().info('Got type: ' + mimeType);
+		reg.logger().info(`Got file: ${localFilePath}`);
+		reg.logger().info(`Got type: ${mimeType}`);
 
 		let resource = Resource.new();
 		resource.id = uuid.create();
@@ -498,7 +501,7 @@ class NoteScreenComponent extends BaseScreenComponent {
 		}
 
 		const itDoes = await shim.fsDriver().waitTillExists(targetPath);
-		if (!itDoes) throw new Error('Resource file was not created: ' + targetPath);
+		if (!itDoes) throw new Error(`Resource file was not created: ${targetPath}`);
 
 		const fileStat = await shim.fsDriver().stat(targetPath);
 		resource.size = fileStat.size;
@@ -508,10 +511,10 @@ class NoteScreenComponent extends BaseScreenComponent {
 		const resourceTag = Resource.markdownTag(resource);
 
 		const newNote = Object.assign({}, this.state.note);
-		newNote.body += '\n' + resourceTag;
+		newNote.body += `\n${resourceTag}`;
 		this.setState({ note: newNote });
 
-		this.refreshResource(resource);
+		this.refreshResource(resource, newNote.body);
 
 		this.scheduleSave();
 	}
@@ -562,7 +565,7 @@ class NoteScreenComponent extends BaseScreenComponent {
 
 	async share_onPress() {
 		await Share.share({
-			message: this.state.note.title + '\n\n' + this.state.note.body,
+			message: `${this.state.note.title}\n\n${this.state.note.body}`,
 			title: this.state.note.title,
 		});
 	}
@@ -750,7 +753,7 @@ class NoteScreenComponent extends BaseScreenComponent {
 		if (fieldToFocus === 'body') this.refs.noteBodyTextField.focus();
 	}
 
-	async folderPickerOptions_valueChanged(itemValue, itemIndex) {
+	async folderPickerOptions_valueChanged(itemValue) {
 		const note = this.state.note;
 
 		if (!note.id) {
@@ -916,6 +919,7 @@ const NoteScreen = connect(state => {
 		folders: state.folders,
 		searchQuery: state.searchQuery,
 		theme: state.settings.theme,
+		editorFont: [state.settings['style.editor.fontFamily']],
 		ftsEnabled: state.settings['db.ftsEnabled'],
 		sharedData: state.sharedData,
 		showSideMenu: state.showSideMenu,

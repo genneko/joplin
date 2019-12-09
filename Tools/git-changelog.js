@@ -4,12 +4,12 @@
 
 // (Desktop|Mobile|Android|iOS[CLI): (New|Improved|Fixed): Some message..... (#ISSUE)
 
-require('app-module-path').addPath(__dirname + '/../ReactNativeClient');
+require('app-module-path').addPath(`${__dirname}/../ReactNativeClient`);
 
 const { execCommand } = require('./tool-utils.js');
 
 async function gitLog(sinceTag) {
-	let lines = await execCommand('git log --pretty=format:"%H:%s" ' + sinceTag + '..HEAD');
+	let lines = await execCommand(`git log --pretty=format:"%H:%s" ${sinceTag}..HEAD`);
 	lines = lines.split('\n');
 
 	const output = [];
@@ -33,7 +33,7 @@ function platformFromTag(tagName) {
 	if (tagName.indexOf('ios') >= 0) return 'ios';
 	if (tagName.indexOf('clipper') === 0) return 'clipper';
 	if (tagName.indexOf('cli') === 0) return 'cli';
-	throw new Error('Could not determine platform from tag: ' + tagName);
+	throw new Error(`Could not determine platform from tag: ${tagName}`);
 }
 
 function filterLogs(logs, platform) {
@@ -63,6 +63,7 @@ function filterLogs(logs, platform) {
 		if (platform === 'android' && prefix.indexOf('android') >= 0) addIt = true;
 		if (platform === 'ios' && prefix.indexOf('ios') >= 0) addIt = true;
 		if (platform === 'desktop' && prefix.indexOf('desktop') >= 0) addIt = true;
+		if (platform === 'desktop' && (prefix.indexOf('desktop') >= 0 || prefix.indexOf('api') >= 0)) addIt = true;
 		if (platform === 'cli' && prefix.indexOf('cli') >= 0) addIt = true;
 		if (platform === 'clipper' && prefix.indexOf('clipper') >= 0) addIt = true;
 
@@ -77,16 +78,19 @@ function formatCommitMessage(msg) {
 
 	const splitted = msg.split(':');
 
+	let subModule = '';
+
 	const isPlatformPrefix = prefix => {
 		prefix = prefix.split(',').map(p => p.trim().toLowerCase());
 		for (const p of prefix) {
-			if (['android', 'mobile', 'ios', 'desktop', 'cli', 'clipper', 'all'].indexOf(p) >= 0) return true;
+			if (['android', 'mobile', 'ios', 'desktop', 'cli', 'clipper', 'all', 'api'].indexOf(p) >= 0) return true;
 		}
 		return false;
 	};
 
 	if (splitted.length) {
 		const platform = splitted[0].trim().toLowerCase();
+		if (platform === 'api') subModule = 'api';
 		if (isPlatformPrefix(platform)) {
 			splitted.splice(0, 1);
 		}
@@ -108,7 +112,7 @@ function formatCommitMessage(msg) {
 		return 'improved';
 	};
 
-	const parseCommitMessage = (msg) => {
+	const parseCommitMessage = (msg, subModule) => {
 		const parts = msg.split(':');
 
 		if (parts.length === 1) {
@@ -147,15 +151,21 @@ function formatCommitMessage(msg) {
 			type: type,
 			message: message,
 			issueNumber: issueNumber,
+			subModule: subModule,
 		};
 	};
 
-	const commitMessage = parseCommitMessage(output);
+	const commitMessage = parseCommitMessage(output, subModule);
 
-	output = capitalizeFirstLetter(commitMessage.type) + ': ' + capitalizeFirstLetter(commitMessage.message);
+	const messagePieces = [];
+	messagePieces.push(`${capitalizeFirstLetter(commitMessage.type)}`);
+	if (commitMessage.subModule) messagePieces.push(`${capitalizeFirstLetter(commitMessage.subModule)}`);
+	messagePieces.push(`${capitalizeFirstLetter(commitMessage.message)}`);
+
+	output = messagePieces.join(': ');
 	if (commitMessage.issueNumber) {
-		const formattedIssueNum = '(#' + commitMessage.issueNumber + ')';
-		if (output.indexOf(formattedIssueNum) < 0) output += ' ' + formattedIssueNum;
+		const formattedIssueNum = `(#${commitMessage.issueNumber})`;
+		if (output.indexOf(formattedIssueNum) < 0) output += ` ${formattedIssueNum}`;
 	}
 
 	return output;
@@ -179,8 +189,8 @@ function decreaseTagVersion(tag) {
 	const s = tag.split('.');
 	let num = Number(s.pop());
 	num--;
-	if (num < 0) throw new Error('Cannot decrease tag version: ' + tag);
-	s.push('' + num);
+	if (num < 0) throw new Error(`Cannot decrease tag version: ${tag}`);
+	s.push(`${num}`);
 	return s.join('.');
 }
 
@@ -233,13 +243,13 @@ async function main() {
 		} else if (l.indexOf('New') === 0) {
 			changelogNews.push(l);
 		} else {
-			throw new Error('Invalid changelog line: ' + l);
+			throw new Error(`Invalid changelog line: ${l}`);
 		}
 	}
 
 	changelog = [].concat(changelogNews).concat(changelogImproves).concat(changelogFixes);
 
-	const changelogString = changelog.map(l => '- ' + l);
+	const changelogString = changelog.map(l => `- ${l}`);
 	console.info(changelogString.join('\n'));
 }
 

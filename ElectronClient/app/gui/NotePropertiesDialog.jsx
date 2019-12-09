@@ -76,7 +76,7 @@ class NotePropertiesDialog extends React.Component {
 
 		formNote.location = '';
 		if (Number(note.latitude) || Number(note.longitude)) {
-			formNote.location = note.latitude + ', ' + note.longitude;
+			formNote.location = `${note.latitude}, ${note.longitude}`;
 		}
 
 		formNote.revisionsLink = note.id;
@@ -106,7 +106,7 @@ class NotePropertiesDialog extends React.Component {
 
 		this.styles_.controlBox = {
 			marginBottom: '1em',
-			color: 'black', //This will apply for the calendar
+			color: 'black', // This will apply for the calendar
 		};
 
 		this.styles_.button = {
@@ -192,7 +192,7 @@ class NotePropertiesDialog extends React.Component {
 	async saveProperty() {
 		if (!this.state.editedKey) return;
 
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			const newFormNote = Object.assign({}, this.state.formNote);
 
 			if (this.state.editedKey.indexOf('_time') >= 0) {
@@ -216,7 +216,7 @@ class NotePropertiesDialog extends React.Component {
 	}
 
 	async cancelProperty() {
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			this.okButton.current.focus();
 			this.setState(
 				{
@@ -328,7 +328,7 @@ class NotePropertiesDialog extends React.Component {
 		if (editCompHandler) {
 			editComp = (
 				<a href="#" onClick={editCompHandler} style={styles.editPropertyButton}>
-					<i className={'fa ' + editCompIcon} aria-hidden="true" style={{ marginLeft: '.5em' }}></i>
+					<i className={`fa ${editCompIcon}`} aria-hidden="true" style={{ marginLeft: '.5em' }}></i>
 				</a>
 			);
 		}

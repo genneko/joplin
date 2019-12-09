@@ -44,6 +44,7 @@ const appDefaultState = Object.assign({}, defaultState, {
 	windowCommand: null,
 	noteVisiblePanes: ['editor', 'viewer'],
 	sidebarVisibility: true,
+	noteListVisibility: true,
 	windowContentSize: bridge().windowContentSize(),
 	watchedNoteFiles: [],
 	lastEditorScrollPercents: {},
@@ -62,7 +63,7 @@ class Application extends BaseApplication {
 	}
 
 	checkForUpdateLoggerPath() {
-		return Setting.value('profileDir') + '/log-autoupdater.txt';
+		return `${Setting.value('profileDir')}/log-autoupdater.txt`;
 	}
 
 	reducer(state = appDefaultState, action) {
@@ -121,19 +122,31 @@ class Application extends BaseApplication {
 			case 'NOTE_VISIBLE_PANES_TOGGLE':
 
 				{
-					let panes = state.noteVisiblePanes.slice();
-					if (panes.length === 2) {
-						panes = ['editor'];
-					} else if (panes.indexOf('editor') >= 0) {
-						panes = ['viewer'];
-					} else if (panes.indexOf('viewer') >= 0) {
-						panes = ['editor', 'viewer'];
-					} else {
-						panes = ['editor', 'viewer'];
-					}
+					const getNextLayout = (currentLayout) => {
+						currentLayout = panes.length === 2 ? 'both' : currentLayout[0];
+
+						let paneOptions;
+						if (state.settings.layoutButtonSequence === Setting.LAYOUT_EDITOR_VIEWER) {
+							paneOptions = ['editor', 'viewer'];
+						} else if (state.settings.layoutButtonSequence === Setting.LAYOUT_EDITOR_SPLIT) {
+							paneOptions = ['editor', 'both'];
+						} else if (state.settings.layoutButtonSequence === Setting.LAYOUT_VIEWER_SPLIT) {
+							paneOptions = ['viewer', 'both'];
+						} else {
+							paneOptions = ['editor', 'viewer', 'both'];
+						}
+
+						const currentLayoutIndex = paneOptions.indexOf(currentLayout);
+						const nextLayoutIndex = currentLayoutIndex === paneOptions.length - 1 ? 0 : currentLayoutIndex + 1;
+
+						let nextLayout = paneOptions[nextLayoutIndex];
+						return nextLayout === 'both' ? ['editor', 'viewer'] : [nextLayout];
+					};
 
 					newState = Object.assign({}, state);
-					newState.noteVisiblePanes = panes;
+
+					let panes = state.noteVisiblePanes.slice();
+					newState.noteVisiblePanes = getNextLayout(panes);
 				}
 				break;
 
@@ -152,6 +165,16 @@ class Application extends BaseApplication {
 			case 'SIDEBAR_VISIBILITY_SET':
 				newState = Object.assign({}, state);
 				newState.sidebarVisibility = action.visibility;
+				break;
+
+			case 'NOTELIST_VISIBILITY_TOGGLE':
+				newState = Object.assign({}, state);
+				newState.noteListVisibility = !state.noteListVisibility;
+				break;
+
+			case 'NOTELIST_VISIBILITY_SET':
+				newState = Object.assign({}, state);
+				newState.noteListVisibility = action.visibility;
 				break;
 
 			case 'NOTE_FILE_WATCHER_ADD':
@@ -196,14 +219,13 @@ class Application extends BaseApplication {
 				break;
 
 			case 'NOTE_DEVTOOLS_TOGGLE':
-
 				newState = Object.assign({}, state);
 				newState.noteDevToolsVisible = !newState.noteDevToolsVisible;
 				break;
 
 			}
 		} catch (error) {
-			error.message = 'In reducer: ' + error.message + ' Action: ' + JSON.stringify(action);
+			error.message = `In reducer: ${error.message} Action: ${JSON.stringify(action)}`;
 			throw error;
 		}
 
@@ -246,8 +268,17 @@ class Application extends BaseApplication {
 			Setting.setValue('sidebarVisibility', newState.sidebarVisibility);
 		}
 
+		if (['NOTELIST_VISIBILITY_TOGGLE', 'NOTELIST_VISIBILITY_SET'].indexOf(action.type) >= 0) {
+			Setting.setValue('noteListVisibility', newState.noteListVisibility);
+		}
+
 		if (action.type.indexOf('NOTE_SELECT') === 0 || action.type.indexOf('FOLDER_SELECT') === 0) {
 			this.updateMenuItemStates();
+		}
+
+		if (action.type === 'NOTE_DEVTOOLS_TOGGLE') {
+			const menuItem = Menu.getApplicationMenu().getMenuItemById('help:toggleDevTools');
+			menuItem.checked = newState.noteDevToolsVisible;
 		}
 
 		return result;
@@ -272,16 +303,16 @@ class Application extends BaseApplication {
 
 		const sortNoteFolderItems = (type) => {
 			const sortItems = [];
-			const sortOptions = Setting.enumOptions(type + '.sortOrder.field');
+			const sortOptions = Setting.enumOptions(`${type}.sortOrder.field`);
 			for (let field in sortOptions) {
 				if (!sortOptions.hasOwnProperty(field)) continue;
 				sortItems.push({
 					label: sortOptions[field],
 					screens: ['Main'],
 					type: 'checkbox',
-					checked: Setting.value(type + '.sortOrder.field') === field,
+					checked: Setting.value(`${type}.sortOrder.field`) === field,
 					click: () => {
-						Setting.setValue(type + '.sortOrder.field', field);
+						Setting.setValue(`${type}.sortOrder.field`, field);
 						this.refreshMenu();
 					},
 				});
@@ -290,12 +321,12 @@ class Application extends BaseApplication {
 			sortItems.push({ type: 'separator' });
 
 			sortItems.push({
-				label: Setting.settingMetadata(type + '.sortOrder.reverse').label(),
+				label: Setting.settingMetadata(`${type}.sortOrder.reverse`).label(),
 				type: 'checkbox',
-				checked: Setting.value(type + '.sortOrder.reverse'),
+				checked: Setting.value(`${type}.sortOrder.reverse`),
 				screens: ['Main'],
 				click: () => {
-					Setting.setValue(type + '.sortOrder.reverse', !Setting.value(type + '.sortOrder.reverse'));
+					Setting.setValue(`${type}.sortOrder.reverse`, !Setting.value(`${type}.sortOrder.reverse`));
 				},
 			});
 
@@ -333,7 +364,6 @@ class Application extends BaseApplication {
 
 		const importItems = [];
 		const exportItems = [];
-		const preferencesItems = [];
 		const toolsItemsFirst = [];
 		const templateItems = [];
 		const ioService = new InteropService();
@@ -379,12 +409,15 @@ class Application extends BaseApplication {
 								message: _('Importing from "%s" as "%s" format. Please wait...', path, module.format),
 							});
 
-							const importOptions = {};
-							importOptions.path = path;
-							importOptions.format = module.format;
-							importOptions.destinationFolderId = !module.isNoteArchive && moduleSource === 'file' ? selectedFolderId : null;
-							importOptions.onError = (error) => {
-								console.warn(error);
+							const importOptions = {
+								path,
+								format: module.format,
+								modulePath: module.path,
+								onError: console.warn,
+								destinationFolderId:
+								!module.isNoteArchive && moduleSource === 'file'
+									? selectedFolderId
+									: null,
 							};
 
 							const service = new InteropService();
@@ -406,7 +439,7 @@ class Application extends BaseApplication {
 		}
 
 		exportItems.push({
-			label: 'PDF - ' + _('PDF File'),
+			label: `PDF - ${_('PDF File')}`,
 			screens: ['Main'],
 			click: async () => {
 				this.dispatch({
@@ -416,15 +449,15 @@ class Application extends BaseApplication {
 			},
 		});
 
-		/* We need a dummy entry, otherwise the ternary operator to show a
-		 * menu item only on a specific OS does not work. */
+		// We need a dummy entry, otherwise the ternary operator to show a
+		// menu item only on a specific OS does not work.
 		const noItem = {
 			type: 'separator',
 			visible: false,
 		};
 
 		const syncStatusItem = {
-			label: _('Synchronisation status'),
+			label: _('Synchronisation Status'),
 			click: () => {
 				this.dispatch({
 					type: 'NAV_GO',
@@ -468,6 +501,18 @@ class Application extends BaseApplication {
 			},
 		};
 
+		const newSubNotebookItem = {
+			label: _('New sub-notebook'),
+			screens: ['Main'],
+			click: () => {
+				this.dispatch({
+					type: 'WINDOW_COMMAND',
+					name: 'newSubNotebook',
+					activeFolderId: Setting.value('activeFolderId'),
+				});
+			},
+		};
+
 		const printItem = {
 			label: _('Print'),
 			accelerator: 'CommandOrControl+P',
@@ -479,33 +524,6 @@ class Application extends BaseApplication {
 				});
 			},
 		};
-
-		preferencesItems.push({
-			label: _('General Options'),
-			accelerator: 'CommandOrControl+,',
-			click: () => {
-				this.dispatch({
-					type: 'NAV_GO',
-					routeName: 'Config',
-				});
-			},
-		}, {
-			label: _('Encryption options'),
-			click: () => {
-				this.dispatch({
-					type: 'NAV_GO',
-					routeName: 'EncryptionConfig',
-				});
-			},
-		}, {
-			label: _('Web clipper options'),
-			click: () => {
-				this.dispatch({
-					type: 'NAV_GO',
-					routeName: 'ClipperConfig',
-				});
-			},
-		});
 
 		toolsItemsFirst.push(syncStatusItem, {
 			type: 'separator',
@@ -563,7 +581,17 @@ class Application extends BaseApplication {
 			},
 		});
 
-		const toolsItems = toolsItemsFirst.concat(preferencesItems);
+		const toolsItems = toolsItemsFirst.concat([{
+			label: _('Options'),
+			visible: !shim.isMac(),
+			accelerator: 'CommandOrControl+,',
+			click: () => {
+				this.dispatch({
+					type: 'NAV_GO',
+					routeName: 'Config',
+				});
+			},
+		}]);
 
 		function _checkForUpdates(ctx) {
 			bridge().checkForUpdates(false, bridge().window(), ctx.checkForUpdateLoggerPath(), { includePreReleases: Setting.value('autoUpdate.includePreReleases') });
@@ -580,24 +608,27 @@ class Application extends BaseApplication {
 				'',
 				'Copyright © 2016-2019 Laurent Cozic',
 				_('%s %s (%s, %s)', p.name, p.version, Setting.value('env'), process.platform),
+				'',
+				_('Client ID: %s', Setting.value('clientId')),
+				_('Sync Version: %s', Setting.value('syncVersion')),
 			];
 			if (gitInfo) {
-				message.push('\n' + gitInfo);
+				message.push(`\n${gitInfo}`);
 				console.info(gitInfo);
 			}
 			bridge().showInfoMessageBox(message.join('\n'), {
-				icon: bridge().electronApp().buildDir() + '/icons/32x32.png',
+				icon: `${bridge().electronApp().buildDir()}/icons/128x128.png`,
 			});
 		}
 
 		const rootMenuFile = {
-			/* Using a dummy entry for macOS here, because first menu
-			 * becomes 'Joplin' and we need a nenu called 'File' later. */
+			// Using a dummy entry for macOS here, because first menu
+			// becomes 'Joplin' and we need a nenu called 'File' later.
 			label: shim.isMac() ? '&JoplinMainMenu' : _('&File'),
-			/* `&` before one of the char in the label name mean, that
-			 * <Alt + F> will open this menu. It's needed becase electron
-			 * opens the first menu on Alt press if no hotkey assigned.
-			 * Issue: https://github.com/laurent22/joplin/issues/934 */
+			// `&` before one of the char in the label name mean, that
+			// <Alt + F> will open this menu. It's needed becase electron
+			// opens the first menu on Alt press if no hotkey assigned.
+			// Issue: https://github.com/laurent22/joplin/issues/934
 			submenu: [{
 				label: _('About Joplin'),
 				visible: shim.isMac() ? true : false,
@@ -608,7 +639,13 @@ class Application extends BaseApplication {
 			}, {
 				label: _('Preferences...'),
 				visible: shim.isMac() ? true : false,
-				submenu: preferencesItems,
+				accelerator: 'CommandOrControl+,',
+				click: () => {
+					this.dispatch({
+						type: 'NAV_GO',
+						routeName: 'Config',
+					});
+				},
 			}, {
 				label: _('Check for updates...'),
 				visible: shim.isMac() ? true : false,
@@ -619,7 +656,8 @@ class Application extends BaseApplication {
 			},
 			shim.isMac() ? noItem : newNoteItem,
 			shim.isMac() ? noItem : newTodoItem,
-			shim.isMac() ? noItem : newNotebookItem, {
+			shim.isMac() ? noItem : newNotebookItem,
+			shim.isMac() ? noItem : newSubNotebookItem, {
 				type: 'separator',
 				visible: shim.isMac() ? false : true,
 			}, {
@@ -674,7 +712,8 @@ class Application extends BaseApplication {
 			submenu: [
 				newNoteItem,
 				newTodoItem,
-				newNotebookItem, {
+				newNotebookItem,
+				newSubNotebookItem, {
 					label: _('Close Window'),
 					platforms: ['darwin'],
 					accelerator: 'Command+W',
@@ -698,6 +737,17 @@ class Application extends BaseApplication {
 				printItem,
 			],
 		};
+
+		const layoutButtonSequenceOptions = Object.entries(Setting.enumOptions('layoutButtonSequence')).map(([layoutKey, layout]) => ({
+			label: layout,
+			screens: ['Main'],
+			type: 'checkbox',
+			checked: Setting.value('layoutButtonSequence') == layoutKey,
+			click: () => {
+				Setting.setValue('layoutButtonSequence', layoutKey);
+				this.refreshMenu();
+			},
+		}));
 
 		const rootMenus = {
 			edit: {
@@ -853,6 +903,22 @@ class Application extends BaseApplication {
 						});
 					},
 				}, {
+					type: 'separator',
+					screens: ['Main'],
+				}, {
+					label: _('Layout button sequence'),
+					screens: ['Main'],
+					submenu: layoutButtonSequenceOptions,
+				}, {
+					label: _('Toggle note list'),
+					screens: ['Main'],
+					click: () => {
+						this.dispatch({
+							type: 'WINDOW_COMMAND',
+							name: 'toggleNoteList',
+						});
+					},
+				}, {
 					label: _('Toggle editor layout'),
 					screens: ['Main'],
 					accelerator: 'CommandOrControl+L',
@@ -873,6 +939,14 @@ class Application extends BaseApplication {
 					label: Setting.settingMetadata('folders.sortOrder.field').label(),
 					screens: ['Main'],
 					submenu: sortFolderItems,
+				}, {
+					label: Setting.settingMetadata('showNoteCounts').label(),
+					type: 'checkbox',
+					checked: Setting.value('showNoteCounts'),
+					screens: ['Main'],
+					click: () => {
+						Setting.setValue('showNoteCounts', !Setting.value('showNoteCounts'));
+					},
 				}, {
 					label: Setting.settingMetadata('uncompletedTodosOnTop').label(),
 					type: 'checkbox',
@@ -907,13 +981,13 @@ class Application extends BaseApplication {
 				submenu: [{
 					label: _('Website and documentation'),
 					accelerator: 'F1',
-					click () { bridge().openExternal('https://joplinapp.org'); },
+					click() { bridge().openExternal('https://joplinapp.org'); },
 				}, {
 					label: _('Joplin Forum'),
-					click () { bridge().openExternal('https://discourse.joplinapp.org'); },
+					click() { bridge().openExternal('https://discourse.joplinapp.org'); },
 				}, {
 					label: _('Make a donation'),
-					click () { bridge().openExternal('https://joplinapp.org/donate/'); },
+					click() { bridge().openExternal('https://joplinapp.org/donate/'); },
 				}, {
 					label: _('Check for updates...'),
 					visible: shim.isMac() ? false : true,
@@ -922,6 +996,8 @@ class Application extends BaseApplication {
 					type: 'separator',
 					screens: ['Main'],
 				}, {
+					id: 'help:toggleDevTools',
+					type: 'checkbox',
 					label: _('Toggle development tools'),
 					visible: true,
 					click: () => {
@@ -1036,7 +1112,7 @@ class Application extends BaseApplication {
 		const note = selectedNoteIds.length === 1 ? await Note.load(selectedNoteIds[0]) : null;
 
 		for (const itemId of ['copy', 'paste', 'cut', 'selectAll', 'bold', 'italic', 'link', 'code', 'insertDateTime', 'commandStartExternalEditing', 'setTags', 'showLocalSearch']) {
-			const menuItem = Menu.getApplicationMenu().getMenuItemById('edit:' + itemId);
+			const menuItem = Menu.getApplicationMenu().getMenuItemById(`edit:${itemId}`);
 			if (!menuItem) continue;
 			menuItem.enabled = !!note && note.markup_language === Note.MARKUP_LANGUAGE_MARKDOWN;
 		}
@@ -1063,14 +1139,14 @@ class Application extends BaseApplication {
 		const fontFamilies = [];
 		let value = '';
 		if ((value = Setting.value('style.editor.fontFamily')) !== null && value.length > 0) {
-			value.split(',').forEach(family => fontFamilies.push('"' + family.trim().replace(/['"]/g, '') + '"'));
+			value.split(',').forEach(family => fontFamilies.push(`"${family.trim().replace(/['"]/g, '')}"`));
 		}
 		fontFamilies.push('monospace');
 
 		// The '*' and '!important' parts are necessary to make sure Russian text is displayed properly
 		// https://github.com/laurent22/joplin/issues/155
 
-		const css = '.ace_editor * { font-family: ' + fontFamilies.join(', ') + ' !important; }';
+		const css = `.ace_editor * { font-family: ${fontFamilies.join(', ')} !important; }`;
 		const styleTag = document.createElement('style');
 		styleTag.type = 'text/css';
 		styleTag.appendChild(document.createTextNode(css));
@@ -1085,7 +1161,7 @@ class Application extends BaseApplication {
 
 			} catch (error) {
 				let msg = error.message ? error.message : '';
-				msg = 'Could not load custom css from ' + filePath + '\n' + msg;
+				msg = `Could not load custom css from ${filePath}\n${msg}`;
 				error.message = msg;
 				throw error;
 			}
@@ -1151,7 +1227,7 @@ class Application extends BaseApplication {
 			ids: Setting.value('collapsedFolderIds'),
 		});
 
-		const cssString = await this.loadCustomCss(Setting.value('profileDir') + '/userstyle.css');
+		const cssString = await this.loadCustomCss(`${Setting.value('profileDir')}/userstyle.css`);
 
 		this.store().dispatch({
 			type: 'LOAD_CUSTOM_CSS',
@@ -1187,7 +1263,9 @@ class Application extends BaseApplication {
 		}, 1000 * 60 * 60);
 
 		if (Setting.value('startMinimized') && Setting.value('showTrayIcon')) {
-			bridge().window().hide();
+			// Keep it hidden
+		} else {
+			bridge().window().show();
 		}
 
 		ResourceService.runInBackground();
@@ -1205,7 +1283,7 @@ class Application extends BaseApplication {
 		}
 
 		const clipperLogger = new Logger();
-		clipperLogger.addTarget('file', { path: Setting.value('profileDir') + '/log-clipper.txt' });
+		clipperLogger.addTarget('file', { path: `${Setting.value('profileDir')}/log-clipper.txt` });
 		clipperLogger.addTarget('console');
 
 		ClipperServer.instance().setLogger(clipperLogger);

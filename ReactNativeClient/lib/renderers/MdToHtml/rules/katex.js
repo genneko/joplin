@@ -7,6 +7,9 @@ const Setting = require('lib/models/Setting');
 var katex = require('katex');
 const katexCss = require('lib/csstojs/katex.css.js');
 const md5 = require('md5');
+const mhchemModule = require('./katex_mhchem.js');
+
+katex = mhchemModule(katex);
 
 // const style = `
 // 	/*
@@ -185,7 +188,7 @@ function math_block(state, start, end, silent) {
 
 	token = state.push('math_block', 'math', 0);
 	token.block = true;
-	token.content = (firstLine && firstLine.trim() ? firstLine + '\n' : '') + state.getLines(start + 1, next, state.tShift[start], true) + (lastLine && lastLine.trim() ? lastLine : '');
+	token.content = (firstLine && firstLine.trim() ? `${firstLine}\n` : '') + state.getLines(start + 1, next, state.tShift[start], true) + (lastLine && lastLine.trim() ? lastLine : '');
 	token.map = [start, state.line];
 	token.markup = '$$';
 	return true;
@@ -194,7 +197,7 @@ function math_block(state, start, end, silent) {
 let assetsLoaded_ = false;
 let cache_ = {};
 
-module.exports = function(context, ruleOptions) {
+module.exports = function(context) {
 	// Keep macros that persist across Katex blocks to allow defining a macro
 	// in one block and re-using it later in other blocks.
 	// https://github.com/laurent22/joplin/issues/1105
@@ -213,11 +216,11 @@ module.exports = function(context, ruleOptions) {
 			if (shim.isReactNative()) {
 				// Fonts must go under the resourceDir directory because this is the baseUrl of NoteBodyViewer
 				const baseDir = Setting.value('resourceDir');
-				await shim.fsDriver().mkdir(baseDir + '/fonts');
+				await shim.fsDriver().mkdir(`${baseDir}/fonts`);
 
-				await shim.fetchBlob('https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-beta1/fonts/KaTeX_Main-Regular.woff2', { overwrite: false, path: baseDir + '/fonts/KaTeX_Main-Regular.woff2' });
-				await shim.fetchBlob('https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-beta1/fonts/KaTeX_Math-Italic.woff2', { overwrite: false, path: baseDir + '/fonts/KaTeX_Math-Italic.woff2' });
-				await shim.fetchBlob('https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-beta1/fonts/KaTeX_Size1-Regular.woff2', { overwrite: false, path: baseDir + '/fonts/KaTeX_Size1-Regular.woff2' });
+				await shim.fetchBlob('https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-beta1/fonts/KaTeX_Main-Regular.woff2', { overwrite: false, path: `${baseDir}/fonts/KaTeX_Main-Regular.woff2` });
+				await shim.fetchBlob('https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-beta1/fonts/KaTeX_Math-Italic.woff2', { overwrite: false, path: `${baseDir}/fonts/KaTeX_Math-Italic.woff2` });
+				await shim.fetchBlob('https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-beta1/fonts/KaTeX_Size1-Regular.woff2', { overwrite: false, path: `${baseDir}/fonts/KaTeX_Size1-Regular.woff2` });
 			}
 
 			// eslint-disable-next-line require-atomic-updates
@@ -268,7 +271,7 @@ module.exports = function(context, ruleOptions) {
 		var katexBlock = function(latex) {
 			options.displayMode = true;
 			try {
-				return '<p>' + renderToStringWithCache(latex, options) + '</p>';
+				return `<p>${renderToStringWithCache(latex, options)}</p>`;
 			} catch (error) {
 				if (options.throwOnError) {
 					console.log(error);
@@ -279,7 +282,7 @@ module.exports = function(context, ruleOptions) {
 
 		var blockRenderer = function(tokens, idx) {
 			addContextAssets();
-			return katexBlock(tokens[idx].content) + '\n';
+			return `${katexBlock(tokens[idx].content)}\n`;
 		};
 
 		md.inline.ruler.after('escape', 'math_inline', math_inline);
