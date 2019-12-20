@@ -7,6 +7,7 @@ const Folder = require('lib/models/Folder.js');
 const Tag = require('lib/models/Tag.js');
 const { time } = require('lib/time-utils.js');
 const Setting = require('lib/models/Setting.js');
+const InteropServiceHelper = require('../InteropServiceHelper.js');
 const { IconButton } = require('./IconButton.min.js');
 const { urlDecode, substrWithEllipsis } = require('lib/string-utils');
 const Toolbar = require('./Toolbar.min.js');
@@ -406,7 +407,7 @@ class NoteTextComponent extends React.Component {
 		return this.markupToHtml_;
 	}
 
-	async componentWillMount() {
+	async UNSAFE_componentWillMount() {
 		let note = null;
 		let noteTags = [];
 		if (this.props.newNote) {
@@ -454,19 +455,6 @@ class NoteTextComponent extends React.Component {
 	}
 
 	componentDidUpdate() {
-		// if (Setting.value('env') === 'dev' && this.webviewRef()) {
-		// 	this.webviewRef().openDevTools();
-		// 	return;
-		// }
-
-		if (this.webviewRef() && this.props.noteDevToolsVisible !== this.webviewRef().isDevToolsOpened()) {
-			if (this.props.noteDevToolsVisible) {
-				this.webviewRef().openDevTools();
-			} else {
-				this.webviewRef().closeDevTools();
-			}
-		}
-
 		const currentNoteId = this.state.note ? this.state.note.id : null;
 		if (this.lastComponentUpdateNoteId_ !== currentNoteId && this.editor_) {
 			this.editor_.editor.getSession().setMode(new CustomMdMode());
@@ -685,7 +673,7 @@ class NoteTextComponent extends React.Component {
 		defer();
 	}
 
-	async componentWillReceiveProps(nextProps) {
+	async UNSAFE_componentWillReceiveProps(nextProps) {
 		if (this.props.newNote !== nextProps.newNote && nextProps.newNote) {
 			await this.scheduleReloadNote(nextProps);
 		} else if ('noteId' in nextProps && nextProps.noteId !== this.props.noteId) {
@@ -942,6 +930,8 @@ class NoteTextComponent extends React.Component {
 	}
 
 	webview_domReady() {
+
+		console.info('webview_domReady', this.webviewRef_.current);
 		if (!this.webviewRef_.current) return;
 
 		this.setState({
@@ -1224,11 +1214,6 @@ class NoteTextComponent extends React.Component {
 		});
 	}
 
-	// helper function to style the title for printing
-	title_(title) {
-		return `<div style="font-size: 2em; font-weight: bold; border-bottom: 1px solid rgb(230,230,230); padding-bottom: .3em;">${title}</div><br>`;
-	}
-
 	async printTo_(target, options) {
 		if (this.props.selectedNoteIds.length !== 1 || !this.webviewRef_.current) {
 			throw new Error(_('Only one note can be printed or exported to PDF at a time.'));
@@ -1240,36 +1225,50 @@ class NoteTextComponent extends React.Component {
 		}
 
 		this.isPrinting_ = true;
-		const previousBody = this.state.note.body;
-		const tempBody = `${this.title_(this.state.note.title)}\n\n${previousBody}`;
 
-		const previousTheme = Setting.value('theme');
-		Setting.setValue('theme', Setting.THEME_LIGHT);
-		this.lastSetHtml_ = '';
-		await this.updateHtml(this.state.note.markup_language, tempBody, { useCustomCss: true });
-		this.forceUpdate();
+		// const previousBody = this.state.note.body;
+		// const tempBody = `${this.state.note.title}\n\n${previousBody}`;
 
-		const restoreSettings = async () => {
-			Setting.setValue('theme', previousTheme);
-			this.lastSetHtml_ = '';
-			await this.updateHtml(this.state.note.markup_language, previousBody);
-			this.forceUpdate();
-		};
+		// const previousTheme = Setting.value('theme');
+		// Setting.setValue('theme', Setting.THEME_LIGHT);
+		// this.lastSetHtml_ = '';
+		// await this.updateHtml(this.state.note.markup_language, tempBody, { useCustomCss: true });
+		// this.forceUpdate();
 
-		setTimeout(() => {
+		// const restoreSettings = async () => {
+		// 	Setting.setValue('theme', previousTheme);
+		// 	this.lastSetHtml_ = '';
+		// 	await this.updateHtml(this.state.note.markup_language, previousBody);
+		// 	this.forceUpdate();
+		// };
+
+		// Need to save because the interop service reloads the note from the database
+		await this.saveIfNeeded();
+
+		setTimeout(async () => {
 			if (target === 'pdf') {
-				this.webviewRef_.current.wrappedInstance.printToPDF({ printBackground: true, pageSize: Setting.value('export.pdfPageSize'), landscape: Setting.value('export.pdfPageOrientation') === 'landscape' }, (error, data) => {
-					restoreSettings();
-
-					if (error) {
-						bridge().showErrorMessageBox(error.message);
-					} else {
-						shim.fsDriver().writeFile(options.path, data, 'buffer');
-					}
-				});
+				try {
+					const pdfData = await InteropServiceHelper.exportNoteToPdf(this.state.note.id, {
+						printBackground: true,
+						pageSize: Setting.value('export.pdfPageSize'),
+						landscape: Setting.value('export.pdfPageOrientation') === 'landscape',
+					});
+					await shim.fsDriver().writeFile(options.path, pdfData, 'buffer');
+				} catch (error) {
+					console.error(error);
+					bridge().showErrorMessageBox(error.message);
+				}
 			} else if (target === 'printer') {
-				this.webviewRef_.current.wrappedInstance.print({ printBackground: true });
-				restoreSettings();
+				try {
+					await InteropServiceHelper.printNote(this.state.note.id, {
+						printBackground: true,
+					});
+				} catch (error) {
+					console.error(error);
+					bridge().showErrorMessageBox(error.message);
+				}
+
+				// restoreSettings();
 			}
 			this.isPrinting_ = false;
 		}, 100);
