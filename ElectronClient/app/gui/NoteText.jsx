@@ -7,6 +7,7 @@ const Folder = require('lib/models/Folder.js');
 const Tag = require('lib/models/Tag.js');
 const { time } = require('lib/time-utils.js');
 const Setting = require('lib/models/Setting.js');
+const InteropServiceHelper = require('../InteropServiceHelper.js');
 const { IconButton } = require('./IconButton.min.js');
 const { urlDecode, substrWithEllipsis } = require('lib/string-utils');
 const Toolbar = require('./Toolbar.min.js');
@@ -14,7 +15,7 @@ const TagList = require('./TagList.min.js');
 const { connect } = require('react-redux');
 const { _ } = require('lib/locale.js');
 const { reg } = require('lib/registry.js');
-const MarkupToHtml = require('lib/renderers/MarkupToHtml');
+const { MarkupToHtml, assetsToHeaders } = require('joplin-renderer');
 const shared = require('lib/components/shared/note-screen-shared.js');
 const { bridge } = require('electron').remote.require('./bridge');
 const { themeStyle } = require('../theme.js');
@@ -40,6 +41,7 @@ const SearchEngine = require('lib/services/SearchEngine');
 const NoteTextViewer = require('./NoteTextViewer.min');
 const NoteRevisionViewer = require('./NoteRevisionViewer.min');
 const TemplateUtils = require('lib/TemplateUtils');
+const markupLanguageUtils = require('lib/markupLanguageUtils');
 
 require('brace/mode/markdown');
 // https://ace.c9.io/build/kitchen-sink.html
@@ -110,6 +112,7 @@ class NoteTextComponent extends React.Component {
 			newAndNoTitleChangeNoteId: null,
 			bodyHtml: '',
 			lastRenderCssFiles: [],
+			lastRenderPluginAssets: [],
 			lastKeys: [],
 			showLocalSearch: false,
 			localSearch: Object.assign({}, this.localSearchDefaultState),
@@ -400,13 +403,15 @@ class NoteTextComponent extends React.Component {
 
 	markupToHtml() {
 		if (this.markupToHtml_) return this.markupToHtml_;
-		this.markupToHtml_ = new MarkupToHtml({
+
+		this.markupToHtml_ = markupLanguageUtils.newMarkupToHtml({
 			resourceBaseUrl: `file://${Setting.value('resourceDir')}/`,
 		});
+
 		return this.markupToHtml_;
 	}
 
-	async componentWillMount() {
+	async UNSAFE_componentWillMount() {
 		let note = null;
 		let noteTags = [];
 		if (this.props.newNote) {
@@ -454,19 +459,6 @@ class NoteTextComponent extends React.Component {
 	}
 
 	componentDidUpdate() {
-		// if (Setting.value('env') === 'dev' && this.webviewRef()) {
-		// 	this.webviewRef().openDevTools();
-		// 	return;
-		// }
-
-		if (this.webviewRef() && this.props.noteDevToolsVisible !== this.webviewRef().isDevToolsOpened()) {
-			if (this.props.noteDevToolsVisible) {
-				this.webviewRef().openDevTools();
-			} else {
-				this.webviewRef().closeDevTools();
-			}
-		}
-
 		const currentNoteId = this.state.note ? this.state.note.id : null;
 		if (this.lastComponentUpdateNoteId_ !== currentNoteId && this.editor_) {
 			this.editor_.editor.getSession().setMode(new CustomMdMode());
@@ -685,7 +677,7 @@ class NoteTextComponent extends React.Component {
 		defer();
 	}
 
-	async componentWillReceiveProps(nextProps) {
+	async UNSAFE_componentWillReceiveProps(nextProps) {
 		if (this.props.newNote !== nextProps.newNote && nextProps.newNote) {
 			await this.scheduleReloadNote(nextProps);
 		} else if ('noteId' in nextProps && nextProps.noteId !== this.props.noteId) {
@@ -855,7 +847,11 @@ class NoteTextComponent extends React.Component {
 			if (item.type_ === BaseModel.TYPE_RESOURCE) {
 				const localState = await Resource.localState(item);
 				if (localState.fetch_status !== Resource.FETCH_STATUS_DONE || !!item.encryption_blob_encrypted) {
-					bridge().showErrorMessageBox(_('This attachment is not downloaded or not decrypted yet.'));
+					if (localState.fetch_status === Resource.FETCH_STATUS_ERROR) {
+						bridge().showErrorMessageBox(`${_('There was an error downloading this attachment:')}\n\n${localState.fetch_error}`);
+					} else {
+						bridge().showErrorMessageBox(_('This attachment is not downloaded or not decrypted yet'));
+					}
 					return;
 				}
 				const filePath = Resource.fullPath(item);
@@ -942,6 +938,8 @@ class NoteTextComponent extends React.Component {
 	}
 
 	webview_domReady() {
+
+		console.info('webview_domReady', this.webviewRef_.current);
 		if (!this.webviewRef_.current) return;
 
 		this.setState({
@@ -1054,10 +1052,10 @@ class NoteTextComponent extends React.Component {
 
 		if (bodyToRender === null) {
 			bodyToRender = this.state.note && this.state.note.body ? this.state.note.body : '';
-			markupLanguage = this.state.note ? this.state.note.markup_language : Note.MARKUP_LANGUAGE_MARKDOWN;
+			markupLanguage = this.state.note ? this.state.note.markup_language : MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN;
 		}
 
-		if (!markupLanguage) markupLanguage = Note.MARKUP_LANGUAGE_MARKDOWN;
+		if (!markupLanguage) markupLanguage = MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN;
 
 		const resources = await shared.attachedResources(bodyToRender);
 
@@ -1078,11 +1076,11 @@ class NoteTextComponent extends React.Component {
 			bodyToRender = `<i>${_('This note has no content. Click on "%s" to toggle the editor and edit the note.', _('Layout'))}</i>`;
 		}
 
-		const result = this.markupToHtml().render(markupLanguage, bodyToRender, theme, mdOptions);
+		const result = await this.markupToHtml().render(markupLanguage, bodyToRender, theme, mdOptions);
 
 		this.setState({
 			bodyHtml: result.html,
-			lastRenderCssFiles: result.cssFiles,
+			lastRenderPluginAssets: result.pluginAssets,
 		});
 	}
 
@@ -1224,11 +1222,6 @@ class NoteTextComponent extends React.Component {
 		});
 	}
 
-	// helper function to style the title for printing
-	title_(title) {
-		return `<div style="font-size: 2em; font-weight: bold; border-bottom: 1px solid rgb(230,230,230); padding-bottom: .3em;">${title}</div><br>`;
-	}
-
 	async printTo_(target, options) {
 		if (this.props.selectedNoteIds.length !== 1 || !this.webviewRef_.current) {
 			throw new Error(_('Only one note can be printed or exported to PDF at a time.'));
@@ -1240,36 +1233,50 @@ class NoteTextComponent extends React.Component {
 		}
 
 		this.isPrinting_ = true;
-		const previousBody = this.state.note.body;
-		const tempBody = `${this.title_(this.state.note.title)}\n\n${previousBody}`;
 
-		const previousTheme = Setting.value('theme');
-		Setting.setValue('theme', Setting.THEME_LIGHT);
-		this.lastSetHtml_ = '';
-		await this.updateHtml(this.state.note.markup_language, tempBody, { useCustomCss: true });
-		this.forceUpdate();
+		// const previousBody = this.state.note.body;
+		// const tempBody = `${this.state.note.title}\n\n${previousBody}`;
 
-		const restoreSettings = async () => {
-			Setting.setValue('theme', previousTheme);
-			this.lastSetHtml_ = '';
-			await this.updateHtml(this.state.note.markup_language, previousBody);
-			this.forceUpdate();
-		};
+		// const previousTheme = Setting.value('theme');
+		// Setting.setValue('theme', Setting.THEME_LIGHT);
+		// this.lastSetHtml_ = '';
+		// await this.updateHtml(this.state.note.markup_language, tempBody, { useCustomCss: true });
+		// this.forceUpdate();
 
-		setTimeout(() => {
+		// const restoreSettings = async () => {
+		// 	Setting.setValue('theme', previousTheme);
+		// 	this.lastSetHtml_ = '';
+		// 	await this.updateHtml(this.state.note.markup_language, previousBody);
+		// 	this.forceUpdate();
+		// };
+
+		// Need to save because the interop service reloads the note from the database
+		await this.saveIfNeeded();
+
+		setTimeout(async () => {
 			if (target === 'pdf') {
-				this.webviewRef_.current.wrappedInstance.printToPDF({ printBackground: true, pageSize: Setting.value('export.pdfPageSize'), landscape: Setting.value('export.pdfPageOrientation') === 'landscape' }, (error, data) => {
-					restoreSettings();
-
-					if (error) {
-						bridge().showErrorMessageBox(error.message);
-					} else {
-						shim.fsDriver().writeFile(options.path, data, 'buffer');
-					}
-				});
+				try {
+					const pdfData = await InteropServiceHelper.exportNoteToPdf(this.state.note.id, {
+						printBackground: true,
+						pageSize: Setting.value('export.pdfPageSize'),
+						landscape: Setting.value('export.pdfPageOrientation') === 'landscape',
+					});
+					await shim.fsDriver().writeFile(options.path, pdfData, 'buffer');
+				} catch (error) {
+					console.error(error);
+					bridge().showErrorMessageBox(error.message);
+				}
 			} else if (target === 'printer') {
-				this.webviewRef_.current.wrappedInstance.print({ printBackground: true });
-				restoreSettings();
+				try {
+					await InteropServiceHelper.printNote(this.state.note.id, {
+						printBackground: true,
+					});
+				} catch (error) {
+					console.error(error);
+					bridge().showErrorMessageBox(error.message);
+				}
+
+				// restoreSettings();
 			}
 			this.isPrinting_ = false;
 		}, 100);
@@ -1627,7 +1634,7 @@ class NoteTextComponent extends React.Component {
 			});
 		}
 
-		if (note.markup_language === Note.MARKUP_LANGUAGE_MARKDOWN && editorIsVisible) {
+		if (note.markup_language === MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN && editorIsVisible) {
 			toolbarItems.push({
 				tooltip: _('Bold'),
 				iconName: 'fa-bold',
@@ -1855,7 +1862,7 @@ class NoteTextComponent extends React.Component {
 		const style = this.props.style;
 		const note = this.state.note;
 		const body = note && note.body ? note.body : '';
-		const markupLanguage = note ? note.markup_language : Note.MARKUP_LANGUAGE_MARKDOWN;
+		const markupLanguage = note ? note.markup_language : MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN;
 		const theme = themeStyle(this.props.theme);
 		const visiblePanes = this.props.visiblePanes || ['editor', 'viewer'];
 		const isTodo = note && !!note.is_todo;
@@ -1996,7 +2003,8 @@ class NoteTextComponent extends React.Component {
 			const htmlHasChanged = this.lastSetHtml_ !== html;
 			if (htmlHasChanged) {
 				let options = {
-					cssFiles: this.state.lastRenderCssFiles,
+					pluginAssets: this.state.lastRenderPluginAssets,
+					pluginAssetsHeadersHtml: assetsToHeaders(this.state.lastRenderPluginAssets),
 					downloadResources: Setting.value('sync.resourceDownloadMode'),
 				};
 				this.webviewRef_.current.wrappedInstance.send('setHtml', html, options);
