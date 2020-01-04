@@ -376,13 +376,15 @@ class MainScreenComponent extends React.Component {
 			backgroundColor: theme.warningBackgroundColor,
 		};
 
+		const rowHeight = height - theme.headerHeight - (messageBoxVisible ? this.styles_.messageBox.height : 0);
+
 		this.styles_.verticalResizer = {
 			width: 5,
-			height: height,
+			// HACK: For unknown reasons, the resizers are just a little bit taller than the other elements,
+			// making the whole window scroll vertically. So we remove 10 extra pixels here.
+			height: rowHeight - 10,
 			display: 'inline-block',
 		};
-
-		const rowHeight = height - theme.headerHeight - (messageBoxVisible ? this.styles_.messageBox.height : 0);
 
 		this.styles_.sideBar = {
 			width: sidebarWidth - this.styles_.verticalResizer.width,

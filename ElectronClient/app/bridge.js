@@ -14,6 +14,10 @@ class Bridge {
 		return this.electronWrapper_;
 	}
 
+	env() {
+		return this.electronWrapper_.env();
+	}
+
 	processArgv() {
 		return process.argv;
 	}
@@ -137,6 +141,10 @@ class Bridge {
 
 	buildDir() {
 		return this.electronApp().buildDir();
+	}
+
+	screen() {
+		return require('electron').screen;
 	}
 
 }
