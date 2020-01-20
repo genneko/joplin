@@ -4,7 +4,6 @@ const BaseItem = require('lib/models/BaseItem.js');
 const BaseModel = require('lib/BaseModel.js');
 const Resource = require('lib/models/Resource.js');
 const Folder = require('lib/models/Folder.js');
-const Tag = require('lib/models/Tag.js');
 const { time } = require('lib/time-utils.js');
 const Setting = require('lib/models/Setting.js');
 const InteropServiceHelper = require('../InteropServiceHelper.js');
@@ -81,7 +80,7 @@ class CustomMdMode extends ace.acequire('ace/mode/markdown').Mode {
 	}
 }
 
-const NOTE_TAG_BAR_FEATURE_ENABLED = false;
+const NOTE_TAG_BAR_FEATURE_ENABLED = true;
 
 class NoteTextComponent extends React.Component {
 	constructor() {
@@ -539,7 +538,6 @@ class NoteTextComponent extends React.Component {
 		let note = null;
 		let loadingNewNote = true;
 		let parentFolder = null;
-		let noteTags = [];
 		let scrollPercent = 0;
 
 		if (props.newNote) {
@@ -554,7 +552,6 @@ class NoteTextComponent extends React.Component {
 			if (!scrollPercent) scrollPercent = 0;
 
 			loadingNewNote = stateNoteId !== noteId;
-			noteTags = await Tag.tagsByNoteId(noteId);
 			this.lastLoadedNoteId_ = noteId;
 			note = noteId ? await Note.load(noteId) : null;
 			if (noteId !== this.lastLoadedNoteId_) return defer(); // Race condition - current note was changed while this one was loading
@@ -633,7 +630,6 @@ class NoteTextComponent extends React.Component {
 			webviewReady: webviewReady,
 			folder: parentFolder,
 			lastKeys: [],
-			noteTags: noteTags,
 			showRevisions: false,
 		};
 
@@ -653,22 +649,6 @@ class NoteTextComponent extends React.Component {
 		this.lastSetMarkersOptions_ = {};
 
 		this.setState(newState);
-
-		// https://github.com/laurent22/joplin/pull/893#discussion_r228025210
-		// @Abijeet: Had to add this check. If not, was going into an infinite loop where state was getting updated repeatedly.
-		// Since I'm updating the state, the componentWillReceiveProps was getting triggered again, where nextProps.newNote was still true, causing reloadNote to trigger again and again.
-		// Notes from Laurent: The selected note tags are part of the global Redux state because they need to be updated whenever tags are changed or deleted
-		// anywhere in the app. Thus it's not possible simple to load the tags here (as we won't have a way to know if they're updated afterwards).
-		// Perhaps a better way would be to move that code in the middleware, check for TAGS_DELETE, TAGS_UPDATE, etc. actions and update the
-		// selected note tags accordingly.
-		if (NOTE_TAG_BAR_FEATURE_ENABLED) {
-			if (!this.props.newNote) {
-				this.props.dispatch({
-					type: 'SET_NOTE_TAGS',
-					items: noteTags,
-				});
-			}
-		}
 
 		// if (newState.note) await shared.refreshAttachedResources(this, newState.note.body);
 
@@ -709,16 +689,36 @@ class NoteTextComponent extends React.Component {
 		if (newTags.length !== oldTags.length) return true;
 
 		for (let i = 0; i < newTags.length; ++i) {
+			let found = false;
 			let currNewTag = newTags[i];
 			for (let j = 0; j < oldTags.length; ++j) {
 				let currOldTag = oldTags[j];
-				if (currOldTag.id === currNewTag.id && currOldTag.updated_time !== currNewTag.updated_time) {
-					return true;
+				if (currOldTag.id === currNewTag.id) {
+					found = true;
+					if (currOldTag.updated_time !== currNewTag.updated_time) {
+						return true;
+					}
+					break;
 				}
+			}
+			if (!found) {
+				return true;
 			}
 		}
 
 		return false;
+	}
+
+	canDisplayTagBar() {
+		if (!NOTE_TAG_BAR_FEATURE_ENABLED) {
+			return false;
+		}
+
+		if (!this.state.noteTags || this.state.noteTags.length === 0) {
+			return false;
+		}
+
+		return true;
 	}
 
 	async noteRevisionViewer_onBack() {
@@ -1111,9 +1111,11 @@ class NoteTextComponent extends React.Component {
 		if (!command) return;
 
 		let fn = null;
+		let args = null;
 
 		if (command.name === 'exportPdf') {
 			fn = this.commandSavePdf;
+			args = {noteId: command.noteId};
 		} else if (command.name === 'print') {
 			fn = this.commandPrint;
 		}
@@ -1129,6 +1131,8 @@ class NoteTextComponent extends React.Component {
 				fn = this.commandDateTime;
 			} else if (command.name === 'commandStartExternalEditing') {
 				fn = this.commandStartExternalEditing;
+			} else if (command.name === 'commandStopExternalEditing') {
+				fn = this.commandStopExternalEditing;
 			} else if (command.name === 'showLocalSearch') {
 				fn = this.commandShowLocalSearch;
 			} else if (command.name === 'textCode') {
@@ -1163,7 +1167,7 @@ class NoteTextComponent extends React.Component {
 
 		requestAnimationFrame(() => {
 			fn = fn.bind(this);
-			fn();
+			fn(args);
 		});
 	}
 
@@ -1256,7 +1260,7 @@ class NoteTextComponent extends React.Component {
 		setTimeout(async () => {
 			if (target === 'pdf') {
 				try {
-					const pdfData = await InteropServiceHelper.exportNoteToPdf(this.state.note.id, {
+					const pdfData = await InteropServiceHelper.exportNoteToPdf(options.noteId, {
 						printBackground: true,
 						pageSize: Setting.value('export.pdfPageSize'),
 						landscape: Setting.value('export.pdfPageOrientation') === 'landscape',
@@ -1268,7 +1272,7 @@ class NoteTextComponent extends React.Component {
 				}
 			} else if (target === 'printer') {
 				try {
-					await InteropServiceHelper.printNote(this.state.note.id, {
+					await InteropServiceHelper.printNote(options.noteId, {
 						printBackground: true,
 					});
 				} catch (error) {
@@ -1282,18 +1286,20 @@ class NoteTextComponent extends React.Component {
 		}, 100);
 	}
 
-	async commandSavePdf() {
+	async commandSavePdf(args) {
 		try {
-			if (!this.state.note) throw new Error(_('Only one note can be printed or exported to PDF at a time.'));
+			if (!this.state.note && !args.noteId) throw new Error(_('Only one note can be exported to PDF at a time.'));
+
+			const note = (!args.noteId ? this.state.note : await Note.load(args.noteId));
 
 			const path = bridge().showSaveDialog({
 				filters: [{ name: _('PDF File'), extensions: ['pdf'] }],
-				defaultPath: safeFilename(this.state.note.title),
+				defaultPath: safeFilename(note.title),
 			});
 
 			if (!path) return;
 
-			await this.printTo_('pdf', { path: path });
+			await this.printTo_('pdf', { path: path, noteId: args.noteId });
 		} catch (error) {
 			bridge().showErrorMessageBox(error.message);
 		}
@@ -1301,25 +1307,23 @@ class NoteTextComponent extends React.Component {
 
 	async commandPrint() {
 		try {
-			await this.printTo_('printer');
+			if (!this.state.note) throw new Error(_('Only one note can be printed at a time.'));
+
+			await this.printTo_('printer', { noteId: this.state.note.id });
 		} catch (error) {
 			bridge().showErrorMessageBox(error.message);
 		}
 	}
 
 	async commandStartExternalEditing() {
-		try {
-			await this.saveIfNeeded(true, {
-				autoTitle: false,
-			});
-			await ExternalEditWatcher.instance().openAndWatch(this.state.note);
-		} catch (error) {
-			bridge().showErrorMessageBox(_('Error opening note in editor: %s', error.message));
-		}
+		await this.saveIfNeeded(true, {
+			autoTitle: false,
+		});
+		NoteListUtils.startExternalEditing(this.state.note.id);
 	}
 
 	async commandStopExternalEditing() {
-		ExternalEditWatcher.instance().stopWatching(this.state.note.id);
+		NoteListUtils.stopExternalEditing(this.state.note.id);
 	}
 
 	async commandSetTags() {
@@ -1825,6 +1829,7 @@ class NoteTextComponent extends React.Component {
 		const menu = NoteListUtils.makeContextMenu(this.props.selectedNoteIds, {
 			notes: this.props.notes,
 			dispatch: this.props.dispatch,
+			watchedNoteFiles: this.props.watchedNoteFiles,
 		});
 
 		const buttonStyle = Object.assign({}, theme.buttonStyle, {
@@ -1940,10 +1945,10 @@ class NoteTextComponent extends React.Component {
 		const searchBarHeight = this.state.showLocalSearch ? 35 : 0;
 
 		let bottomRowHeight = 0;
-		if (NOTE_TAG_BAR_FEATURE_ENABLED) {
+		if (this.canDisplayTagBar()) {
 			bottomRowHeight = rootStyle.height - titleBarStyle.height - titleBarStyle.marginBottom - titleBarStyle.marginTop - theme.toolbarHeight - tagStyle.height - tagStyle.marginBottom;
 		} else {
-			toolbarStyle.marginBottom = 10;
+			toolbarStyle.marginBottom = tagStyle.marginBottom,
 			bottomRowHeight = rootStyle.height - titleBarStyle.height - titleBarStyle.marginBottom - titleBarStyle.marginTop - theme.toolbarHeight - toolbarStyle.marginBottom;
 		}
 
@@ -2062,7 +2067,7 @@ class NoteTextComponent extends React.Component {
 			/>
 		);
 
-		const tagList = !NOTE_TAG_BAR_FEATURE_ENABLED ? null : <TagList style={tagStyle} items={this.state.noteTags} />;
+		const tagList = this.canDisplayTagBar() ? <TagList style={tagStyle} items={this.state.noteTags} /> : null;
 
 		const titleBarMenuButton = (
 			<IconButton
@@ -2120,6 +2125,8 @@ class NoteTextComponent extends React.Component {
 				onSelectionChange={this.aceEditor_selectionChange}
 				onFocus={this.aceEditor_focus}
 				readOnly={visiblePanes.indexOf('editor') < 0}
+				// Enable/Disable the autoclosing braces
+				setOptions={{ behavioursEnabled: Setting.value('editor.autoMatchingBraces') }}
 				// Disable warning: "Automatically scrolling cursor into view after
 				// selection change this will be disabled in the next version set
 				// editor.$blockScrolling = Infinity to disable this message"

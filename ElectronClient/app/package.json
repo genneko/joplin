@@ -1,6 +1,6 @@
 {
   "name": "Joplin",
-  "version": "1.0.177",
+  "version": "1.0.178",
   "description": "Joplin for Desktop",
   "main": "main.js",
   "scripts": {
@@ -78,7 +78,7 @@
     "electron-rebuild": "^1.8.8"
   },
   "optionalDependencies": {
-    "electron": "^7.1.5",
+    "electron": "^7.1.9",
     "7zip-bin-linux": "^1.0.1",
     "7zip-bin-mac": "^1.0.1",
     "7zip-bin-win": "^2.1.1"
@@ -105,9 +105,9 @@
     "html-minifier": "^4.0.0",
     "https-proxy-agent": "^2.2.1",
     "image-type": "^3.0.0",
-    "joplin-renderer": "^1.0.6",
+    "joplin-renderer": "^1.0.7",
     "joplin-turndown": "^4.0.19",
-    "joplin-turndown-plugin-gfm": "^1.0.11",
+    "joplin-turndown-plugin-gfm": "^1.0.12",
     "jssha": "^2.3.1",
     "levenshtein": "^1.0.5",
     "lodash": "^4.17.15",
