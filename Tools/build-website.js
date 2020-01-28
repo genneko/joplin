@@ -306,13 +306,15 @@ https://github.com/laurent22/joplin/blob/master/{{{sourceMarkdownFile}}}
 	{{{tocHtml}}}
 `;
 
-const footerHtml = `
+const footerHtmlTemplate = `
 <div class="footer">
-Copyright (c) 2016-2019 Laurent Cozic
+Copyright (c) 2016-YYYY Laurent Cozic
 </div>
 </body>
 </html>
 `;
+
+const footerHtml = footerHtmlTemplate.replace('YYYY', new Date().getFullYear());
 
 // const screenshotHtml = `
 // <table class="screenshots">
@@ -561,7 +563,7 @@ function makeHomePageMd() {
 async function main() {
 	tocMd();
 
-	renderMdToHtml(makeHomePageMd(), `${rootDir}/docs/index.html`, {});
+	renderMdToHtml(makeHomePageMd(), `${rootDir}/docs/index.html`, { sourceMarkdownFile: 'README.md' });
 
 	const sources = [
 		[ 'readme/changelog.md', 'docs/changelog/index.html', { title: 'Changelog (Desktop App)' } ],
