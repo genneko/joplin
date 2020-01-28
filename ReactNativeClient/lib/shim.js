@@ -203,6 +203,10 @@ shim.waitForFrame = () => {
 	throw new Error('Not implemented');
 };
 
+shim.appVersion = () => {
+	throw new Error('Not implemented');
+};
+
 shim.injectedJs = name => '';
 
 let isTestingEnv_ = false;
