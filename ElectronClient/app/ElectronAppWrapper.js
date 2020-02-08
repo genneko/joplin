@@ -39,7 +39,7 @@ class ElectronAppWrapper {
 
 	createWindow() {
 		// Set to true to view errors if the application does not start
-		const debugEarlyBugs = this.env_ === 'dev' && false;
+		const debugEarlyBugs = this.env_ === 'dev';
 
 		const windowStateKeeper = require('electron-window-state');
 
@@ -124,6 +124,13 @@ class ElectronAppWrapper {
 		// automatically (the listeners will be removed when the window is closed)
 		// and restore the maximized or full screen state
 		windowState.manage(this.win_);
+
+		// HACK: Ensure the window is hidden, as `windowState.manage` may make the window
+		// visible with isMaximized set to true in window-state-${this.env_}.json.
+		// https://github.com/laurent22/joplin/issues/2365
+		if (!windowOptions.show) {
+			this.win_.hide();
+		}
 	}
 
 	async waitForElectronAppReady() {
