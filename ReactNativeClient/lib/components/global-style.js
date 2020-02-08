@@ -1,3 +1,5 @@
+/* eslint-disable enforce-react-hooks/enforce-react-hooks */
+
 const Setting = require('lib/models/Setting.js');
 const { Platform } = require('react-native');
 
@@ -148,7 +150,7 @@ function themeStyle(theme) {
 	output.htmlCodeBackgroundColor = 'rgb(47, 48, 49)';
 	output.htmlCodeBorderColor = 'rgb(70, 70, 70)';
 
-	output.codeThemeCss = 'hljs-atom-one-dark-reasonable.css';
+	output.codeThemeCss = 'atom-one-dark-reasonable.css';
 
 	output.colorUrl = '#7B81FF';
 
