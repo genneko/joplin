@@ -1,5 +1,3 @@
-/* eslint-disable enforce-react-hooks/enforce-react-hooks */
-
 const React = require('react');
 const Component = React.Component;
 const { connect } = require('react-redux');
@@ -9,6 +7,8 @@ const Icon = require('react-native-vector-icons/Ionicons').default;
 const { _ } = require('lib/locale.js');
 const { shim } = require('lib/shim');
 const Setting = require('lib/models/Setting');
+
+Icon.loadFont();
 
 class CameraView extends Component {
 	constructor() {

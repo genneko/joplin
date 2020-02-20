@@ -1,5 +1,3 @@
-/* eslint-disable enforce-react-hooks/enforce-react-hooks */
-
 const React = require('react');
 const Component = React.Component;
 const { Easing, Animated, TouchableOpacity, Text, StyleSheet, ScrollView, View, Alert } = require('react-native');
@@ -11,6 +9,8 @@ const NavService = require('lib/services/NavService.js');
 const { _ } = require('lib/locale.js');
 const { globalStyle, themeStyle } = require('lib/components/global-style.js');
 const shared = require('lib/components/shared/side-menu-shared.js');
+
+Icon.loadFont();
 
 class SideMenuContentComponent extends Component {
 	constructor() {

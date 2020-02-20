@@ -1,5 +1,3 @@
-/* eslint-disable enforce-react-hooks/enforce-react-hooks */
-
 const React = require('react');
 
 const { StyleSheet, View, TextInput, FlatList, TouchableHighlight } = require('react-native');
@@ -13,6 +11,8 @@ const { BaseScreenComponent } = require('lib/components/base-screen.js');
 const { themeStyle } = require('lib/components/global-style.js');
 const SearchEngineUtils = require('lib/services/SearchEngineUtils');
 const DialogBox = require('react-native-dialogbox').default;
+
+Icon.loadFont();
 
 class SearchScreenComponent extends BaseScreenComponent {
 	static navigationOptions() {
