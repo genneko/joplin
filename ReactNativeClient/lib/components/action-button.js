@@ -1,5 +1,3 @@
-/* eslint-disable enforce-react-hooks/enforce-react-hooks */
-
 const React = require('react');
 
 const { StyleSheet } = require('react-native');
@@ -7,6 +5,8 @@ const Icon = require('react-native-vector-icons/Ionicons').default;
 const ReactNativeActionButton = require('react-native-action-button').default;
 const { connect } = require('react-redux');
 const { _ } = require('lib/locale.js');
+
+Icon.loadFont();
 
 const styles = StyleSheet.create({
 	actionButtonIcon: {

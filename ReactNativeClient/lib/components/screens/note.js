@@ -1,5 +1,3 @@
-/* eslint-disable enforce-react-hooks/enforce-react-hooks */
-
 const React = require('react');
 const { Platform, Clipboard, Keyboard, View, TextInput, StyleSheet, Linking, Image, Share } = require('react-native');
 const { connect } = require('react-redux');
@@ -35,7 +33,7 @@ const ImageResizer = require('react-native-image-resizer').default;
 const shared = require('lib/components/shared/note-screen-shared.js');
 const ImagePicker = require('react-native-image-picker');
 const { SelectDateTimeDialog } = require('lib/components/select-date-time-dialog.js');
-const ShareExtension = require('react-native-share-extension').default;
+// const ShareExtension = require('react-native-share-extension').default;
 const CameraView = require('lib/components/CameraView');
 const SearchEngine = require('lib/services/SearchEngine');
 const urlUtils = require('lib/urlUtils');
@@ -305,9 +303,9 @@ class NoteScreenComponent extends BaseScreenComponent {
 
 		shared.uninstallResourceHandling(this.refreshResource);
 
-		if (Platform.OS !== 'ios' && this.state.fromShare) {
-			ShareExtension.close();
-		}
+		// if (Platform.OS !== 'ios' && this.state.fromShare) {
+		// 	ShareExtension.close();
+		// }
 	}
 
 	title_changeText(text) {
@@ -760,8 +758,8 @@ class NoteScreenComponent extends BaseScreenComponent {
 		let fieldToFocus = this.state.note.is_todo ? 'title' : 'body';
 		if (this.state.mode === 'view') fieldToFocus = '';
 
-		if (fieldToFocus === 'title') this.refs.titleTextField.focus();
-		if (fieldToFocus === 'body') this.refs.noteBodyTextField.focus();
+		if (fieldToFocus === 'title' && this.refs.titleTextField) this.refs.titleTextField.focus();
+		if (fieldToFocus === 'body' && this.refs.noteBodyTextField) this.refs.noteBodyTextField.focus();
 	}
 
 	async folderPickerOptions_valueChanged(itemValue) {
