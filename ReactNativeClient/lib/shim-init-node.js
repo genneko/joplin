@@ -11,6 +11,8 @@ const Resource = require('lib/models/Resource.js');
 const urlValidator = require('valid-url');
 const { _ } = require('lib/locale.js');
 const HttpsProxyAgent = require('https-proxy-agent');
+const http = require('http');
+const https = require('https');
 
 function shimInit() {
 	shim.fsDriver = () => {
@@ -382,6 +384,24 @@ function shimInit() {
 		// Returns true if it opens the file successfully; returns false if it could
 		// not find the file.
 		return bridge().openExternal(url);
+	};
+
+	shim.httpAgent_ = null;
+
+	shim.httpAgent = url => {
+		if (shim.isLinux() && !shim.httpAgent) {
+			var AgentSettings = {
+				keepAlive: true,
+				maxSockets: 1,
+				keepAliveMsecs: 5000,
+			};
+			if (url.startsWith('https')) {
+				shim.httpAgent_ = new https.Agent(AgentSettings);
+			} else {
+				shim.httpAgent_ = new http.Agent(AgentSettings);
+			}
+		}
+		return shim.httpAgent_;
 	};
 
 	shim.openOrCreateFile = (filepath, defaultContents) => {
