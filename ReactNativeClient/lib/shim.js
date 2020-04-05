@@ -226,4 +226,8 @@ shim.pathRelativeToCwd = (path) => {
 	throw new Error('Not implemented');
 };
 
+shim.showMessageBox = (message, options = null) => {
+	throw new Error('Not implemented');
+};
+
 module.exports = { shim };
