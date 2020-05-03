@@ -207,7 +207,7 @@ function shimInit() {
 		return Resource.save(resource, { isNew: true });
 	};
 
-	shim.attachFileToNote = async function(note, filePath, position = null, options = null) {
+	shim.attachFileToNoteBody = async function(noteBody, filePath, position = null, options = null) {
 		options = Object.assign({}, {
 			createFileURL: false,
 		}, options);
@@ -225,10 +225,10 @@ function shimInit() {
 		const newBody = [];
 
 		if (position === null) {
-			position = note.body ? note.body.length : 0;
+			position = noteBody ? noteBody.length : 0;
 		}
 
-		if (note.body && position) newBody.push(note.body.substr(0, position));
+		if (noteBody && position) newBody.push(noteBody.substr(0, position));
 
 		if (!options.createFileURL) {
 			newBody.push(Resource.markdownTag(resource));
@@ -238,10 +238,17 @@ function shimInit() {
 			newBody.push(fileURL);
 		}
 
-		if (note.body) newBody.push(note.body.substr(position));
+		if (noteBody) newBody.push(noteBody.substr(position));
+
+		return newBody.join('\n\n');
+	};
+
+	shim.attachFileToNote = async function(note, filePath, position = null, options = null) {
+		const newBody = await shim.attachFileToNoteBody(note.body, filePath, position, options);
+		if (!newBody) return null;
 
 		const newNote = Object.assign({}, note, {
-			body: newBody.join('\n\n'),
+			body: newBody,
 		});
 		return await Note.save(newNote);
 	};
