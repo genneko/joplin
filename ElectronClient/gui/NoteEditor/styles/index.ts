@@ -1,15 +1,15 @@
-import { NoteTextProps } from '../utils/types';
+import { NoteEditorProps } from '../utils/types';
 
 const { buildStyle } = require('../../../theme.js');
 
-export default function styles(props: NoteTextProps) {
+export default function styles(props: NoteEditorProps) {
 	return buildStyle('NoteEditor', props.theme, (theme: any) => {
 		return {
 			root: {
 				...props.style,
 				boxSizing: 'border-box',
 				paddingLeft: 10,
-				paddingTop: 10,
+				paddingTop: 5,
 				borderLeftWidth: 1,
 				borderLeftColor: theme.dividerColor,
 				borderLeftStyle: 'solid',
@@ -18,12 +18,15 @@ export default function styles(props: NoteTextProps) {
 				flex: 1,
 				display: 'inline-block',
 				paddingTop: 5,
+				minHeight: 35,
+				boxSizing: 'border-box',
 				paddingBottom: 5,
 				paddingLeft: 8,
 				paddingRight: 8,
-				marginRight: theme.paddingLeft,
+				marginLeft: 5,
+				// marginRight: theme.paddingLeft,
 				color: theme.textStyle.color,
-				fontSize: theme.textStyle.fontSize * 1.25 * 1.5,
+				fontSize: theme.textStyle.fontSize * 1.25,
 				backgroundColor: theme.backgroundColor,
 				border: '1px solid',
 				borderColor: theme.dividerColor,
@@ -33,6 +36,8 @@ export default function styles(props: NoteTextProps) {
 				fontFamily: theme.fontFamily,
 				padding: 10,
 				fontSize: theme.fontSize,
+				marginTop: 5,
+				marginBottom: 5,
 			},
 			tinyMCE: {
 				width: '100%',

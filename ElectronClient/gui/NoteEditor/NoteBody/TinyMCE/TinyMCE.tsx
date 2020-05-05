@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
-import { EditorCommand, NoteBodyEditorProps } from '../../utils/types';
+import { ScrollOptions, ScrollOptionTypes, EditorCommand, NoteBodyEditorProps } from '../../utils/types';
 import { resourcesStatus } from '../../utils/resourceHandling';
+import useScroll from './utils/useScroll';
 const { MarkupToHtml } = require('lib/joplin-renderer');
 const taboverride = require('taboverride');
 const { reg } = require('lib/registry.js');
@@ -142,8 +143,13 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 	const attachResources = useRef(null);
 	attachResources.current = props.attachResources;
 
+	const props_onMessage = useRef(null);
+	props_onMessage.current = props.onMessage;
+
 	const markupToHtml = useRef(null);
 	markupToHtml.current = props.markupToHtml;
+
+	const lastOnChangeEventContent = useRef<string>('');
 
 	const rootIdRef = useRef<string>(`tinymce-${Date.now()}${Math.round(Math.random() * 10000)}`);
 	const editorRef = useRef<any>(null);
@@ -151,6 +157,8 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 
 	const styles = styles_(props);
 	const theme = themeStyle(props.theme);
+
+	const { scrollToPercent } = useScroll({ editor, onScroll: props.onScroll });
 
 	const dispatchDidUpdate = (editor:any) => {
 		if (dispatchDidUpdateIID_) clearTimeout(dispatchDidUpdateIID_);
@@ -170,15 +178,7 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 
 		if (nodeName === 'A' && (event.ctrlKey || event.metaKey)) {
 			const href = event.target.getAttribute('href');
-			// const joplinUrl = href.indexOf('joplin://') === 0 ? href : null;
 
-			// if (joplinUrl) {
-			// 	props.onMessage({
-			// 		name: 'openInternal',
-			// 		args: {
-			// 			url: joplinUrl,
-			// 		},
-			// 	});
 			if (href.indexOf('#') === 0) {
 				const anchorName = href.substr(1);
 				const anchor = editor.getDoc().getElementById(anchorName);
@@ -188,12 +188,7 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 					reg.logger().warn('TinyMce: could not find anchor with ID ', anchorName);
 				}
 			} else {
-				props.onMessage({
-					name: 'openUrl',
-					args: {
-						url: href,
-					},
-				});
+				props.onMessage({ channel: href });
 			}
 		}
 	}, [editor, props.onMessage]);
@@ -204,17 +199,28 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 				if (!editorRef.current) return '';
 				return prop_htmlToMarkdownRef.current(props.contentMarkupLanguage, editorRef.current.getContent(), props.contentOriginalCss);
 			},
-			setContent: (/* body: string*/) => {
-				console.warn('TinyMCE::setContent - not implemented');
-			},
 			resetScroll: () => {
-				console.warn('TinyMCE::resetScroll - not implemented');
+				if (editor) editor.getWin().scrollTo(0,0);
 			},
-			scrollTo: (/* options:ScrollOptions*/) => {
-				console.warn('TinyMCE::scrollTo - not implemented');
+			scrollTo: (options:ScrollOptions) => {
+				if (!editor) return;
+
+				if (options.type === ScrollOptionTypes.Hash) {
+					const anchor = editor.getDoc().getElementById(options.value);
+					if (!anchor) {
+						console.warn('Cannot find hash', options);
+						return;
+					}
+					anchor.scrollIntoView();
+				} else if (options.type === ScrollOptionTypes.Percent) {
+					scrollToPercent(options.value);
+				} else {
+					throw new Error(`Unsupported scroll options: ${options.type}`);
+				}
 			},
-			clearState: () => {
-				console.warn('TinyMCE::clearState - not implemented');
+			supportsCommand: (name:string) => {
+				// TODO: should also handle commands that are not in this map (insertText, focus, etc);
+				return !!joplinCommandToTinyMceCommands[name];
 			},
 			execCommand: async (cmd:EditorCommand) => {
 				if (!editor) return false;
@@ -398,6 +404,10 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 			.tox .tox-dialog__footer {
 				border-color: ${theme.dividerColor} !important;
 			}
+
+			.tox-tinymce {
+				border-top: none !important;
+			}
 		`));
 
 		return () => {
@@ -440,14 +450,16 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 				branding: false,
 				target_list: false,
 				table_resize_bars: false,
-				toolbar: 'bold italic | link joplinInlineCode joplinCodeBlock joplinAttach | numlist bullist joplinChecklist | h1 h2 h3 hr blockquote table',
+				language: props.locale,
+				toolbar: 'bold italic | link joplinInlineCode joplinCodeBlock joplinAttach | numlist bullist joplinChecklist | h1 h2 h3 hr blockquote table joplinInsertDateTime',
+				localization_function: _,
 				setup: (editor:any) => {
 
 					function openEditDialog(editable:any) {
 						const source = editable ? findBlockSource(editable) : newBlockSource();
 
 						editor.windowManager.open({
-							title: 'Edit',
+							title: _('Edit'),
 							size: 'large',
 							initialData: {
 								codeTextArea: source.content,
@@ -507,7 +519,7 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 					}
 
 					editor.ui.registry.addButton('joplinAttach', {
-						tooltip: 'Attach...',
+						tooltip: _('Attach file'),
 						icon: 'paperclip',
 						onAction: async function() {
 							const resources = await attachResources.current();
@@ -526,7 +538,7 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 					});
 
 					editor.ui.registry.addButton('joplinCodeBlock', {
-						tooltip: 'Code Block',
+						tooltip: _('Code Block'),
 						icon: 'code-sample',
 						onAction: async function() {
 							openEditDialog(null);
@@ -534,7 +546,7 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 					});
 
 					editor.ui.registry.addToggleButton('joplinInlineCode', {
-						tooltip: 'Inline Code',
+						tooltip: _('Inline Code'),
 						icon: 'sourcecode',
 						onAction: function() {
 							editor.execCommand('mceToggleFormat', false, 'code', { class: 'inline-code' });
@@ -546,6 +558,17 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 							return function() {
 								if (unbind) unbind();
 							};
+						},
+					});
+
+					editor.ui.registry.addButton('joplinInsertDateTime', {
+						tooltip: _('Insert Date Time'),
+						icon: 'insert-time',
+						onAction: function() {
+							props.dispatch({
+								type: 'WINDOW_COMMAND',
+								name: 'insertDateTime',
+							});
 						},
 					});
 
@@ -564,6 +587,10 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 
 					editor.on('init', () => {
 						setEditorReady(true);
+					});
+
+					editor.on('SetContent', () => {
+						props_onMessage.current({ channel: 'noteRenderComplete' });
 					});
 				},
 			});
@@ -627,14 +654,15 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 		let cancelled = false;
 
 		const loadContent = async () => {
+			if (lastOnChangeEventContent.current === props.content) return;
+
 			const result = await props.markupToHtml(props.contentMarkupLanguage, props.content, markupRenderOptions({ resourceInfos: props.resourceInfos }));
 			if (cancelled) return;
 
+			lastOnChangeEventContent.current = props.content;
 			editor.setContent(result.html);
 
 			await loadDocumentAssets(editor, await props.allAssets(props.contentMarkupLanguage));
-
-			editor.getDoc().addEventListener('click', onEditorContentClick);
 
 			// Need to clear UndoManager to avoid this problem:
 			// - Load note 1
@@ -650,9 +678,17 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 
 		return () => {
 			cancelled = true;
+		};
+	}, [editor, props.markupToHtml, props.allAssets, props.content, props.resourceInfos]);
+
+	useEffect(() => {
+		if (!editor) return () => {};
+
+		editor.getDoc().addEventListener('click', onEditorContentClick);
+		return () => {
 			editor.getDoc().removeEventListener('click', onEditorContentClick);
 		};
-	}, [editor, props.markupToHtml, props.allAssets, onEditorContentClick, props.resourceInfos]);
+	}, [editor, onEditorContentClick]);
 
 	// -----------------------------------------------------------------------------------------
 	// Handle onChange event
@@ -684,6 +720,8 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 				const contentMd = await prop_htmlToMarkdownRef.current(props.contentMarkupLanguage, editor.getContent(), props.contentOriginalCss);
 
 				if (!editor) return;
+
+				lastOnChangeEventContent.current = contentMd;
 
 				props_onChangeRef.current({
 					changeId: changeId,
