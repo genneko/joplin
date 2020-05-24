@@ -1,14 +1,18 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import { ScrollOptions, ScrollOptionTypes, EditorCommand, NoteBodyEditorProps } from '../../utils/types';
-import { resourcesStatus } from '../../utils/resourceHandling';
+import { resourcesStatus, commandAttachFileToBody, handlePasteEvent } from '../../utils/resourceHandling';
 import useScroll from './utils/useScroll';
+import { menuItems, ContextMenuOptions, ContextMenuItemType } from '../../utils/contextMenu';
 const { MarkupToHtml } = require('lib/joplin-renderer');
 const taboverride = require('taboverride');
 const { reg } = require('lib/registry.js');
-const { _ } = require('lib/locale');
+const { _, closestSupportedLocale } = require('lib/locale');
 const BaseItem = require('lib/models/BaseItem');
+const Resource = require('lib/models/Resource');
 const { themeStyle, buildStyle } = require('../../../../theme.js');
+const { clipboard } = require('electron');
+const supportedLocales = require('./supportedLocales');
 
 function markupRenderOptions(override:any = null) {
 	return {
@@ -122,6 +126,7 @@ function styles_(props:NoteBodyEditorProps) {
 				padding: 20,
 				paddingTop: 50,
 				textAlign: 'center',
+				width: '100%',
 			},
 			rootStyle: {
 				position: 'relative',
@@ -131,7 +136,8 @@ function styles_(props:NoteBodyEditorProps) {
 	});
 }
 
-let loadedAssetFiles_:string[] = [];
+let loadedCssFiles_:string[] = [];
+let loadedJsFiles_:string[] = [];
 let dispatchDidUpdateIID_:any = null;
 let changeId_:number = 1;
 
@@ -139,12 +145,15 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 	const [editor, setEditor] = useState(null);
 	const [scriptLoaded, setScriptLoaded] = useState(false);
 	const [editorReady, setEditorReady] = useState(false);
-
-	const attachResources = useRef(null);
-	attachResources.current = props.attachResources;
+	const [draggingStarted, setDraggingStarted] = useState(false);
 
 	const props_onMessage = useRef(null);
 	props_onMessage.current = props.onMessage;
+
+	const props_onDrop = useRef(null);
+	props_onDrop.current = props.onDrop;
+
+	const contextMenuActionOptions = useRef<ContextMenuOptions>(null);
 
 	const markupToHtml = useRef(null);
 	markupToHtml.current = props.markupToHtml;
@@ -167,6 +176,17 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 			if (editor && editor.getDoc()) editor.getDoc().dispatchEvent(new Event('joplin-noteDidUpdate'));
 		}, 10);
 	};
+
+	const insertResourcesIntoContent = useCallback(async (filePaths:string[] = null, options:any = null) => {
+		const resourceMd = await commandAttachFileToBody('', filePaths, options);
+		const result = await props.markupToHtml(MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, resourceMd, markupRenderOptions({ bodyOnly: true }));
+		editor.insertContent(result.html);
+		// editor.fire('joplinChange');
+		// dispatchDidUpdate(editor);
+	}, [props.markupToHtml, editor]);
+
+	const insertResourcesIntoContentRef = useRef(null);
+	insertResourcesIntoContentRef.current = insertResourcesIntoContent;
 
 	const onEditorContentClick = useCallback((event:any) => {
 		const nodeName = event.target ? event.target.nodeName : '';
@@ -234,6 +254,15 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 					editor.insertContent(result.html);
 				} else if (cmd.name === 'focus') {
 					editor.focus();
+				} else if (cmd.name === 'dropItems') {
+					if (cmd.value.type === 'notes') {
+						const result = await markupToHtml.current(MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, cmd.value.markdownTags.join('\n'), markupRenderOptions({ bodyOnly: true }));
+						editor.insertContent(result.html);
+					} else if (cmd.value.type === 'files') {
+						insertResourcesIntoContentRef.current(cmd.value.paths, { createFileURL: !!cmd.value.createFileURL });
+					} else {
+						reg.logger().warn('AceEditor: unsupported drop item: ', cmd);
+					}
 				} else {
 					commandProcessed = false;
 				}
@@ -353,6 +382,7 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 			}
 
 			.tox .tox-editor-header {
+				border-top: 1px solid ${theme.dividerColor};
 				border-bottom: 1px solid ${theme.dividerColor};
 			}
 
@@ -365,8 +395,8 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 			.tox input,
 			.tox .tox-label,
 			.tox .tox-toolbar-label {
-				color: ${theme.color} !important;
-				fill: ${theme.color} !important;
+				color: ${theme.iconColor} !important;
+				fill: ${theme.iconColor} !important;
 			}
 
 			.tox .tox-statusbar a,
@@ -413,7 +443,7 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 		return () => {
 			document.head.removeChild(element);
 		};
-	}, [editorReady]);
+	}, [editorReady, props.theme]);
 
 	// -----------------------------------------------------------------------------------------
 	// Enable or disable the editor
@@ -431,9 +461,24 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 	useEffect(() => {
 		if (!scriptLoaded) return;
 
-		loadedAssetFiles_ = [];
+		loadedCssFiles_ = [];
+		loadedJsFiles_ = [];
+
+		function contextMenuItemNameWithNamespace(name:string) {
+			// For unknown reasons, TinyMCE converts all context menu names to
+			// lowercase when setting them in the init method, so we need to
+			// make them lowercase too, to make sure that the update() method
+			// addContextMenu is triggered.
+			return (`joplin${name}`).toLowerCase();
+		}
 
 		const loadEditor = async () => {
+			const contextMenuItems = menuItems();
+			const contextMenuItemNames = [];
+			for (const name in contextMenuItems) contextMenuItemNames.push(contextMenuItemNameWithNamespace(name));
+
+			const language = closestSupportedLocale(props.locale, true, supportedLocales);
+
 			const editors = await (window as any).tinymce.init({
 				selector: `#${rootIdRef.current}`,
 				width: '100%',
@@ -450,9 +495,10 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 				branding: false,
 				target_list: false,
 				table_resize_bars: false,
-				language: props.locale,
+				language: ['en_US', 'en_GB'].includes(language) ? undefined : language,
 				toolbar: 'bold italic | link joplinInlineCode joplinCodeBlock joplinAttach | numlist bullist joplinChecklist | h1 h2 h3 hr blockquote table joplinInsertDateTime',
 				localization_function: _,
+				contextmenu: contextMenuItemNames.join(' '),
 				setup: (editor:any) => {
 
 					function openEditDialog(editable:any) {
@@ -522,18 +568,7 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 						tooltip: _('Attach file'),
 						icon: 'paperclip',
 						onAction: async function() {
-							const resources = await attachResources.current();
-							if (!resources.length) return;
-
-							const html = [];
-							for (const resource of resources) {
-								const result = await markupToHtml.current(MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, resource.markdownTag, markupRenderOptions({ bodyOnly: true }));
-								html.push(result.html);
-							}
-
-							editor.insertContent(html.join('\n'));
-							editor.fire('joplinChange');
-							dispatchDidUpdate(editor);
+							insertResourcesIntoContentRef.current();
 						},
 					});
 
@@ -572,10 +607,52 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 						},
 					});
 
+					for (const itemName in contextMenuItems) {
+						const item = contextMenuItems[itemName];
+
+						const itemNameNS = contextMenuItemNameWithNamespace(itemName);
+
+						editor.ui.registry.addMenuItem(itemNameNS, {
+							text: item.label,
+							onAction: () => {
+								item.onAction(contextMenuActionOptions.current);
+							},
+						});
+
+						editor.ui.registry.addContextMenu(itemNameNS, {
+							update: function(element:any) {
+								let itemType:ContextMenuItemType = ContextMenuItemType.None;
+								let resourceId = '';
+								let textToCopy = '';
+
+								if (element.nodeName === 'IMG') {
+									itemType = ContextMenuItemType.Image;
+									resourceId = Resource.pathToId(element.src);
+								} else if (element.nodeName === 'A') {
+									resourceId = Resource.pathToId(element.href);
+									itemType = resourceId ? ContextMenuItemType.Resource : ContextMenuItemType.Link;
+								} else {
+									itemType = ContextMenuItemType.Text;
+									textToCopy = editor.selection.getContent({ format: 'text' });
+								}
+
+								contextMenuActionOptions.current = { itemType, resourceId, textToCopy };
+
+
+								return item.isActive(itemType) ? itemNameNS : '';
+							},
+						});
+					}
+
 					// TODO: remove event on unmount?
 					editor.on('DblClick', (event:any) => {
 						const editable = findEditableContainer(event.target);
 						if (editable) openEditDialog(editable);
+					});
+
+					// This is triggered when an external file is dropped on the editor
+					editor.on('drop', (event:any) => {
+						props_onDrop.current(event);
 					});
 
 					editor.on('ObjectResized', function(event:any) {
@@ -606,27 +683,57 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 	// -----------------------------------------------------------------------------------------
 
 	const loadDocumentAssets = (editor:any, pluginAssets:any[]) => {
+		// Note: The way files are cached is not correct because it assumes there's only one version
+		// of each file. However, when the theme change, a new CSS file, specific to the theme, is
+		// created. That file should not be loaded on top of the previous one, but as a replacement.
+		// Otherwise it would do this:
+		// - Try to load CSS for theme 1 => OK
+		// - Try to load CSS for theme 2 => OK
+		// - Try to load CSS for theme 1 => Skip because the file is in cache. As a result, theme 2
+		//                                  incorrectly stay.
+		// The fix would be to make allAssets() return a name and a version for each asset. Then the loading
+		// code would check this and either append the CSS or replace.
+
+		let docHead_:any = null;
+
+		function docHead() {
+			if (docHead_) return docHead_;
+			docHead_ = editor.getDoc().getElementsByTagName('head')[0];
+			return docHead_;
+		}
+
 		const cssFiles = [
-			'css/fork-awesome.min.css',
+			'node_modules/@fortawesome/fontawesome-free/css/all.min.css',
 			`gui/note-viewer/pluginAssets/highlight.js/${theme.codeThemeCss}`,
 		].concat(
 			pluginAssets
 				.filter((a:any) => a.mime === 'text/css')
 				.map((a:any) => a.path)
-		).filter((path:string) => !loadedAssetFiles_.includes(path));
+		).filter((path:string) => !loadedCssFiles_.includes(path));
 
-		const jsFiles = ['gui/NoteEditor/NoteBody/TinyMCE/content_script.js'].concat(
+		const jsFiles = [].concat(
 			pluginAssets
 				.filter((a:any) => a.mime === 'application/javascript')
 				.map((a:any) => a.path)
-		).filter((path:string) => !loadedAssetFiles_.includes(path));
+		).filter((path:string) => !loadedJsFiles_.includes(path));
 
-		for (const cssFile of cssFiles) loadedAssetFiles_.push(cssFile);
-		for (const jsFile of jsFiles) loadedAssetFiles_.push(jsFile);
+		for (const cssFile of cssFiles) loadedCssFiles_.push(cssFile);
+		for (const jsFile of jsFiles) loadedJsFiles_.push(jsFile);
 
 		console.info('loadDocumentAssets: files to load', cssFiles, jsFiles);
 
-		if (cssFiles.length) editor.dom.loadCSS(cssFiles.join(','));
+		if (cssFiles.length) {
+			for (const cssFile of cssFiles) {
+				const script = editor.dom.create('link', {
+					rel: 'stylesheet',
+					type: 'text/css',
+					href: cssFile,
+					class: 'jop-tinymce-css',
+				});
+
+				docHead().appendChild(script);
+			}
+		}
 
 		if (jsFiles.length) {
 			const editorElementId = editor.dom.uniqueId();
@@ -638,7 +745,7 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 					src: jsFile,
 				});
 
-				editor.getDoc().getElementsByTagName('head')[0].appendChild(script);
+				docHead().appendChild(script);
 			}
 		}
 	};
@@ -654,13 +761,12 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 		let cancelled = false;
 
 		const loadContent = async () => {
-			if (lastOnChangeEventContent.current === props.content) return;
-
-			const result = await props.markupToHtml(props.contentMarkupLanguage, props.content, markupRenderOptions({ resourceInfos: props.resourceInfos }));
-			if (cancelled) return;
-
-			lastOnChangeEventContent.current = props.content;
-			editor.setContent(result.html);
+			if (lastOnChangeEventContent.current !== props.content) {
+				const result = await props.markupToHtml(props.contentMarkupLanguage, props.content, markupRenderOptions({ resourceInfos: props.resourceInfos }));
+				if (cancelled) return;
+				lastOnChangeEventContent.current = props.content;
+				editor.setContent(result.html);
+			}
 
 			await loadDocumentAssets(editor, await props.allAssets(props.contentMarkupLanguage));
 
@@ -669,7 +775,11 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 			// - Make a change
 			// - Load note 2
 			// - Undo => content is that of note 1
-			editor.undoManager.clear();
+
+			// The doc is not very clear what's the different between
+			// clear() and reset() but it seems reset() works best, in
+			// particular for the onPaste bug.
+			editor.undoManager.reset();
 
 			dispatchDidUpdate(editor);
 		};
@@ -689,6 +799,34 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 			editor.getDoc().removeEventListener('click', onEditorContentClick);
 		};
 	}, [editor, onEditorContentClick]);
+
+	// This is to handle dropping notes on the editor. In this case, we add an
+	// overlay over the editor, which makes it a valid drop target. This in
+	// turn makes NoteEditor get the drop event and dispatch it.
+	useEffect(() => {
+		if (!editor) return () => {};
+
+		function onDragStart() {
+			setDraggingStarted(true);
+		}
+
+		function onDrop() {
+			setDraggingStarted(false);
+		}
+
+		function onDragEnd() {
+			setDraggingStarted(false);
+		}
+
+		document.addEventListener('dragstart', onDragStart);
+		document.addEventListener('drop', onDrop);
+		document.addEventListener('dragend', onDragEnd);
+		return () => {
+			document.removeEventListener('dragstart', onDragStart);
+			document.removeEventListener('drop', onDrop);
+			document.removeEventListener('dragend', onDragEnd);
+		};
+	}, [editor]);
 
 	// -----------------------------------------------------------------------------------------
 	// Handle onChange event
@@ -774,19 +912,44 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 		}
 
 		async function onPaste(event:any) {
-			const pastedText = event.clipboardData.getData('text');
-			if (BaseItem.isMarkdownTag(pastedText)) {
-				event.preventDefault();
-				const result = await markupToHtml.current(MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, pastedText, markupRenderOptions({ bodyOnly: true }));
+			const resourceMds = await handlePasteEvent(event);
+			if (resourceMds.length) {
+				const result = await markupToHtml.current(MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, resourceMds.join('\n'), markupRenderOptions({ bodyOnly: true }));
 				editor.insertContent(result.html);
 			} else {
-				onChangeHandler();
+				const pastedText = event.clipboardData.getData('text');
+
+				if (BaseItem.isMarkdownTag(pastedText)) { // Paste a link to a note
+					event.preventDefault();
+					const result = await markupToHtml.current(MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, pastedText, markupRenderOptions({ bodyOnly: true }));
+					editor.insertContent(result.html);
+				} else { // Paste regular text
+					// HACK: TinyMCE doesn't add an undo step when pasting, for unclear reasons
+					// so we manually add it here. We also can't do it immediately it seems, or
+					// else nothing is added to the stack, so do it on the next frame.
+					window.requestAnimationFrame(() => editor.undoManager.add());
+					onChangeHandler();
+				}
+			}
+		}
+
+		function onKeyDown(event:any) {
+			// Handle "paste as text". Note that when pressing CtrlOrCmd+Shift+V it's going
+			// to trigger the "keydown" event but not the "paste" event, so it's ok to process
+			// it here and we don't need to do anything special in onPaste
+			if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.code === 'KeyV') {
+				const pastedText = clipboard.readText();
+				if (pastedText) editor.insertContent(pastedText);
 			}
 		}
 
 		editor.on('keyup', onKeyUp);
+		editor.on('keydown', onKeyDown);
 		editor.on('keypress', onKeypress);
 		editor.on('paste', onPaste);
+		// `compositionend` means that a user has finished entering a Chinese
+		// (or other languages that require IME) character.
+		editor.on('compositionend', onChangeHandler);
 		editor.on('cut', onChangeHandler);
 		editor.on('joplinChange', onChangeHandler);
 		editor.on('Undo', onChangeHandler);
@@ -796,8 +959,10 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 		return () => {
 			try {
 				editor.off('keyup', onKeyUp);
+				editor.off('keydown', onKeyDown);
 				editor.off('keypress', onKeypress);
 				editor.off('paste', onPaste);
+				editor.off('compositionend', onChangeHandler);
 				editor.off('cut', onChangeHandler);
 				editor.off('joplinChange', onChangeHandler);
 				editor.off('Undo', onChangeHandler);
@@ -825,13 +990,14 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 	// as it is quite complex and probably rarely used.
 	function renderDisabledOverlay() {
 		const status = resourcesStatus(props.resourceInfos);
-		if (status === 'ready') return null;
+		if (status === 'ready' && !draggingStarted) return null;
 
-		const message = _('Please wait for all attachments to be downloaded and decrypted. You may also switch to %s to edit the note.', _('Code View'));
+		const message = draggingStarted ? _('Drop notes or files here') : _('Please wait for all attachments to be downloaded and decrypted. You may also switch to %s to edit the note.', _('Code View'));
+		const statusComp = draggingStarted ? null : <p style={theme.textStyleMinor}>{`Status: ${status}`}</p>;
 		return (
 			<div style={styles.disabledOverlay}>
 				<p style={theme.textStyle}>{message}</p>
-				<p style={theme.textStyleMinor}>{`Status: ${status}`}</p>
+				{statusComp}
 			</div>
 		);
 	}

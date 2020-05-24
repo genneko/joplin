@@ -3,9 +3,10 @@ import { useState, useEffect, useRef, forwardRef, useCallback, useImperativeHand
 
 // eslint-disable-next-line no-unused-vars
 import { EditorCommand, NoteBodyEditorProps } from '../../utils/types';
-import { commandAttachFileToBody } from '../../utils/resourceHandling';
+import { commandAttachFileToBody, handlePasteEvent } from '../../utils/resourceHandling';
 import { ScrollOptions, ScrollOptionTypes } from '../../utils/types';
-import { textOffsetToCursorPosition, useScrollHandler, usePrevious, lineLeftSpaces, selectionRangeCurrentLine, selectionRangePreviousLine, currentTextOffset, textOffsetSelection, selectedText, useSelectionRange } from './utils';
+import { textOffsetToCursorPosition, useScrollHandler, useRootWidth, usePrevious, lineLeftSpaces, selectionRange, selectionRangeCurrentLine, selectionRangePreviousLine, currentTextOffset, textOffsetSelection, selectedText } from './utils';
+import useListIdent from './utils/useListIdent';
 import Toolbar from './Toolbar';
 import styles_ from './styles';
 import { RenderedBody, defaultRenderedBody } from './utils/types';
@@ -14,12 +15,9 @@ const AceEditorReact = require('react-ace').default;
 const { bridge } = require('electron').remote.require('./bridge');
 const Note = require('lib/models/Note.js');
 const { clipboard } = require('electron');
-const mimeUtils = require('lib/mime-utils.js').mime;
 const Setting = require('lib/models/Setting.js');
 const NoteTextViewer = require('../../../NoteTextViewer.min');
 const shared = require('lib/components/shared/note-screen-shared.js');
-const md5 = require('md5');
-const { shim } = require('lib/shim.js');
 const Menu = bridge().Menu;
 const MenuItem = bridge().MenuItem;
 const markdownUtils = require('lib/markdownUtils');
@@ -36,8 +34,10 @@ require('brace/theme/solarized_dark');
 require('brace/theme/twilight');
 require('brace/theme/dracula');
 require('brace/theme/chaos');
+require('brace/theme/tomorrow');
 require('brace/keybinding/vim');
 require('brace/keybinding/emacs');
+require('brace/theme/terminal');
 
 // TODO: Could not get below code to work
 
@@ -87,20 +87,18 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 
 	const editorRef = useRef(null);
 	editorRef.current = editor;
-	const indentOrig = useRef<any>(null);
+	const rootRef = useRef(null);
 	const webviewRef = useRef(null);
 	const props_onChangeRef = useRef<Function>(null);
 	props_onChangeRef.current = props.onChange;
 	const contentKeyHasChangedRef = useRef(false);
 	contentKeyHasChangedRef.current = previousContentKey !== props.contentKey;
 
-	// The selection range changes all the time, when the caret moves or
-	// when the selection changes, so it's best not to make it part of the
-	// state as it would trigger too many unecessary updates.
-	const selectionRangeRef = useRef(null);
-	selectionRangeRef.current = useSelectionRange(editor);
+	const rootWidth = useRootWidth({ rootRef });
 
 	const { resetScroll, setEditorPercentScroll, setViewerPercentScroll, editor_scroll } = useScrollHandler(editor, webviewRef, props.onScroll);
+
+	useListIdent({ editor });
 
 	const aceEditor_change = useCallback((newBody: string) => {
 		props_onChangeRef.current({ changeId: null, content: newBody });
@@ -109,7 +107,7 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 	const wrapSelectionWithStrings = useCallback((string1: string, string2 = '', defaultText = '', replacementText: string = null, byLine = false) => {
 		if (!editor) return;
 
-		const selection = textOffsetSelection(selectionRangeRef.current, props.content);
+		const selection = textOffsetSelection(selectionRange(editor), props.content);
 
 		let newBody = props.content;
 
@@ -136,7 +134,7 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 
 			newBody += props.content.substr(selection.end);
 
-			const r = selectionRangeRef.current;
+			const r = selectionRange(editor);
 
 			// Because some insertion strings will have newlines, we'll need to account for them
 			const str1Split = string1.split(/\r?\n/);
@@ -176,7 +174,7 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 			}
 
 			setTimeout(() => {
-				const range = selectionRangeRef.current;
+				const range = selectionRange(editor);
 				range.setStart(newRange.start.row, newRange.start.column);
 				range.setEnd(newRange.end.row, newRange.end.column);
 				editor.getSession().getSelection().setSelectionRange(range, false);
@@ -200,7 +198,7 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 
 			setTimeout(() => {
 				if (middleText && newRange) {
-					const range = selectionRangeRef.current;
+					const range = selectionRange(editor);
 					range.setStart(newRange.start.row, newRange.start.column);
 					range.setEnd(newRange.end.row, newRange.end.column);
 					editor.getSession().getSelection().setSelectionRange(range, false);
@@ -218,12 +216,12 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 
 	const addListItem = useCallback((string1, string2 = '', defaultText = '', byLine = false) => {
 		let newLine = '\n';
-		const range = selectionRangeRef.current;
+		const range = selectionRange(editor);
 		if (!range || (range.start.row === range.end.row && !selectionRangeCurrentLine(range, props.content))) {
 			newLine = '';
 		}
 		wrapSelectionWithStrings(newLine + string1, string2, defaultText, null, byLine);
-	}, [wrapSelectionWithStrings, props.content]);
+	}, [wrapSelectionWithStrings, props.content, editor]);
 
 	useImperativeHandle(ref, () => {
 		return {
@@ -279,7 +277,7 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 							if (url) wrapSelectionWithStrings('[', `](${url})`);
 						},
 						textCode: () => {
-							const selection = textOffsetSelection(selectionRangeRef.current, props.content);
+							const selection = textOffsetSelection(selectionRange(editor), props.content);
 							const string = props.content.substr(selection.start, selection.end - selection.start);
 
 							// Look for newlines
@@ -297,13 +295,14 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 						},
 						insertText: (value: any) => wrapSelectionWithStrings(value),
 						attachFile: async () => {
-							const selection = textOffsetSelection(selectionRangeRef.current, props.content);
+							const selection = textOffsetSelection(selectionRange(editor), props.content);
 							const newBody = await commandAttachFileToBody(props.content, null, { position: selection ? selection.start : 0 });
 							if (newBody) aceEditor_change(newBody);
 						},
 						textNumberedList: () => {
-							let bulletNumber = markdownUtils.olLineNumber(selectionRangeCurrentLine(selectionRangeRef.current, props.content));
-							if (!bulletNumber) bulletNumber = markdownUtils.olLineNumber(selectionRangePreviousLine(selectionRangeRef.current, props.content));
+							const selection = selectionRange(editor);
+							let bulletNumber = markdownUtils.olLineNumber(selectionRangeCurrentLine(selection, props.content));
+							if (!bulletNumber) bulletNumber = markdownUtils.olLineNumber(selectionRangePreviousLine(selection, props.content));
 							if (!bulletNumber) bulletNumber = 0;
 							addListItem(`${bulletNumber + 1}. `, '', _('List item'), true);
 						},
@@ -327,29 +326,10 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 	}, [editor, props.content, addListItem, wrapSelectionWithStrings, selectionRangeCurrentLine, aceEditor_change, setEditorPercentScroll, setViewerPercentScroll, resetScroll, renderedBody]);
 
 	const onEditorPaste = useCallback(async (event: any = null) => {
-		const formats = clipboard.availableFormats();
-		for (let i = 0; i < formats.length; i++) {
-			const format = formats[i].toLowerCase();
-			const formatType = format.split('/')[0];
-
-			const position = currentTextOffset(editor, props.content);
-
-			if (formatType === 'image') {
-				if (event) event.preventDefault();
-
-				const image = clipboard.readImage();
-
-				const fileExt = mimeUtils.toFileExtension(format);
-				const filePath = `${Setting.value('tempDir')}/${md5(Date.now())}.${fileExt}`;
-
-				await shim.writeImageToFile(image, format, filePath);
-				const newBody = await commandAttachFileToBody(props.content, [filePath], { position });
-				await shim.fsDriver().remove(filePath);
-
-				aceEditor_change(newBody);
-			}
-		}
-	}, [editor, props.content, aceEditor_change]);
+		const resourceMds = await handlePasteEvent(event);
+		if (!resourceMds.length) return;
+		wrapSelectionWithStrings('', '', resourceMds.join('\n'));
+	}, [wrapSelectionWithStrings]);
 
 	const onEditorKeyDown = useCallback((event: any) => {
 		setLastKeys(prevLastKeys => {
@@ -361,12 +341,12 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 	}, []);
 
 	const editorCutText = useCallback(() => {
-		const text = selectedText(selectionRangeRef.current, props.content);
+		const text = selectedText(selectionRange(editor), props.content);
 		if (!text) return;
 
 		clipboard.writeText(text);
 
-		const s = textOffsetSelection(selectionRangeRef.current, props.content);
+		const s = textOffsetSelection(selectionRange(editor), props.content);
 		if (!s || s.start === s.end) return;
 
 		const s1 = props.content.substr(0, s.start);
@@ -375,7 +355,7 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 		aceEditor_change(s1 + s2);
 
 		setTimeout(() => {
-			const range = selectionRangeRef.current;
+			const range = selectionRange(editor);
 			range.setStart(range.start.row, range.start.column);
 			range.setEnd(range.start.row, range.start.column);
 			editor.getSession().getSelection().setSelectionRange(range, false);
@@ -384,9 +364,9 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 	}, [props.content, editor, aceEditor_change]);
 
 	const editorCopyText = useCallback(() => {
-		const text = selectedText(selectionRangeRef.current, props.content);
+		const text = selectedText(selectionRange(editor), props.content);
 		clipboard.writeText(text);
-	}, [props.content]);
+	}, [props.content, editor]);
 
 	const editorPasteText = useCallback(() => {
 		wrapSelectionWithStrings(clipboard.readText(), '', '', '');
@@ -395,7 +375,7 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 	const onEditorContextMenu = useCallback(() => {
 		const menu = new Menu();
 
-		const hasSelectedText = !!selectedText(selectionRangeRef.current, props.content);
+		const hasSelectedText = !!selectedText(selectionRange(editor), props.content);
 		const clipboardText = clipboard.readText();
 
 		menu.append(
@@ -405,7 +385,7 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 				click: async () => {
 					editorCutText();
 				},
-			})
+			}),
 		);
 
 		menu.append(
@@ -415,7 +395,7 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 				click: async () => {
 					editorCopyText();
 				},
-			})
+			}),
 		);
 
 		menu.append(
@@ -430,11 +410,11 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 						onEditorPaste();
 					}
 				},
-			})
+			}),
 		);
 
 		menu.popup(bridge().window());
-	}, [props.content, editorCutText, editorPasteText, editorCopyText, onEditorPaste]);
+	}, [props.content, editorCutText, editorPasteText, editorCopyText, onEditorPaste, editor]);
 
 	function aceEditor_load(editor: any) {
 		setEditor(editor);
@@ -442,8 +422,6 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 
 	useEffect(() => {
 		if (!editor) return () => {};
-
-		editor.indent = indentOrig.current;
 
 		const cancelledKeys = [];
 		const letters = ['F', 'T', 'P', 'Q', 'L', ',', 'G', 'K'];
@@ -496,36 +474,6 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 		};
 	}, [editor, onEditorPaste, onEditorContextMenu, lastKeys]);
 
-	useEffect(() => {
-		if (!editor) return;
-
-		// Markdown list indentation. (https://github.com/laurent22/joplin/pull/2713)
-		// If the current line starts with `markup.list` token,
-		// hitting `Tab` key indents the line instead of inserting tab at cursor.
-		indentOrig.current = editor.indent;
-		const localIndentOrig = indentOrig.current;
-		editor.indent = function() {
-			const range = selectionRangeRef.current;
-			if (range.isEmpty()) {
-				const row = range.start.row;
-				const tokens = this.session.getTokens(row);
-
-				if (tokens.length > 0 && tokens[0].type == 'markup.list') {
-					if (tokens[0].value.search(/\d+\./) != -1) {
-						// Resets numbered list to 1.
-						this.session.replace({ start: { row, column: 0 }, end: { row, column: tokens[0].value.length } },
-							tokens[0].value.replace(/\d+\./, '1.'));
-					}
-
-					this.session.indentRows(row, row, '\t');
-					return;
-				}
-			}
-
-			localIndentOrig.call(this);
-		};
-	}, [editor]);
-
 	const webview_domReady = useCallback(() => {
 		setWebviewReady(true);
 	}, []);
@@ -543,7 +491,7 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 		} else {
 			props.onMessage(event);
 		}
-	}, [props.onMessage, props.content, aceEditor_change]);
+	}, [props.onMessage, props.content, aceEditor_change, setEditorPercentScroll]);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -567,7 +515,18 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 			cancelled = true;
 			clearTimeout(timeoutId);
 		};
-	}, [props.content, props.contentMarkupLanguage, props.visiblePanes, props.resourceInfos]);
+	}, [props.content, props.contentMarkupLanguage, props.visiblePanes, props.resourceInfos, props.markupToHtml]);
+
+	useEffect(() => {
+		if (!editor) return;
+
+		if (contentKeyHasChangedRef.current) {
+			// editor.getSession().setMode(new CustomMdMode());
+			const undoManager = editor.getSession().getUndoManager();
+			undoManager.reset();
+			editor.getSession().setUndoManager(undoManager);
+		}
+	}, [props.content, editor]);
 
 	useEffect(() => {
 		if (!webviewReady) return;
@@ -591,11 +550,18 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 			// Note: Ideally we'd set the display to "none" to take the editor out
 			// of the DOM but if we do that, certain things won't work, in particular
 			// things related to scroll, which are based on the editor.
-			output.width = 1;
-			output.maxWidth = 1;
-			output.position = 'absolute';
-			output.left = -100000;
+
+			// Note that the below hack doesn't work and causes a bug in this case:
+			// - Put Ace Editor in viewer-only mode
+			// - Go to WYSIWYG editor
+			// - Create new to-do - set title only
+			// - Switch to Code View
+			// - Switch layout and type something
+			// => Text editor layout is broken and text is off-screen
+
+			output.display = 'none'; // Seems to work fine since the refactoring
 		}
+
 		return output;
 	}, [styles.cellEditor, props.visiblePanes]);
 
@@ -614,6 +580,12 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 	}, [styles.cellViewer, props.visiblePanes]);
 
 	function renderEditor() {
+		// Need to hard-code the editor width, otherwise various bugs pops up
+		let width = 0;
+		if (props.visiblePanes.includes('editor')) {
+			width = !props.visiblePanes.includes('viewer') ? rootWidth : Math.floor(rootWidth / 2);
+		}
+
 		return (
 			<div style={cellEditorStyle}>
 				<AceEditorReact
@@ -621,6 +593,7 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 					mode={props.contentMarkupLanguage === Note.MARKUP_LANGUAGE_HTML ? 'text' : 'markdown'}
 					theme={styles.editor.editorTheme}
 					style={styles.editor}
+					width={`${width}px`}
 					fontSize={styles.editor.fontSize}
 					showGutter={false}
 					readOnly={props.visiblePanes.indexOf('editor') < 0}
@@ -663,7 +636,7 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 	}
 
 	return (
-		<div style={styles.root}>
+		<div style={styles.root} ref={rootRef}>
 			<div style={styles.rowToolbar}>
 				<Toolbar
 					theme={props.theme}

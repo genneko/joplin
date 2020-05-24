@@ -3,6 +3,7 @@ import { FormNote, EditorCommand } from './types';
 const { time } = require('lib/time-utils.js');
 const { reg } = require('lib/registry.js');
 const NoteListUtils = require('../../utils/NoteListUtils');
+const TemplateUtils = require('lib/TemplateUtils');
 
 interface HookDependencies {
 	windowCommand: any,
@@ -62,12 +63,14 @@ export default function useWindowCommandHandler(dependencies:HookDependencies) {
 				if (editorRef.current && editorRef.current.supportsCommand('search')) {
 					editorCmd.name = 'search';
 				} else {
-					setShowLocalSearch(true);
-					if (noteSearchBarRef.current) noteSearchBarRef.current.wrappedInstance.focus();
+					fn = () => {
+						setShowLocalSearch(true);
+						if (noteSearchBarRef.current) noteSearchBarRef.current.wrappedInstance.focus();
+					};
 				}
 			} else if (command.name === 'insertTemplate') {
-				editorCmd.name = 'insertText',
-				editorCmd.value = time.formatMsToLocal(new Date().getTime());
+				editorCmd.name = 'insertText';
+				editorCmd.value = TemplateUtils.render(command.value);
 			}
 
 			if (command.name === 'focusElement' && command.target === 'noteTitle') {
