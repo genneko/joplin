@@ -38,7 +38,7 @@ async function main() {
 		console.info(await execCommand([`"${exePath}"`, '--arch ia32'].join(' ')));
 		console.info(await execCommand([`"${exePath}"`, '--arch x64'].join(' ')));
 	} else if (isFreeBSD()) {
-		console.info(await execCommand([`"${exePath}"`, '-e /usr/local/bin', '--version $(pkg query -e "%n ~ electron*" %v)'].join(' ')));
+		console.info(await execCommand([`"${exePath}"`, '-e /usr/local/bin', '--version $(cat /usr/local/share/$(pkg query -e "%n ~ electron*" %n)/version)'].join(' ')));
 
 	} else {
 		console.info(await execCommand([`"${exePath}"`].join(' ')));
