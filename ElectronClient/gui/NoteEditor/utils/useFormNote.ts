@@ -1,16 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FormNote, defaultFormNote, ResourceInfos } from './types';
 import { clearResourceCache, attachedResources } from './resourceHandling';
-const { MarkupToHtml } = require('lib/joplin-renderer');
-const HtmlToHtml = require('lib/joplin-renderer/HtmlToHtml');
 import AsyncActionQueue from '../../../lib/AsyncActionQueue';
 import { handleResourceDownloadMode } from './resourceHandling';
+const { MarkupToHtml } = require('lib/joplin-renderer');
+const HtmlToHtml = require('lib/joplin-renderer/HtmlToHtml');
 const usePrevious = require('lib/hooks/usePrevious').default;
 const Note = require('lib/models/Note');
 const Setting = require('lib/models/Setting');
 const { reg } = require('lib/registry.js');
 const ResourceFetcher = require('lib/services/ResourceFetcher.js');
 const DecryptionWorker = require('lib/services/DecryptionWorker.js');
+const ResourceEditWatcher = require('lib/services/ResourceEditWatcher.js').default;
 
 export interface OnLoadEvent {
 	formNote: FormNote,
@@ -30,12 +31,14 @@ function installResourceChangeHandler(onResourceChangeHandler: Function) {
 	ResourceFetcher.instance().on('downloadComplete', onResourceChangeHandler);
 	ResourceFetcher.instance().on('downloadStarted', onResourceChangeHandler);
 	DecryptionWorker.instance().on('resourceDecrypted', onResourceChangeHandler);
+	ResourceEditWatcher.instance().on('resourceChange', onResourceChangeHandler);
 }
 
 function uninstallResourceChangeHandler(onResourceChangeHandler: Function) {
 	ResourceFetcher.instance().off('downloadComplete', onResourceChangeHandler);
 	ResourceFetcher.instance().off('downloadStarted', onResourceChangeHandler);
 	DecryptionWorker.instance().off('resourceDecrypted', onResourceChangeHandler);
+	ResourceEditWatcher.instance().off('resourceChange', onResourceChangeHandler);
 }
 
 export default function useFormNote(dependencies:HookDependencies) {
