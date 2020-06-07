@@ -139,11 +139,15 @@ class MainScreenComponent extends React.Component {
 
 			const body = template ? TemplateUtils.render(template) : '';
 
-			const newNote = await Note.save({
+			const defaultValues = Note.previewFieldsWithDefaultValues({ includeTimestamps: false });
+
+			let newNote = Object.assign({}, defaultValues, {
 				parent_id: folderId,
 				is_todo: isTodo ? 1 : 0,
 				body: body,
-			}, { provisional: true });
+			});
+
+			newNote = await Note.save(newNote, { provisional: true });
 
 			this.props.dispatch({
 				type: 'NOTE_SELECT',
@@ -862,7 +866,8 @@ class MainScreenComponent extends React.Component {
 		const noteContentPropertiesDialogOptions = this.state.noteContentPropertiesDialogOptions;
 		const shareNoteDialogOptions = this.state.shareNoteDialogOptions;
 
-		const bodyEditor = this.props.settingEditorCodeView ? 'AceEditor' : 'TinyMCE';
+		const codeEditor = Setting.value('editor.betaCodeMirror') ? 'CodeMirror' : 'AceEditor';
+		const bodyEditor = this.props.settingEditorCodeView ? codeEditor : 'TinyMCE';
 
 		return (
 			<div style={style}>
