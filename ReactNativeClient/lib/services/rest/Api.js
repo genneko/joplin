@@ -24,46 +24,14 @@ const { FoldersScreenUtils } = require('lib/folders-screen-utils.js');
 const uri2path = require('file-uri-to-path');
 const { MarkupToHtml } = require('lib/joplin-renderer');
 const { uuid } = require('lib/uuid');
-
-const ExternalEditWatcher = require('lib/services/ExternalEditWatcher');
-
-class ApiError extends Error {
-	constructor(message, httpCode = 400) {
-		super(message);
-		this.httpCode_ = httpCode;
-	}
-
-	get httpCode() {
-		return this.httpCode_;
-	}
-}
-
-class ErrorMethodNotAllowed extends ApiError {
-	constructor(message = 'Method Not Allowed') {
-		super(message, 405);
-	}
-}
-class ErrorNotFound extends ApiError {
-	constructor(message = 'Not Found') {
-		super(message, 404);
-	}
-}
-class ErrorForbidden extends ApiError {
-	constructor(message = 'Forbidden') {
-		super(message, 403);
-	}
-}
-class ErrorBadRequest extends ApiError {
-	constructor(message = 'Bad Request') {
-		super(message, 400);
-	}
-}
+const { ErrorMethodNotAllowed, ErrorForbidden, ErrorBadRequest, ErrorNotFound } = require('./errors');
 
 class Api {
-	constructor(token = null) {
+	constructor(token = null, actionApi = null) {
 		this.token_ = token;
 		this.knownNounces_ = {};
 		this.logger_ = new Logger();
+		this.actionApi_ = actionApi;
 	}
 
 	get token() {
@@ -391,13 +359,11 @@ class Api {
 		this.checkToken_(request);
 
 		if (request.method !== 'POST') throw new ErrorMethodNotAllowed();
+		if (!this.actionApi_) throw new ErrorNotFound('No action API has been setup!');
+		if (!this.actionApi_[serviceName]) throw new ErrorNotFound(`No such service: ${serviceName}`);
 
-		if (serviceName === 'externalEditWatcher') {
-			const externalApi = ExternalEditWatcher.instance().externalApi();
-			return this.execServiceActionFromRequest_(externalApi, JSON.parse(request.body));
-		} else {
-			throw new ErrorNotFound(`No such service: ${serviceName}`);
-		}
+		const externalApi = this.actionApi_[serviceName]();
+		return this.execServiceActionFromRequest_(externalApi, JSON.parse(request.body));
 	}
 
 	async action_notes(request, id = null, link = null) {
