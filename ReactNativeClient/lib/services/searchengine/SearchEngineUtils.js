@@ -1,4 +1,4 @@
-const SearchEngine = require('lib/services/SearchEngine');
+const SearchEngine = require('lib/services/searchengine/SearchEngine');
 const Note = require('lib/models/Note');
 
 class SearchEngineUtils {
@@ -11,7 +11,7 @@ class SearchEngineUtils {
 			searchType = SearchEngine.SEARCH_TYPE_BASIC;
 		}
 
-		const results = await SearchEngine.instance().search(query, { searchType });
+		const results = await SearchEngine.instance().search(query, { searchType, fuzzy: options.fuzzy });
 		const noteIds = results.map(n => n.id);
 
 		// We need at least the note ID to be able to sort them below so if not
@@ -42,7 +42,18 @@ class SearchEngineUtils {
 			if (idWasAutoAdded) delete sortedNotes[idx].id;
 		}
 
-		return sortedNotes;
+
+		// Note that when the search engine index is somehow corrupted, it might contain
+		// references to notes that don't exist. Not clear how it can happen, but anyway
+		// handle it here by checking if `user_updated_time` IS NOT NULL. Was causing this
+		// issue: https://discourse.joplinapp.org/t/how-to-recover-corrupted-database/9367
+		if (noteIds.length !== notes.length) {
+			// remove null objects
+			return sortedNotes.filter(n => n);
+		} else {
+			return sortedNotes;
+		}
+
 	}
 }
 

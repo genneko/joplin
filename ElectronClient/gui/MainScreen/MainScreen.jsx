@@ -408,7 +408,7 @@ class MainScreenComponent extends React.Component {
 				color: theme.color,
 				backgroundColor: theme.backgroundColor,
 			},
-			this.props.style,
+			this.props.style
 		);
 		const promptOptions = this.state.promptOptions;
 		const notes = this.props.notes;
@@ -434,7 +434,7 @@ class MainScreenComponent extends React.Component {
 				// A bit of a hack, but for now don't allow changing code view
 				// while a note is being saved as it will cause a problem with
 				// TinyMCE because it won't have time to send its content before
-				// being switch to Ace Editor.
+				// being switch to the Code Editor.
 				if (this.props.hasNotesBeingSaved) return;
 				Setting.toggle('editor.codeView');
 			},
@@ -445,8 +445,8 @@ class MainScreenComponent extends React.Component {
 		headerItems.push({
 			title: _('Search...'),
 			iconName: 'fa-search',
-			onQuery: query => {
-				CommandService.instance().execute('search', { query });
+			onQuery: (query, fuzzy = false) => {
+				CommandService.instance().execute('search', { query, fuzzy });
 			},
 			type: 'search',
 		});
@@ -468,8 +468,7 @@ class MainScreenComponent extends React.Component {
 		const noteContentPropertiesDialogOptions = this.state.noteContentPropertiesDialogOptions;
 		const shareNoteDialogOptions = this.state.shareNoteDialogOptions;
 
-		const codeEditor = Setting.value('editor.betaCodeMirror') ? 'CodeMirror' : 'AceEditor';
-		const bodyEditor = this.props.settingEditorCodeView ? codeEditor : 'TinyMCE';
+		const bodyEditor = this.props.settingEditorCodeView ? 'CodeMirror' : 'TinyMCE';
 
 		return (
 			<div style={style}>
