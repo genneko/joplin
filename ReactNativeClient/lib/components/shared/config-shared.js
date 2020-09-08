@@ -159,6 +159,12 @@ shared.settingsSections = createSelector(
 			isScreen: true,
 		});
 
+		output.push({
+			name: 'keymap',
+			metadatas: [],
+			isScreen: true,
+		});
+
 		return output;
 	}
 );
