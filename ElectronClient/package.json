@@ -1,6 +1,6 @@
 {
   "name": "Joplin",
-  "version": "1.0.242",
+  "version": "1.1.1",
   "description": "Joplin for Desktop",
   "main": "main.js",
   "scripts": {
@@ -78,7 +78,7 @@
       ]
     },
     "linux": {
-      "icon": "../Assets/LinuxIcons/256x256.png",
+      "icon": "../Assets/LinuxIcons",
       "category": "Office",
       "desktop": {
         "Icon": "joplin"
