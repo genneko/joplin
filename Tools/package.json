@@ -24,6 +24,6 @@
     "sharp": "^0.23.4",
     "string-padding": "^1.0.2",
     "uri-template": "^1.0.1",
-    "yargs": "^12.0.5"
+    "yargs": "^16.0.3"
   }
 }
