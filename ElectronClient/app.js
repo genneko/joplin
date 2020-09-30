@@ -34,6 +34,7 @@ const KeymapService = require('lib/services/KeymapService').default;
 const TemplateUtils = require('lib/TemplateUtils');
 const CssUtils = require('lib/CssUtils');
 const resourceEditWatcherReducer = require('lib/services/ResourceEditWatcher/reducer').default;
+// const populateDatabase = require('lib/services/debug/populateDatabase').default;
 const versionInfo = require('lib/versionInfo').default;
 
 const commands = [
@@ -100,6 +101,7 @@ const appDefaultState = Object.assign({}, defaultState, {
 	lastEditorScrollPercents: {},
 	devToolsVisible: false,
 	visibleDialogs: {}, // empty object if no dialog is visible. Otherwise contains the list of visible dialogs.
+	focusedField: null,
 });
 
 class Application extends BaseApplication {
@@ -289,6 +291,21 @@ class Application extends BaseApplication {
 			case 'VISIBLE_DIALOGS_REMOVE':
 				newState = Object.assign({}, state);
 				delete newState.visibleDialogs[state.name];
+				break;
+
+			case 'FOCUS_SET':
+
+				newState = Object.assign({}, state);
+				newState.focusedField = action.field;
+				break;
+
+			case 'FOCUS_CLEAR':
+
+				// A field can only clear its own state
+				if (action.field === state.focusedField) {
+					newState = Object.assign({}, state);
+					newState.focusedField = null;
+				}
 				break;
 
 			}
@@ -1109,7 +1126,7 @@ class Application extends BaseApplication {
 		try {
 			await keymapService.loadCustomKeymap(`${dir}/keymap-desktop.json`);
 		} catch (err) {
-			bridge().showErrorMessageBox(err.message);
+			reg.logger().error(err.message);
 		}
 
 		AlarmService.setDriver(new AlarmServiceDriverNode({ appName: packageInfo.build.appId }));
@@ -1267,6 +1284,8 @@ class Application extends BaseApplication {
 		};
 
 		bridge().addEventListener('nativeThemeUpdated', this.bridge_nativeThemeUpdated);
+
+		// await populateDatabase(reg.db());
 	}
 
 }

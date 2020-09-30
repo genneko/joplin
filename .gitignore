@@ -112,6 +112,7 @@ ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/utils/types.js
 ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/utils/useCursorUtils.js
 ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/utils/useEditorSearch.js
 ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/utils/useJoplinMode.js
+ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/utils/useKeymap.js
 ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/utils/useLineSorting.js
 ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/utils/useListIdent.js
 ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/utils/useScrollUtils.js
@@ -138,6 +139,7 @@ ElectronClient/gui/NoteList/NoteList.js
 ElectronClient/gui/NoteListControls/commands/focusSearch.js
 ElectronClient/gui/NoteListControls/NoteListControls.js
 ElectronClient/gui/NoteListItem.js
+ElectronClient/gui/NoteTextViewer.js
 ElectronClient/gui/NoteToolbar/NoteToolbar.js
 ElectronClient/gui/OneDriveLoginScreen.js
 ElectronClient/gui/ResizableLayout/hooks/useLayoutItemSizes.js
@@ -169,6 +171,7 @@ ReactNativeClient/lib/components/screens/UpgradeSyncTargetScreen.js
 ReactNativeClient/lib/hooks/useEffectDebugger.js
 ReactNativeClient/lib/hooks/useImperativeHandlerDebugger.js
 ReactNativeClient/lib/hooks/usePrevious.js
+ReactNativeClient/lib/hooks/usePropsDebugger.js
 ReactNativeClient/lib/joplin-renderer/MdToHtml/rules/checkbox.js
 ReactNativeClient/lib/joplin-renderer/MdToHtml/rules/fence.js
 ReactNativeClient/lib/joplin-renderer/MdToHtml/rules/mermaid.js
@@ -176,6 +179,7 @@ ReactNativeClient/lib/joplin-renderer/MdToHtml/rules/sanitize_html.js
 ReactNativeClient/lib/JoplinServerApi.js
 ReactNativeClient/lib/ntpDate.js
 ReactNativeClient/lib/services/CommandService.js
+ReactNativeClient/lib/services/debug/populateDatabase.js
 ReactNativeClient/lib/services/keychain/KeychainService.js
 ReactNativeClient/lib/services/keychain/KeychainServiceDriver.dummy.js
 ReactNativeClient/lib/services/keychain/KeychainServiceDriver.mobile.js
