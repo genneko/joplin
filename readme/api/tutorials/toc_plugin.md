@@ -8,9 +8,9 @@ Through this tutorial you will learn about several aspect of the Joplin API, inc
 - How to create a webview
 - How to listen to changes in the user interface
 
-## Setting up your environment
+## Setting up your environment
 
-Before getting any further, make sure your environment is setup correctly as described in the [Get Started guide](https://github.com/laurent22/joplin/blob/dev/readme/api/get_started/plugins/).
+Before getting any further, make sure your environment is setup correctly as described in the [Get Started guide](https://github.com/laurent22/joplin/blob/dev/readme/api/get_started/plugins.md).
 
 ## Registering the plugin
 
@@ -125,17 +125,17 @@ joplin.plugins.register({
 });
 ```
 
-Later you will also need a way to generate the slug for each header. A slug is an identifier which is used to link to a particular header. Essentially a header text like "My Header" is converted to "my-header". And if there's already a slug with that name, a number is appended to it. Without going into too much details, you will need the "slug" package to generate this for you, so install it using `npm i -s slug` from the root of your plugin directory.
+Later you will also need a way to generate the slug for each header. A slug is an identifier which is used to link to a particular header. Essentially a header text like "My Header" is converted to "my-header". And if there's already a slug with that name, a number is appended to it. Without going into too much details, you will need the "slug" package to generate this for you, so install it using `npm i -s uslug` from the root of your plugin directory.
 
 Then this is the function you will need for Joplin, so copy it somewhere in your file:
 
 ```typescript
-const nodeSlug = require('slug');
+const uslug = require('uslug');
 
 let slugs = {};
 
 function headerSlug(headerText) {
-	const s = nodeSlug(headerText);
+	const s = uslug(headerText);
 	let num = slugs[s] ? slugs[s] : 1;
 	const output = [s];
 	if (num > 1) output.push(num);

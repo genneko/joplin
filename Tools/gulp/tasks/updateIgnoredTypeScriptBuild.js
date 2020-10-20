@@ -11,11 +11,10 @@ module.exports = {
 				'**/.git/**',
 				'**/ElectronClient/lib/**',
 				'**/CliClient/build/**',
-				'**/CliClient/tests-build/lib/**',
+				'**/CliClient/tests-build/**',
 				'**/ElectronClient/dist/**',
 				'**/Modules/TinyMCE/JoplinLists/**',
 				'**/Modules/TinyMCE/IconPack/**',
-				'**/CliClient/tests-build/support/**',
 				'**/CliClient/tests/support/plugins/**',
 				'**/plugin_types/**',
 			],
@@ -33,6 +32,7 @@ module.exports = {
 		await Promise.all([
 			utils.replaceFileText(`${rootDir}/.gitignore`, regex, replacement),
 			utils.replaceFileText(`${rootDir}/.eslintignore`, regex, replacement),
+			utils.replaceFileText(`${rootDir}/.ignore`, regex, replacement),
 		]);
 	},
 };
