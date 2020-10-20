@@ -2,7 +2,7 @@ const MarkdownIt = require('markdown-it');
 const md5 = require('md5');
 const noteStyle = require('./noteStyle');
 const { fileExtension } = require('./pathUtils');
-const memoryCache = require('memory-cache');
+const InMemoryCache = require('lib/InMemoryCache').default;
 
 // /!\/!\ Note: the order of rules is important!! /!\/!\
 const rules = {
@@ -22,7 +22,7 @@ const rules = {
 // const eventManager = require('lib/eventManager').default;
 const setupLinkify = require('./MdToHtml/setupLinkify');
 const hljs = require('highlight.js');
-const nodeSlug = require('slug');
+const uslug = require('uslug');
 const markdownItAnchor = require('markdown-it-anchor');
 // The keys must match the corresponding entry in Setting.js
 const plugins = {
@@ -41,8 +41,11 @@ const plugins = {
 const defaultNoteStyle = require('./defaultNoteStyle');
 
 function slugify(s) {
-	return nodeSlug(s);
+	return uslug(s);
 }
+
+// Share across all instances of MdToHtml
+const inMemoryCache = new InMemoryCache(20);
 
 class MdToHtml {
 	constructor(options = null) {
@@ -57,7 +60,7 @@ class MdToHtml {
 		this.cachedHighlightedCode_ = {};
 		this.ResourceModel_ = options.ResourceModel;
 		this.pluginOptions_ = options.pluginOptions ? options.pluginOptions : {};
-		this.contextCache_ = new memoryCache.Cache();
+		this.contextCache_ = inMemoryCache;
 
 		this.tempDir_ = options.tempDir;
 		this.fsDriver_ = {
@@ -175,7 +178,11 @@ class MdToHtml {
 		return html.substring(3, html.length - 5);
 	}
 
-	// "style" here is really the theme, as returned by themeStyle()
+	clearCache() {
+		this.cachedOutputs_ = {};
+	}
+
+	// "theme" is the theme as returned by themeStyle()
 	async render(body, theme = null, options = null) {
 		options = Object.assign({}, {
 			// In bodyOnly mode, the rendered Markdown is returned without the wrapper DIV

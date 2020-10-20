@@ -35,7 +35,7 @@ const { JoplinDatabase } = require('lib/joplin-database.js');
 const { Database } = require('lib/database.js');
 const { NotesScreen } = require('lib/components/screens/notes.js');
 const { TagsScreen } = require('lib/components/screens/tags.js');
-const { NoteScreen } = require('lib/components/screens/note.js');
+const NoteScreen = require('lib/components/screens/Note').default;
 const { ConfigScreen } = require('lib/components/screens/config.js');
 const { FolderScreen } = require('lib/components/screens/folder.js');
 const { LogScreen } = require('lib/components/screens/log.js');
@@ -54,7 +54,7 @@ const { DatabaseDriverReactNative } = require('lib/database-driver-react-native'
 const { reg } = require('lib/registry.js');
 const { setLocale, closestSupportedLocale, defaultLocale } = require('lib/locale');
 const RNFetchBlob = require('rn-fetch-blob').default;
-const { PoorManIntervals } = require('lib/poor-man-intervals.js');
+const PoorManIntervals = require('lib/PoorManIntervals').default;
 const reducer = require('lib/reducer').default;
 const { defaultState } = require('lib/reducer');
 const { FileApiDriverLocal } = require('lib/file-api-driver-local.js');
@@ -73,14 +73,12 @@ const KeychainServiceDriverMobile = require('lib/services/keychain/KeychainServi
 const SyncTargetRegistry = require('lib/SyncTargetRegistry.js');
 const SyncTargetOneDrive = require('lib/SyncTargetOneDrive.js');
 const SyncTargetFilesystem = require('lib/SyncTargetFilesystem.js');
-const SyncTargetOneDriveDev = require('lib/SyncTargetOneDriveDev.js');
 const SyncTargetNextcloud = require('lib/SyncTargetNextcloud.js');
 const SyncTargetWebDAV = require('lib/SyncTargetWebDAV.js');
 const SyncTargetDropbox = require('lib/SyncTargetDropbox.js');
 const SyncTargetAmazonS3 = require('lib/SyncTargetAmazonS3.js');
 
 SyncTargetRegistry.addClass(SyncTargetOneDrive);
-if (__DEV__) SyncTargetRegistry.addClass(SyncTargetOneDriveDev);
 SyncTargetRegistry.addClass(SyncTargetNextcloud);
 SyncTargetRegistry.addClass(SyncTargetWebDAV);
 SyncTargetRegistry.addClass(SyncTargetDropbox);
@@ -442,7 +440,7 @@ async function initialize(dispatch) {
 	Resource.fsDriver_ = fsDriver;
 	FileApiDriverLocal.fsDriver_ = fsDriver;
 
-	AlarmService.setDriver(new AlarmServiceDriver());
+	AlarmService.setDriver(new AlarmServiceDriver(mainLogger));
 	AlarmService.setLogger(mainLogger);
 
 	try {
@@ -465,7 +463,6 @@ async function initialize(dispatch) {
 			let locale = NativeModules.I18nManager.localeIdentifier;
 			if (!locale) locale = defaultLocale();
 			Setting.setValue('locale', closestSupportedLocale(locale));
-			if (Setting.value('env') === 'dev') Setting.setValue('sync.target', SyncTargetRegistry.nameToId('onedrive_dev'));
 			Setting.setValue('firstStart', 0);
 		}
 

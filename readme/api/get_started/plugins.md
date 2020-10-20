@@ -2,7 +2,7 @@
 
 In this article you will learn the basic steps to build and test a plugin in Joplin.
 
-## Setting up your environment
+## Setting up your environment
 
 First you need to setup your environment:
 
@@ -43,5 +43,5 @@ Restart the app, and Joplin should load the plugin and execute its `onStart` han
 
 # Next steps
 
-- You might want to check the [plugin tutorial](https://github.com/laurent22/joplin/blob/dev/readme/api/tutorials/toc_plugin/) to get a good overview of how to create a complete plugin and how to use the plugin API.
+- You might want to check the [plugin tutorial](https://github.com/laurent22/joplin/blob/dev/readme/api/tutorials/toc_plugin.md) to get a good overview of how to create a complete plugin and how to use the plugin API.
 - For more information about the plugin API, check the [Plugin API reference](https://joplinapp.org/api/references/plugin_api/classes/joplin.html).

@@ -5,14 +5,14 @@ import { stateUtils } from 'lib/reducer';
 import CommandService from 'lib/services/CommandService';
 import MenuUtils from 'lib/services/commands/MenuUtils';
 import KeymapService from 'lib/services/KeymapService';
-import { utils as pluginUtils, ViewInfo } from 'lib/services/plugins/reducer';
+import { PluginStates, utils as pluginUtils } from 'lib/services/plugins/reducer';
 import shim from 'lib/shim';
 import Setting from 'lib/models/Setting';
 import versionInfo from 'lib/versionInfo';
 import { Module } from 'lib/services/interop/types';
 import InteropServiceHelper from '../InteropServiceHelper';
 import { _ } from 'lib/locale';
-import { MenuItemLocation } from 'lib/services/plugins/api/types';
+import { MenuItem, MenuItemLocation } from 'lib/services/plugins/api/types';
 
 const { connect } = require('react-redux');
 const { reg } = require('lib/registry.js');
@@ -22,6 +22,51 @@ const { shell, clipboard } = require('electron');
 const Menu = bridge().Menu;
 const PluginManager = require('lib/services/PluginManager');
 const TemplateUtils = require('lib/TemplateUtils');
+
+const menuUtils = new MenuUtils(CommandService.instance());
+
+function pluginMenuItemsCommandNames(menuItems:MenuItem[]):string[] {
+	let output:string[] = [];
+	for (const menuItem of menuItems) {
+		if (menuItem.submenu) {
+			output = output.concat(pluginMenuItemsCommandNames(menuItem.submenu));
+		} else {
+			if (menuItem.commandName) output.push(menuItem.commandName);
+		}
+	}
+	return output;
+}
+
+function pluginCommandNames(plugins:PluginStates):string[] {
+	let output:string[] = [];
+
+	for (const view of pluginUtils.viewsByType(plugins, 'menu')) {
+		output = output.concat(pluginMenuItemsCommandNames(view.menuItems));
+	}
+
+	for (const view of pluginUtils.viewsByType(plugins, 'menuItem')) {
+		if (view.commandName) output.push(view.commandName);
+	}
+
+	return output;
+}
+
+function createPluginMenuTree(label:string, menuItems:MenuItem[], onMenuItemClick:Function) {
+	const output:any = {
+		label: label,
+		submenu: [],
+	};
+
+	for (const menuItem of menuItems) {
+		if (menuItem.submenu) {
+			output.submenu.push(createPluginMenuTree(menuItem.label, menuItem.submenu, onMenuItemClick));
+		} else {
+			output.submenu.push(menuUtils.commandToMenuItem(menuItem.commandName, onMenuItemClick));
+		}
+	}
+
+	return output;
+}
 
 interface Props {
 	dispatch: Function,
@@ -36,7 +81,8 @@ interface Props {
 	showNoteCounts: boolean,
 	uncompletedTodosOnTop: boolean,
 	showCompletedTodos: boolean,
-	pluginMenuItemInfos: ViewInfo[],
+	pluginMenuItems: any[],
+	pluginMenus: any[],
 }
 
 const commandNames:string[] = [
@@ -85,8 +131,6 @@ function menuItemSetEnabled(id:string, enabled:boolean) {
 	menuItem.enabled = enabled;
 }
 
-const menuUtils = new MenuUtils(CommandService.instance());
-
 function useMenu(props:Props) {
 	const [menu, setMenu] = useState(null);
 	const [keymapLastChangeTime, setKeymapLastChangeTime] = useState(Date.now());
@@ -118,7 +162,7 @@ function useMenu(props:Props) {
 		const importOptions = {
 			path,
 			format: module.format,
-			modulePath: module.path,
+			outputFormat: module.outputFormat,
 			onError: console.warn,
 			destinationFolderId: !module.isNoteArchive && moduleSource === 'file' ? props.selectedFolderId : null,
 		};
@@ -143,7 +187,7 @@ function useMenu(props:Props) {
 	useEffect(() => {
 		const keymapService = KeymapService.instance();
 
-		const pluginCommandNames = props.pluginMenuItemInfos.map((viewInfo:ViewInfo) => viewInfo.view.commandName);
+		const pluginCommandNames = props.pluginMenuItems.map((view:any) => view.commandName);
 		const menuItemDic = menuUtils.commandsToMenuItems(commandNames.concat(pluginCommandNames), (commandName:string) => onMenuItemClickRef.current(commandName));
 
 		const quitMenuItem = {
@@ -207,7 +251,7 @@ function useMenu(props:Props) {
 					exportItems.push({
 						label: module.fullLabel(),
 						click: async () => {
-							await InteropServiceHelper.export(props.dispatch.bind(this), module);
+							await InteropServiceHelper.export((action:any) => props.dispatch(action), module);
 						},
 					});
 				}
@@ -278,7 +322,7 @@ function useMenu(props:Props) {
 			click: async () => {
 				const templates = await TemplateUtils.loadTemplates(Setting.value('templateDir'));
 
-				this.store().dispatch({
+				props.dispatch({
 					type: 'TEMPLATE_UPDATE_ALL',
 					templates: templates,
 				});
@@ -314,8 +358,8 @@ function useMenu(props:Props) {
 		}
 		toolsItems = toolsItems.concat(toolsItemsAll);
 
-		function _checkForUpdates(ctx:any) {
-			bridge().checkForUpdates(false, bridge().window(), ctx.checkForUpdateLoggerPath(), { includePreReleases: Setting.value('autoUpdate.includePreReleases') });
+		function _checkForUpdates() {
+			bridge().checkForUpdates(false, bridge().window(), `${Setting.value('profileDir')}/log-autoupdater.txt`, { includePreReleases: Setting.value('autoUpdate.includePreReleases') });
 		}
 
 		function _showAbout() {
@@ -361,7 +405,7 @@ function useMenu(props:Props) {
 			}, {
 				label: _('Check for updates...'),
 				visible: shim.isMac() ? true : false,
-				click: () => _checkForUpdates(this),
+				click: () => _checkForUpdates(),
 			}, {
 				type: 'separator',
 				visible: shim.isMac() ? true : false,
@@ -397,12 +441,16 @@ function useMenu(props:Props) {
 			}, shim.isMac() ? noItem : printItem, {
 				type: 'separator',
 				platforms: ['darwin'],
-			}, {
+			},
+
+			shim.isMac() ? {
 				label: _('Hide %s', 'Joplin'),
 				platforms: ['darwin'],
 				accelerator: shim.isMac() && keymapService.getAccelerator('hideApp'),
 				click: () => { bridge().electronApp().hide(); },
-			}, {
+			} : noItem,
+
+			{
 				type: 'separator',
 			},
 			quitMenuItem],
@@ -590,7 +638,7 @@ function useMenu(props:Props) {
 				}, {
 					label: _('Check for updates...'),
 					visible: shim.isMac() ? false : true,
-					click: () => _checkForUpdates(this),
+					click: () => _checkForUpdates(),
 				},
 				separator(),
 				{
@@ -641,26 +689,36 @@ function useMenu(props:Props) {
 			rootMenus[key].submenu = cleanUpSeparators(rootMenus[key].submenu);
 		}
 
-		const pluginMenuItems = PluginManager.instance().menuItems();
-		for (const item of pluginMenuItems) {
-			const itemParent = rootMenus[item.parent] ? rootMenus[item.parent] : 'tools';
-			itemParent.submenu.push(item);
+		{
+			// This is for GotoAnything only - should be refactored since this plugin manager is not used otherwise
+			const pluginMenuItems = PluginManager.instance().menuItems();
+			for (const item of pluginMenuItems) {
+				const itemParent = rootMenus[item.parent] ? rootMenus[item.parent] : 'tools';
+				itemParent.submenu.push(item);
+			}
 		}
 
-		// TODO: test
-
-		const pluginViewInfos = props.pluginMenuItemInfos;
-
-		for (const info of pluginViewInfos) {
-			const location:MenuItemLocation = info.view.location;
+		for (const view of props.pluginMenuItems) {
+			const location:MenuItemLocation = view.location;
 			if (location === MenuItemLocation.Context) continue;
 
 			const itemParent = rootMenus[location];
 
 			if (!itemParent) {
-				reg.logger().error('Menu item location does not exist: ', location, info);
+				reg.logger().error('Menu item location does not exist: ', location, view);
 			} else {
-				itemParent.submenu.push(menuItemDic[info.view.commandName]);
+				itemParent.submenu.push(menuItemDic[view.commandName]);
+			}
+		}
+
+		for (const view of props.pluginMenus) {
+			if (view.location === MenuItemLocation.Context) continue;
+			const itemParent = rootMenus[view.location];
+
+			if (!itemParent) {
+				reg.logger().error('Menu location does not exist: ', location, view);
+			} else {
+				itemParent.submenu.push(createPluginMenuTree(view.label, view.menuItems, (commandName:string) => onMenuItemClickRef.current(commandName)));
 			}
 		}
 
@@ -725,7 +783,7 @@ function useMenu(props:Props) {
 		} else {
 			setMenu(Menu.buildFromTemplate(template));
 		}
-	}, [props.routeName, props.pluginMenuItemInfos, keymapLastChangeTime, modulesLastChangeTime]);
+	}, [props.routeName, props.pluginMenuItems, props.pluginMenus, keymapLastChangeTime, modulesLastChangeTime]);
 
 	useEffect(() => {
 		for (const commandName in props.menuItemProps) {
@@ -735,7 +793,7 @@ function useMenu(props:Props) {
 
 		const layoutButtonSequenceOptions = Setting.enumOptions('layoutButtonSequence');
 		for (const value in layoutButtonSequenceOptions) {
-			menuItemSetEnabled(`layoutButtonSequence_${value}`, props.layoutButtonSequence === Number(value));
+			menuItemSetChecked(`layoutButtonSequence_${value}`, props.layoutButtonSequence === Number(value));
 		}
 
 		function applySortItemCheckState(type:string) {
@@ -801,7 +859,7 @@ function MenuBar(props:Props):JSX.Element {
 
 const mapStateToProps = (state:AppState) => {
 	return {
-		menuItemProps: menuUtils.commandsToMenuItemProps(state, commandNames),
+		menuItemProps: menuUtils.commandsToMenuItemProps(state, commandNames.concat(pluginCommandNames(state.pluginService.plugins))),
 		routeName: state.route.routeName,
 		selectedFolderId: state.selectedFolderId,
 		layoutButtonSequence: state.settings.layoutButtonSequence,
@@ -812,7 +870,8 @@ const mapStateToProps = (state:AppState) => {
 		showNoteCounts: state.settings.showNoteCounts,
 		uncompletedTodosOnTop: state.settings.uncompletedTodosOnTop,
 		showCompletedTodos: state.settings.showCompletedTodos,
-		pluginMenuItemInfos: stateUtils.selectArrayShallow({ array: pluginUtils.viewInfosByType(state.pluginService.plugins, 'menuItem') }, 'menuBar.pluginMenuItemInfos'),
+		pluginMenuItems: stateUtils.selectArrayShallow({ array: pluginUtils.viewsByType(state.pluginService.plugins, 'menuItem') }, 'menuBar.pluginMenuItems'),
+		pluginMenus: stateUtils.selectArrayShallow({ array: pluginUtils.viewsByType(state.pluginService.plugins, 'menu') }, 'menuBar.pluginMenus'),
 	};
 };
 
