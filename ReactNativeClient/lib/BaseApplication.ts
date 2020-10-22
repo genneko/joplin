@@ -43,7 +43,7 @@ const DecryptionWorker = require('lib/services/DecryptionWorker');
 const { loadKeychainServiceAndSettings } = require('lib/services/SettingUtils');
 const KvStore = require('lib/services/KvStore');
 const MigrationService = require('lib/services/MigrationService');
-const { toSystemSlashes } = require('lib/path-utils.js');
+const { toSystemSlashes } = require('lib/path-utils');
 const { setAutoFreeze } = require('immer');
 
 // const ntpClient = require('lib/vendor/ntp-client');
@@ -546,7 +546,13 @@ export default class BaseApplication {
 			await this.refreshNotes(newState, refreshNotesUseSelectedNoteId, refreshNotesHash);
 		}
 
-		if (action.type === 'NOTE_UPDATE_ONE' || action.type === 'NOTE_DELETE') {
+		if (action.type === 'NOTE_UPDATE_ONE') {
+			if (!action.changedFields.length || action.changedFields.includes('parent_id') || action.changedFields.includes('encryption_applied')) {
+				refreshFolders = true;
+			}
+		}
+
+		if (action.type === 'NOTE_DELETE') {
 			refreshFolders = true;
 		}
 
@@ -696,7 +702,9 @@ export default class BaseApplication {
 		initArgs = Object.assign(initArgs, extraFlags);
 
 		this.logger_.addTarget(TargetType.File, { path: `${profileDir}/log.txt` });
-		// this.logger_.addTarget(TargetType.Console, { level: Logger.LEVEL_DEBUG });
+		if (Setting.value('env') === 'dev' && !shim.isTestingEnv()) {
+			// this.logger_.addTarget(TargetType.Console, { level: Logger.LEVEL_DEBUG });
+		}
 		this.logger_.setLevel(initArgs.logLevel);
 
 		reg.setLogger(this.logger_);

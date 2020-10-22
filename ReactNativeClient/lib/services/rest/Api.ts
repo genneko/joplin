@@ -3,7 +3,7 @@ import Logger from 'lib/Logger';
 import shim from 'lib/shim';
 import uuid from 'lib/uuid';
 
-const { ltrimSlashes } = require('lib/path-utils.js');
+const { ltrimSlashes } = require('lib/path-utils');
 const { Database } = require('lib/database.js');
 const Folder = require('lib/models/Folder');
 const Note = require('lib/models/Note');
@@ -12,7 +12,7 @@ const BaseItem = require('lib/models/BaseItem');
 const Resource = require('lib/models/Resource');
 const BaseModel = require('lib/BaseModel');
 const htmlUtils = require('lib/htmlUtils');
-const markupLanguageUtils = require('lib/markupLanguageUtils');
+const markupLanguageUtils = require('lib/markupLanguageUtils').default;
 const mimeUtils = require('lib/mime-utils.js').mime;
 const md5 = require('md5');
 const HtmlToMd = require('lib/HtmlToMd');
@@ -432,6 +432,8 @@ export default class Api {
 			const timestamp = Date.now();
 			note.updated_time = timestamp;
 			note.created_time = timestamp;
+			if (!('user_updated_time' in note)) note.user_updated_time = timestamp;
+			if (!('user_created_time' in note)) note.user_created_time = timestamp;
 
 			note = await Note.save(note, saveOptions);
 
@@ -454,7 +456,24 @@ export default class Api {
 
 			if (!note) throw new ErrorNotFound();
 
-			const updatedNote = await this.defaultAction_(BaseModel.TYPE_NOTE, request, id, link);
+			const saveOptions = {
+				...this.defaultSaveOptions_(note, 'PUT'),
+				autoTimestamp: false, // No auto-timestamp because user may have provided them
+				userSideValidation: true,
+			};
+
+			const timestamp = Date.now();
+
+			const newProps = request.bodyJson(this.readonlyProperties('PUT'));
+			if (!('user_updated_time' in newProps)) newProps.user_updated_time = timestamp;
+
+			let newNote = {
+				...note,
+				...newProps,
+				updated_time: timestamp,
+			};
+
+			newNote = await Note.save(newNote, saveOptions);
 
 			const requestNote = JSON.parse(request.body);
 			if (requestNote.tags || requestNote.tags === '') {
@@ -462,7 +481,7 @@ export default class Api {
 				await Tag.setNoteTagsByTitles(id, tagTitles);
 			}
 
-			return updatedNote;
+			return newNote;
 		}
 
 		return this.defaultAction_(BaseModel.TYPE_NOTE, request, id, link);
