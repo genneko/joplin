@@ -1,4 +1,4 @@
-import CommandService, { CommandDeclaration, CommandRuntime } from 'lib/services/CommandService';
+import CommandService, { CommandContext, CommandDeclaration, CommandRuntime } from 'lib/services/CommandService';
 import { Command } from './types';
 
 /**
@@ -12,9 +12,9 @@ import { Command } from './types';
  * It is also possible to execute internal Joplin's commands which, as of now, are not well documented.
  * You can find the list directly on GitHub though at the following locations:
  *
- * https://github.com/laurent22/joplin/tree/dev/ElectronClient/gui/MainScreen/commands
- * https://github.com/laurent22/joplin/tree/dev/ElectronClient/commands
- * https://github.com/laurent22/joplin/tree/dev/ElectronClient/gui/NoteEditor/commands/editorCommandDeclarations.ts
+ * * [Main screen commands](https://github.com/laurent22/joplin/tree/dev/ElectronClient/gui/MainScreen/commands)
+ * * [Global commands](https://github.com/laurent22/joplin/tree/dev/ElectronClient/commands)
+ * * [Editor commands](https://github.com/laurent22/joplin/tree/dev/ElectronClient/gui/NoteEditor/commands/editorCommandDeclarations.ts)
  *
  * To view what arguments are supported, you can open any of these files and look at the `execute()` command.
  */
@@ -30,11 +30,11 @@ export default class JoplinCommands {
 	 *
 	 * // Create a new sub-notebook under the provided notebook
 	 * // Note: internally, notebooks are called "folders".
-	 * await joplin.commands.execute('newFolder', { parent_id: "SOME_FOLDER_ID" });
+	 * await joplin.commands.execute('newFolder', "SOME_FOLDER_ID");
 	 * ```
 	 */
-	async execute(commandName: string, props: any = null):Promise<any> {
-		return CommandService.instance().execute(commandName, props);
+	async execute(commandName: string, ...args:any[]):Promise<any | void> {
+		return CommandService.instance().execute(commandName, ...args);
 	}
 
 	/**
@@ -62,11 +62,12 @@ export default class JoplinCommands {
 		if ('iconName' in command) declaration.iconName = command.iconName;
 
 		const runtime:CommandRuntime = {
-			execute: command.execute,
+			execute: (_context:CommandContext, ...args:any[]) => {
+				return command.execute(...args);
+			},
 		};
 
-		if ('isEnabled' in command) runtime.isEnabled = command.isEnabled;
-		if ('mapStateToProps' in command) runtime.mapStateToProps = command.mapStateToProps;
+		if ('enabledCondition' in command) runtime.enabledCondition = command.enabledCondition;
 
 		CommandService.instance().registerDeclaration(declaration);
 		CommandService.instance().registerRuntime(declaration.name, runtime);

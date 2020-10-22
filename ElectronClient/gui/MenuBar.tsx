@@ -13,6 +13,7 @@ import { Module } from 'lib/services/interop/types';
 import InteropServiceHelper from '../InteropServiceHelper';
 import { _ } from 'lib/locale';
 import { MenuItem, MenuItemLocation } from 'lib/services/plugins/api/types';
+import stateToWhenClauseContext from 'lib/services/commands/stateToWhenClauseContext';
 
 const { connect } = require('react-redux');
 const { reg } = require('lib/registry.js');
@@ -108,13 +109,14 @@ const commandNames:string[] = [
 	'attachFile',
 	'focusSearch',
 	'showLocalSearch',
-	'toggleSidebar',
+	'toggleSideBar',
 	'toggleNoteList',
 	'toggleVisiblePanes',
 	'toggleExternalEditing',
 	'setTags',
 	'showNoteContentProperties',
 	'copyDevCommand',
+	'openProfileDirectory',
 ];
 
 function menuItemSetChecked(id:string, checked:boolean) {
@@ -137,8 +139,8 @@ function useMenu(props:Props) {
 	const [modulesLastChangeTime, setModulesLastChangeTime] = useState(Date.now());
 
 	const onMenuItemClick = useCallback((commandName:string) => {
-		CommandService.instance().execute(commandName, props.menuItemProps[commandName]);
-	}, [props.menuItemProps]);
+		CommandService.instance().execute(commandName);
+	}, []);
 
 	const onImportModuleClick = useCallback(async (module:Module, moduleSource:string) => {
 		let path = null;
@@ -157,12 +159,21 @@ function useMenu(props:Props) {
 
 		if (Array.isArray(path)) path = path[0];
 
-		CommandService.instance().execute('showModalMessage', { message: _('Importing from "%s" as "%s" format. Please wait...', path, module.format) });
+		const modalMessage =  _('Importing from "%s" as "%s" format. Please wait...', path, module.format);
+
+		CommandService.instance().execute('showModalMessage', modalMessage);
 
 		const importOptions = {
 			path,
 			format: module.format,
 			outputFormat: module.outputFormat,
+			onProgress: (status:any) => {
+				const statusStrings:string[] = Object.keys(status).map((key:string) => {
+					return `${key}: ${status[key]}`;
+				});
+
+				CommandService.instance().execute('showModalMessage', `${modalMessage}\n\n${statusStrings.join('\n')}`);
+			},
 			onError: console.warn,
 			destinationFolderId: !module.isNoteArchive && moduleSource === 'file' ? props.selectedFolderId : null,
 		};
@@ -299,12 +310,12 @@ function useMenu(props:Props) {
 		templateItems.push({
 			label: _('Create note from template'),
 			click: () => {
-				CommandService.instance().execute('selectTemplate', { noteType: 'note' });
+				CommandService.instance().execute('selectTemplate', 'note');
 			},
 		}, {
 			label: _('Create to-do from template'),
 			click: () => {
-				CommandService.instance().execute('selectTemplate', { noteType: 'todo' });
+				CommandService.instance().execute('selectTemplate', 'todo');
 			},
 		}, {
 			label: _('Insert template'),
@@ -373,7 +384,7 @@ function useMenu(props:Props) {
 			});
 
 			if (copyToClipboard === 0) {
-				clipboard.writeText(v.message);
+				clipboard.writeText(v.body);
 			}
 		}
 
@@ -532,7 +543,7 @@ function useMenu(props:Props) {
 			view: {
 				label: _('&View'),
 				submenu: [
-					menuItemDic.toggleSidebar,
+					menuItemDic.toggleSideBar,
 					menuItemDic.toggleNoteList,
 					menuItemDic.toggleVisiblePanes,
 					{
@@ -550,7 +561,6 @@ function useMenu(props:Props) {
 						id: 'showNoteCounts',
 						label: Setting.settingMetadata('showNoteCounts').label(),
 						type: 'checkbox',
-						// checked: Setting.value('showNoteCounts'),
 						click: () => {
 							Setting.setValue('showNoteCounts', !Setting.value('showNoteCounts'));
 						},
@@ -558,7 +568,6 @@ function useMenu(props:Props) {
 						id: 'uncompletedTodosOnTop',
 						label: Setting.settingMetadata('uncompletedTodosOnTop').label(),
 						type: 'checkbox',
-						// checked: Setting.value('uncompletedTodosOnTop'),
 						click: () => {
 							Setting.setValue('uncompletedTodosOnTop', !Setting.value('uncompletedTodosOnTop'));
 						},
@@ -566,7 +575,6 @@ function useMenu(props:Props) {
 						id: 'showCompletedTodos',
 						label: Setting.settingMetadata('showCompletedTodos').label(),
 						type: 'checkbox',
-						// checked: Setting.value('showCompletedTodos'),
 						click: () => {
 							Setting.setValue('showCompletedTodos', !Setting.value('showCompletedTodos'));
 						},
@@ -651,6 +659,7 @@ function useMenu(props:Props) {
 					},
 				},
 
+				menuItemDic.openProfileDirectory,
 				menuItemDic.copyDevCommand,
 
 				{
@@ -786,9 +795,13 @@ function useMenu(props:Props) {
 	}, [props.routeName, props.pluginMenuItems, props.pluginMenus, keymapLastChangeTime, modulesLastChangeTime]);
 
 	useEffect(() => {
+		const whenClauseContext = CommandService.instance().currentWhenClauseContext();
+
 		for (const commandName in props.menuItemProps) {
-			if (!props.menuItemProps[commandName]) continue;
-			menuItemSetEnabled(commandName, CommandService.instance().isEnabled(commandName, props.menuItemProps[commandName]));
+			const p = props.menuItemProps[commandName];
+			if (!p) continue;
+			const enabled = 'enabled' in p ? p.enabled : CommandService.instance().isEnabled(commandName, whenClauseContext);
+			menuItemSetEnabled(commandName, enabled);
 		}
 
 		const layoutButtonSequenceOptions = Setting.enumOptions('layoutButtonSequence');
@@ -858,8 +871,10 @@ function MenuBar(props:Props):JSX.Element {
 }
 
 const mapStateToProps = (state:AppState) => {
+	const whenClauseContext = stateToWhenClauseContext(state);
+
 	return {
-		menuItemProps: menuUtils.commandsToMenuItemProps(state, commandNames.concat(pluginCommandNames(state.pluginService.plugins))),
+		menuItemProps: menuUtils.commandsToMenuItemProps(commandNames.concat(pluginCommandNames(state.pluginService.plugins)), whenClauseContext),
 		routeName: state.route.routeName,
 		selectedFolderId: state.selectedFolderId,
 		layoutButtonSequence: state.settings.layoutButtonSequence,
