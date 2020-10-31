@@ -46,6 +46,7 @@ const commands = [
 	require('./gui/MainScreen/commands/moveToFolder'),
 	require('./gui/MainScreen/commands/newNote'),
 	require('./gui/MainScreen/commands/newFolder'),
+	require('./gui/MainScreen/commands/newSubFolder'),
 	require('./gui/MainScreen/commands/newTodo'),
 	require('./gui/MainScreen/commands/print'),
 	require('./gui/MainScreen/commands/renameFolder'),
@@ -61,6 +62,9 @@ const commands = [
 	require('./gui/MainScreen/commands/toggleSideBar'),
 	require('./gui/MainScreen/commands/toggleVisiblePanes'),
 	require('./gui/MainScreen/commands/toggleEditors'),
+	require('./gui/MainScreen/commands/openNote'),
+	require('./gui/MainScreen/commands/openFolder'),
+	require('./gui/MainScreen/commands/openTag'),
 	require('./gui/NoteEditor/commands/focusElementNoteBody'),
 	require('./gui/NoteEditor/commands/focusElementNoteTitle'),
 	require('./gui/NoteEditor/commands/showLocalSearch'),
@@ -491,14 +495,6 @@ class Application extends BaseApplication {
 		const filename = Setting.custom_css_files.JOPLIN_APP;
 		await CssUtils.injectCustomStyles(`${dir}/${filename}`);
 
-		const keymapService = KeymapService.instance();
-
-		try {
-			await keymapService.loadCustomKeymap(`${dir}/keymap-desktop.json`);
-		} catch (err) {
-			reg.logger().error(err.message);
-		}
-
 		AlarmService.setDriver(new AlarmServiceDriverNode({ appName: packageInfo.build.appId }));
 		AlarmService.setLogger(reg.logger());
 
@@ -527,6 +523,15 @@ class Application extends BaseApplication {
 
 		for (const declaration of editorCommandDeclarations) {
 			CommandService.instance().registerDeclaration(declaration);
+		}
+
+		const keymapService = KeymapService.instance();
+		keymapService.initialize(CommandService.instance().commandNames(true));
+
+		try {
+			await keymapService.loadCustomKeymap(`${dir}/keymap-desktop.json`);
+		} catch (error) {
+			reg.logger().error(error);
 		}
 
 		// Since the settings need to be loaded before the store is created, it will never

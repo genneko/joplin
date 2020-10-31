@@ -95,6 +95,7 @@ const commandNames:string[] = [
 	'newNote',
 	'newTodo',
 	'newFolder',
+	'newSubFolder',
 	'print',
 	'synchronize',
 	'textCopy',
@@ -117,6 +118,8 @@ const commandNames:string[] = [
 	'showNoteContentProperties',
 	'copyDevCommand',
 	'openProfileDirectory',
+	'historyBackward',
+	'historyForward',
 ];
 
 function menuItemSetChecked(id:string, checked:boolean) {
@@ -248,10 +251,8 @@ function useMenu(props:Props) {
 			menuItemDic.focusElementNoteBody,
 		];
 
-		let toolsItems:any[] = [];
 		const importItems = [];
 		const exportItems = [];
-		const toolsItemsFirst = [];
 		const templateItems:any[] = [];
 		const ioService = InteropService.instance();
 		const ioModules = ioService.modules();
@@ -298,14 +299,17 @@ function useMenu(props:Props) {
 			},
 		};
 
+		const separator = () => {
+			return {
+				type: 'separator',
+			};
+		};
+
 		const newNoteItem = menuItemDic.newNote;
 		const newTodoItem = menuItemDic.newTodo;
 		const newFolderItem = menuItemDic.newFolder;
+		const newSubFolderItem = menuItemDic.newSubFolder;
 		const printItem = menuItemDic.print;
-
-		toolsItemsFirst.push(syncStatusItem, {
-			type: 'separator',
-		});
 
 		templateItems.push({
 			label: _('Create note from template'),
@@ -340,18 +344,22 @@ function useMenu(props:Props) {
 			},
 		});
 
+		let toolsItems:any[] = [];
+
 		// we need this workaround, because on macOS the menu is different
-		const toolsItemsWindowsLinux:any[] = toolsItemsFirst.concat([{
-			label: _('Options'),
-			visible: !shim.isMac(),
-			accelerator: !shim.isMac() && keymapService.getAccelerator('config'),
-			click: () => {
-				props.dispatch({
-					type: 'NAV_GO',
-					routeName: 'Config',
-				});
+		const toolsItemsWindowsLinux:any[] = [
+			{
+				label: _('Options'),
+				accelerator: keymapService.getAccelerator('config'),
+				click: () => {
+					props.dispatch({
+						type: 'NAV_GO',
+						routeName: 'Config',
+					});
+				},
 			},
-		} as any]);
+			separator(),
+		];
 
 		// the following menu items will be available for all OS under Tools
 		const toolsItemsAll = [{
@@ -423,7 +431,9 @@ function useMenu(props:Props) {
 			},
 			shim.isMac() ? noItem : newNoteItem,
 			shim.isMac() ? noItem : newTodoItem,
-			shim.isMac() ? noItem : newFolderItem, {
+			shim.isMac() ? noItem : newFolderItem,
+			shim.isMac() ? noItem : newSubFolderItem,
+			{
 				type: 'separator',
 				visible: shim.isMac() ? false : true,
 			}, {
@@ -447,9 +457,7 @@ function useMenu(props:Props) {
 
 			menuItemDic.synchronize,
 
-			shim.isMac() ? syncStatusItem : noItem, {
-				type: 'separator',
-			}, shim.isMac() ? noItem : printItem, {
+			shim.isMac() ? noItem : printItem, {
 				type: 'separator',
 				platforms: ['darwin'],
 			},
@@ -473,7 +481,9 @@ function useMenu(props:Props) {
 			submenu: [
 				newNoteItem,
 				newTodoItem,
-				newFolderItem, {
+				newFolderItem,
+				newSubFolderItem,
+				{
 					label: _('Close Window'),
 					platforms: ['darwin'],
 					accelerator: shim.isMac() && keymapService.getAccelerator('closeWindow'),
@@ -511,12 +521,6 @@ function useMenu(props:Props) {
 				},
 			});
 		}
-
-		const separator = () => {
-			return {
-				type: 'separator',
-			};
-		};
 
 		const rootMenus:any = {
 			edit: {
@@ -581,11 +585,6 @@ function useMenu(props:Props) {
 					},
 					separator(),
 					{
-						label: _('Focus'),
-						submenu: focusItems,
-					},
-					separator(),
-					{
 						label: _('Actual Size'),
 						click: () => {
 							Setting.setValue('windowContentZoomFactor', 100);
@@ -616,6 +615,18 @@ function useMenu(props:Props) {
 						},
 						accelerator: 'CommandOrControl+-',
 					}],
+			},
+			go: {
+				label: _('&Go'),
+				submenu: [
+					menuItemDic.historyBackward,
+					menuItemDic.historyForward,
+					separator(),
+					{
+						label: _('Focus'),
+						submenu: focusItems,
+					},
+				],
 			},
 			note: {
 				label: _('&Note'),
@@ -648,6 +659,8 @@ function useMenu(props:Props) {
 					visible: shim.isMac() ? false : true,
 					click: () => _checkForUpdates(),
 				},
+				separator(),
+				syncStatusItem,
 				separator(),
 				{
 					id: 'help:toggleDevTools',
@@ -703,6 +716,7 @@ function useMenu(props:Props) {
 			const pluginMenuItems = PluginManager.instance().menuItems();
 			for (const item of pluginMenuItems) {
 				const itemParent = rootMenus[item.parent] ? rootMenus[item.parent] : 'tools';
+				itemParent.submenu.push(separator());
 				itemParent.submenu.push(item);
 			}
 		}
@@ -735,6 +749,7 @@ function useMenu(props:Props) {
 			rootMenus.file,
 			rootMenus.edit,
 			rootMenus.view,
+			rootMenus.go,
 			rootMenus.note,
 			rootMenus.tools,
 			rootMenus.help,
@@ -742,51 +757,20 @@ function useMenu(props:Props) {
 
 		if (shim.isMac()) template.splice(0, 0, rootMenus.macOsApp);
 
-		// TODO
-
-		// function isEmptyMenu(template:any[]) {
-		// 	for (let i = 0; i < template.length; i++) {
-		// 		const t = template[i];
-		// 		if (t.type !== 'separator') return false;
-		// 	}
-		// 	return true;
-		// }
-
-		// function removeUnwantedItems(template:any[], screen:string) {
-		// 	const platform = shim.platformName();
-
-		// 	let output = [];
-		// 	for (let i = 0; i < template.length; i++) {
-		// 		const t = Object.assign({}, template[i]);
-		// 		if (t.screens && t.screens.indexOf(screen) < 0) continue;
-		// 		if (t.platforms && t.platforms.indexOf(platform) < 0) continue;
-		// 		if (t.submenu) t.submenu = removeUnwantedItems(t.submenu, screen);
-		// 		if (('submenu' in t) && isEmptyMenu(t.submenu)) continue;
-		// 		output.push(t);
-		// 	}
-
-		// 	// Remove empty separator for now empty sections
-		// 	const temp = [];
-		// 	let previous = null;
-		// 	for (let i = 0; i < output.length; i++) {
-		// 		const t = Object.assign({}, output[i]);
-		// 		if (t.type === 'separator') {
-		// 			if (!previous) continue;
-		// 			if (previous.type === 'separator') continue;
-		// 		}
-		// 		temp.push(t);
-		// 		previous = t;
-		// 	}
-		// 	output = temp;
-
-		// 	return output;
-		// }
-
 		if (props.routeName !== 'Main') {
 			setMenu(Menu.buildFromTemplate([
 				{
 					label: _('&File'),
 					submenu: [quitMenuItem],
+				},
+				{
+					label: _('&Edit'),
+					submenu: [
+						menuItemDic.textCopy,
+						menuItemDic.textCut,
+						menuItemDic.textPaste,
+						menuItemDic.textSelectAll,
+					],
 				},
 			]));
 		} else {
