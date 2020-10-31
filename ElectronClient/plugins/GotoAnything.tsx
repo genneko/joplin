@@ -421,7 +421,7 @@ class Dialog extends React.PureComponent<Props, State> {
 	listItem_onClick(event:any) {
 		const itemId = event.currentTarget.getAttribute('data-id');
 		const parentId = event.currentTarget.getAttribute('data-parent-id');
-		const itemType = event.currentTarget.getAttribute('data-type');
+		const itemType = Number(event.currentTarget.getAttribute('data-type'));
 
 		this.gotoItem({
 			id: itemId,
@@ -557,7 +557,7 @@ GotoAnything.manifest = {
 	menuItems: [
 		{
 			name: 'main',
-			parent: 'tools',
+			parent: 'go',
 			label: _('Goto Anything...'),
 			accelerator: () => KeymapService.instance().getAccelerator('gotoAnything'),
 			screens: ['Main'],

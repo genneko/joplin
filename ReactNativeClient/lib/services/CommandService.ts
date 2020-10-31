@@ -11,6 +11,7 @@ type EnabledCondition = string;
 export interface CommandContext {
 	// The state may also be of type "AppState" (used by the desktop app), which inherits from "State" (used by all apps)
 	state: State,
+	dispatch: Function,
 }
 
 export interface CommandRuntime {
@@ -143,8 +144,17 @@ export default class CommandService extends BaseService {
 		return output;
 	}
 
-	public commandNames() {
-		return Object.keys(this.commands_);
+	public commandNames(publicOnly:boolean = false) {
+		if (publicOnly) {
+			const output = [];
+			for (const name in this.commands_) {
+				if (!this.isPublic(name)) continue;
+				output.push(name);
+			}
+			return output;
+		} else {
+			return Object.keys(this.commands_);
+		}
 	}
 
 	public commandByName(name:string, options:CommandByNameOptions = null):Command {
@@ -203,10 +213,20 @@ export default class CommandService extends BaseService {
 		delete command.runtime;
 	}
 
+	private createContext():CommandContext {
+		return {
+			state: this.store_.getState(),
+			dispatch: (action:any) => {
+				this.store_.dispatch(action);
+			},
+		};
+	}
+
 	public async execute(commandName:string, ...args:any[]):Promise<any | void> {
 		const command = this.commandByName(commandName);
 		this.logger().info('CommandService::execute:', commandName, args);
-		return command.runtime.execute({ state: this.store_.getState() }, ...args);
+		if (!command.runtime) throw new Error(`Cannot execute a command without a runtime: ${commandName}`);
+		return command.runtime.execute(this.createContext(), ...args);
 	}
 
 	public scheduleExecute(commandName:string, args:any) {
@@ -217,6 +237,10 @@ export default class CommandService extends BaseService {
 
 	public currentWhenClauseContext() {
 		return stateToWhenClauseContext(this.store_.getState());
+	}
+
+	public isPublic(commandName:string) {
+		return !!this.label(commandName);
 	}
 
 	// When looping on commands and checking their enabled state, the whenClauseContext
