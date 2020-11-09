@@ -1,0 +1,56 @@
+#!/bin/sh
+#
+# joplin-desktop - launcher script for self-built Joplin desktop application
+#
+prog=$(basename $0)
+bindir=$(dirname $(readlink -f $0))
+JOPLINDIR=$(readlink -f $bindir/../..)
+APPDIR=$JOPLINDIR/packages/app-desktop
+ELECTRON=$(which $(pkg query -e "%n ~ electron*" %n) || echo /usr/local/bin/electron)
+
+echoerr() {
+        echo "$@" >&2
+}
+
+usage_exit(){
+        echoerr "usage: $prog [-D]"
+        echoerr "       $prog -c > $HOME/.local/share/applications/userapp-Joplin.desktop"
+        echoerr "       $prog -h"
+        echoerr
+        exit 1
+}
+
+show_config(){
+        cat <<__DATA__
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Type=Application
+Exec=$bindir/$prog
+Icon=$JOPLINDIR/Assets/LinuxIcons/16x16.png
+Name=Joplin(Desktop)
+Comment=Joplin Desktop(Electron) App
+Terminal=false
+Categories=Office
+__DATA__
+	exit 0
+}
+
+debug=0
+while getopts "cDh" opt
+do
+        case "$opt" in
+                c) show_config ;;
+                D) debug=1 ;;
+                h|*) usage_exit ;;
+        esac
+done
+shift $(( $OPTIND - 1 ))
+
+cd $APPDIR
+if [ $debug == 1 ]; then
+	$ELECTRON . --env dev --log-level debug --no-welcome --open-dev-tools "$@"
+else
+	$ELECTRON . "$@" > /dev/null 2>&1
+fi
+
