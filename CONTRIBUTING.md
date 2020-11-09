@@ -44,9 +44,9 @@ Building the apps is relatively easy - please [see the build instructions](https
 
 Coding style is enforced by a pre-commit hook that runs eslint. This hook is installed whenever running `npm install` on any of the application directory. If for some reason the pre-commit hook didn't get installed, you can manually install it by running `npm install` at the root of the repository.
 
-For new React components, please use [React Hooks](https://reactjs.org/docs/hooks-intro.html). For new code in general, please use TypeScript (unless you are modifying a file that was originally in JavaScript).
+For new React components, please use [React Hooks](https://reactjs.org/docs/hooks-intro.html). For new code in general, please use TypeScript. Even if you are modifying a file that was originally in JavaScript you should ideally convert it first to TypeScript before modifying it. Doing so is relatively easy and it helps maintain code quality.
 
-For changes made to the Desktop client that affect the user interface, refer to `ElectronClient/app/theme.js` for all styling information. The goal is to create a consistent user interface to allow for easy navigation of Joplin's various features and improve the overall user experience.
+For changes made to the Desktop client that affect the user interface, refer to `packages/app-desktop/theme.ts` for all styling information. The goal is to create a consistent user interface to allow for easy navigation of Joplin's various features and improve the overall user experience.
 
 ## Automated tests
 
@@ -56,11 +56,11 @@ When submitting a pull request for a new feature or a bug fix, please add automa
 
 * **Feature tests** on the other hand are to test higher level functionalities such as interactions with the GUI and how they affect the underlying model. Often these tests would dispatch Redux actions, and inspect how the application state has been changed. The feature tests should be prefixed with "feature_", for example "feature_TagList". There's a good explanation on what qualifies as a feature test in [this post](https://github.com/laurent22/joplin/pull/2819#issuecomment-603502230).
 
-The tests are under CliClient/tests. To get them running, you first need to build the CLI app:
+The tests are under packages/app-cli/tests. To get them running, you first need to build the CLI app:
 
 ```sh
 npm install
-cd CliClient
+cd packages/app-cli
 ```
 
 To run all the test units:
