@@ -95,7 +95,6 @@
     "app-builder-bin": "^1.9.11",
     "babel-cli": "^6.26.0",
     "babel-preset-react": "^6.24.1",
-    "electron": "^8.2.5",
     "electron-builder": "22.3.2",
     "electron-rebuild": "^1.10.1",
     "glob": "^7.1.6",
@@ -104,6 +103,7 @@
     "typescript": "^4.0.5"
   },
   "optionalDependencies": {
+    "electron": "^8.2.5",
     "7zip-bin-linux": "^1.0.1",
     "7zip-bin-mac": "^1.0.1",
     "7zip-bin-win": "^2.1.1"
