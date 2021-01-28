@@ -9,28 +9,28 @@ const React = require('react');
 const { View } = require('react-native');
 const { WebView } = require('react-native-webview');
 const { themeStyle } = require('../global-style.js');
-const BackButtonDialogBox = require('../BackButtonDialogBox').default;
+import BackButtonDialogBox from '../BackButtonDialogBox';
 const { reg } = require('@joplin/lib/registry.js');
 
 interface Props {
-	themeId: number,
-	style: any,
-	noteBody: string,
-	noteMarkupLanguage: number,
-	highlightedKeywords: string[],
-	noteResources: any,
-	paddingBottom: number,
-	noteHash: string,
-	onJoplinLinkClick: Function,
-	onCheckboxChange?: Function,
-	onMarkForDownload?: Function,
-	onLoadEnd?: Function,
+	themeId: number;
+	style: any;
+	noteBody: string;
+	noteMarkupLanguage: number;
+	highlightedKeywords: string[];
+	noteResources: any;
+	paddingBottom: number;
+	noteHash: string;
+	onJoplinLinkClick: Function;
+	onCheckboxChange?: Function;
+	onMarkForDownload?: Function;
+	onLoadEnd?: Function;
 }
 
-export default function NoteBodyViewer(props:Props) {
+export default function NoteBodyViewer(props: Props) {
 	const theme = themeStyle(props.themeId);
 
-	const webViewStyle:any = useMemo(() => {
+	const webViewStyle: any = useMemo(() => {
 		return { backgroundColor: theme.backgroundColor };
 	}, [theme.backgroundColor]);
 
@@ -89,6 +89,8 @@ export default function NoteBodyViewer(props:Props) {
 	// since the WebView package went through many versions it's possible that
 	// the above no longer applies.
 
+	const BackButtonDialogBox_ = BackButtonDialogBox as any;
+
 	return (
 		<View style={props.style}>
 			<WebView
@@ -105,7 +107,7 @@ export default function NoteBodyViewer(props:Props) {
 				onError={onError}
 				onMessage={onMessage}
 			/>
-			<BackButtonDialogBox ref={dialogBoxRef}/>
+			<BackButtonDialogBox_ ref={dialogBoxRef}/>
 		</View>
 	);
 }

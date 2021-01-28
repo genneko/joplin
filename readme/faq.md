@@ -14,6 +14,12 @@ Now try to install again and it should work.
 
 More info there: https://github.com/electron-userland/electron-builder/issues/4057
 
+## How can I pass arguments to the Linux installation script?
+
+You can pass [arguments](https://github.com/laurent22/joplin/blob/dev/Joplin_install_and_update.sh#L37) to the installation script by using this command.
+
+<pre><code style="word-break: break-all">wget -O - https://raw.githubusercontent.com/laurent22/joplin/dev/Joplin_install_and_update.sh | bash -s -- --argument1 --argument2</code></pre>
+
 ## How can I edit my note in an external text editor?
 
 The editor command (may include arguments) defines which editor will be used to open a note. If none is provided it will try to auto-detect the default editor. If this does nothing or you want to change it for Joplin, you need to configure it in the Preferences -> Text editor command.
@@ -27,7 +33,7 @@ subl -n -w      # Opens Sublime (subl) in a new window (-n) and waits for close 
 code -n --wait  # Opens Visual Studio Code (code) in a new window (-n) and waits for close (--wait)
 gedit --new-window    # Opens gedit (Gnome Text Editor) in a new window
 xterm -e vim    # Opens a new terminal and opens vim. Can be replaced with an
-                # alternative terminal (gnome-terminal, terminator, etc.) 
+                # alternative terminal (gnome-terminal, terminator, etc.)
                 # or terminal text-editor (emacs, nano, etc.)
 open -a <application> # Mac only: opens a GUI application
 ```
@@ -81,7 +87,7 @@ For these reasons, because the OS or yourself can easily protect the local data,
 
 There is however an issue open about it, so pull requests are welcome: https://github.com/laurent22/joplin/issues/289
 
-## WebDAV synchronisation is not working
+## Why is my WebDAV host not working?
 
 ### "Forbidden" error in Strato
 
@@ -97,6 +103,10 @@ For example:
     </body></html>
 
 In this case, [make sure you enter the correct WebDAV URL](https://github.com/laurent22/joplin/issues/309).
+
+### The following WebDAV hosts are not supported
+
+- Jianguoyun.com (see [Github issue](https://github.com/laurent22/joplin/issues/4294))
 
 ### Nextcloud sync is not working
 

@@ -1,7 +1,7 @@
 import { Theme, ThemeAppearance } from './type';
 
 // This is the default dark theme in Joplin
-const theme:Theme = {
+const theme: Theme = {
 	appearance: ThemeAppearance.Dark,
 
 	// Color scheme "1" is the basic one, like used to display the note
@@ -41,7 +41,7 @@ const theme:Theme = {
 	searchMarkerBackgroundColor: '#F7D26E',
 	searchMarkerColor: 'black',
 
-	warningBackgroundColor: '#CC6600',
+	warningBackgroundColor: '#013F74',
 
 	tableBackgroundColor: 'rgb(40, 41, 42)',
 	codeBackgroundColor: 'rgb(47, 48, 49)',

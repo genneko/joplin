@@ -40,21 +40,21 @@ import { Path } from './types';
 export default class JoplinData {
 
 	private api_: any = new Api();
-	private pathSegmentRegex_:RegExp;
+	private pathSegmentRegex_: RegExp;
 
 	private serializeApiBody(body: any) {
 		if (typeof body !== 'string') { return JSON.stringify(body); }
 		return body;
 	}
 
-	private pathToString(path:Path):string {
+	private pathToString(path: Path): string {
 		if (!this.pathSegmentRegex_) {
 			this.pathSegmentRegex_ = /^([a-z0-9]+)$/;
 		}
 
 		if (!Array.isArray(path)) throw new Error(`Path must be an array: ${JSON.stringify(path)}`);
 		if (path.length < 1) throw new Error(`Path must have at least one element: ${JSON.stringify(path)}`);
-		if (path.length > 3) throw new Error(`Path must have no more than 3 elements: ${JSON.stringify(path)}`);
+		if (path.length > 4) throw new Error(`Path must have no more than 4 elements: ${JSON.stringify(path)}`);
 
 		for (const p of path) {
 			if (!this.pathSegmentRegex_.test(p)) throw new Error(`Path segments must only contain lowercase letters and digits: ${JSON.stringify(path)}`);

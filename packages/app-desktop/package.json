@@ -1,16 +1,19 @@
 {
   "name": "@joplin/app-desktop",
-  "version": "1.4.7",
+  "version": "1.7.6",
   "description": "Joplin for Desktop",
   "main": "main.js",
   "private": true,
   "scripts": {
-    "dist": "node_modules/.bin/electron-builder",
+    "dist": "npm run electronRebuild && npx electron-builder",
     "build": "gulp build",
-    "postinstall": "npm run build && gulp electronRebuild",
+    "postinstall": "npm run build",
+    "electronRebuild": "gulp electronRebuild",
     "tsc": "node node_modules/typescript/bin/tsc --project tsconfig.json",
     "watch": "node node_modules/typescript/bin/tsc --watch --project tsconfig.json",
-    "start": "gulp build && electron . --env dev --log-level debug --no-welcome --open-dev-tools"
+    "start": "gulp build && electron . --env dev --log-level debug --no-welcome --open-dev-tools",
+    "test": "jest",
+    "test-ci": "npm run test"
   },
   "repository": {
     "type": "git",
@@ -25,6 +28,7 @@
     "appId": "net.cozic.joplin-desktop",
     "productName": "Joplin",
     "npmRebuild": false,
+    "afterSign": "./tools/notarizeMacApp.js",
     "extraResources": [
       "build/icons/*",
       "build/images/*"
@@ -70,7 +74,10 @@
       "artifactName": "${productName}Portable.${ext}"
     },
     "mac": {
-      "icon": "../../Assets/macOs.icns"
+      "icon": "../../Assets/macOs.icns",
+      "target": "dmg",
+      "hardenedRuntime": true,
+      "entitlements": "./build-mac/entitlements.mac.inherit.plist"
     },
     "linux": {
       "icon": "../../Assets/LinuxIcons",
@@ -86,24 +93,29 @@
   },
   "homepage": "https://github.com/laurent22/joplin#readme",
   "devDependencies": {
-    "@types/jasmine": "^3.5.11",
+    "@joplin/tools": "^1.0.9",
+    "@testing-library/react-hooks": "^3.4.2",
+    "@types/jest": "^26.0.15",
     "@types/node": "^14.14.6",
     "@types/react": "16.9.55",
     "@types/react-redux": "^7.1.9",
-    "@joplin/tools": "^1.0.9",
+    "@types/styled-components": "^5.1.4",
     "ajv": "^6.5.0",
     "app-builder-bin": "^1.9.11",
     "babel-cli": "^6.26.0",
     "babel-preset-react": "^6.24.1",
-    "electron-builder": "22.3.2",
-    "electron-rebuild": "^1.10.1",
+    "electron-builder": "22.9.1",
+    "electron-notarize": "^1.0.0",
+    "electron-rebuild": "^2.3.2",
     "glob": "^7.1.6",
     "gulp": "^4.0.2",
+    "jest": "^26.6.3",
     "js-sha512": "^0.8.0",
+    "react-test-renderer": "^16.14.0",
     "typescript": "^4.0.5"
   },
   "optionalDependencies": {
-    "electron": "^8.2.5",
+    "electron": "^10.1.6",
     "7zip-bin-linux": "^1.0.1",
     "7zip-bin-mac": "^1.0.1",
     "7zip-bin-win": "^2.1.1"
@@ -130,7 +142,7 @@
     "md5": "^2.2.1",
     "moment": "^2.22.2",
     "node-fetch": "^1.7.3",
-    "node-notifier": "^6.0.0",
+    "node-notifier": "^8.0.0",
     "pretty-bytes": "^5.3.0",
     "re-resizable": "^6.5.4",
     "react": "16.13.1",
@@ -138,6 +150,7 @@
     "react-dom": "16.9.0",
     "react-redux": "^5.0.7",
     "react-select": "^2.4.3",
+    "react-toggle-button": "^2.2.0",
     "react-tooltip": "^3.10.0",
     "redux": "^3.7.2",
     "reselect": "^4.0.0",

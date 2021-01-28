@@ -1,14 +1,14 @@
 import { useCallback } from 'react';
-const Note = require('@joplin/lib/models/Note.js');
+import Note from '@joplin/lib/models/Note';
 
 interface HookDependencies {
-	editorRef:any,
+	editorRef: any;
 }
 
-export default function useDropHandler(dependencies:HookDependencies) {
+export default function useDropHandler(dependencies: HookDependencies) {
 	const { editorRef } = dependencies;
 
-	return useCallback(async (event:any) => {
+	return useCallback(async (event: any) => {
 		const dt = event.dataTransfer;
 		const createFileURL = event.altKey;
 

@@ -1,6 +1,6 @@
-import ViewController from './ViewController';
+import ViewController, { EmitMessageEvent } from './ViewController';
 import shim from '../../shim';
-import { ButtonId, ButtonSpec } from './api/types';
+import { ButtonSpec, DialogResult } from './api/types';
 const { toSystemSlashes } = require('../../path-utils');
 
 export enum ContainerType {
@@ -9,7 +9,7 @@ export enum ContainerType {
 }
 
 export interface Options {
-	containerType: ContainerType,
+	containerType: ContainerType;
 }
 
 interface CloseResponse {
@@ -17,13 +17,33 @@ interface CloseResponse {
 	reject: Function;
 }
 
+// TODO: Copied from:
+// packages/app-desktop/gui/ResizableLayout/utils/findItemByKey.ts
+function findItemByKey(layout: any, key: string): any {
+	if (!layout) throw new Error('Layout cannot be null');
+
+	function recurseFind(item: any): any {
+		if (item.key === key) return item;
+
+		if (item.children) {
+			for (const child of item.children) {
+				const found = recurseFind(child);
+				if (found) return found;
+			}
+		}
+		return null;
+	}
+
+	return recurseFind(layout);
+}
+
 export default class WebviewController extends ViewController {
 
-	private baseDir_:string;
-	private messageListener_:Function = null;
-	private closeResponse_:CloseResponse = null;
+	private baseDir_: string;
+	private messageListener_: Function = null;
+	private closeResponse_: CloseResponse = null;
 
-	constructor(id:string, pluginId:string, store:any, baseDir:string) {
+	public constructor(id: string, pluginId: string, store: any, baseDir: string, containerType: ContainerType) {
 		super(id, pluginId, store);
 		this.baseDir_ = toSystemSlashes(baseDir, 'linux');
 
@@ -33,7 +53,7 @@ export default class WebviewController extends ViewController {
 			view: {
 				id: this.handle,
 				type: this.type,
-				containerType: ContainerType.Panel,
+				containerType: containerType,
 				html: '',
 				scripts: [],
 				opened: false,
@@ -42,11 +62,11 @@ export default class WebviewController extends ViewController {
 		});
 	}
 
-	public get type():string {
+	public get type(): string {
 		return 'webview';
 	}
 
-	private setStoreProp(name:string, value:any) {
+	private setStoreProp(name: string, value: any) {
 		this.store.dispatch({
 			type: 'PLUGIN_VIEW_PROP_SET',
 			pluginId: this.pluginId,
@@ -56,23 +76,19 @@ export default class WebviewController extends ViewController {
 		});
 	}
 
-	public get html():string {
+	public get html(): string {
 		return this.storeView.html;
 	}
 
-	public set html(html:string) {
+	public set html(html: string) {
 		this.setStoreProp('html', html);
 	}
 
-	public get containerType():ContainerType {
+	public get containerType(): ContainerType {
 		return this.storeView.containerType;
 	}
 
-	public set containerType(containerType:ContainerType) {
-		this.setStoreProp('containerType', containerType);
-	}
-
-	public async addScript(path:string) {
+	public async addScript(path: string) {
 		const fullPath = toSystemSlashes(shim.fsDriver().resolve(`${this.baseDir_}/${path}`), 'linux');
 
 		if (fullPath.indexOf(this.baseDir_) !== 0) throw new Error(`Script appears to be outside of plugin base directory: ${fullPath} (Base dir: ${this.baseDir_})`);
@@ -86,41 +102,64 @@ export default class WebviewController extends ViewController {
 		});
 	}
 
-	public emitMessage(event:any) {
+	public async emitMessage(event: EmitMessageEvent): Promise<any> {
 		if (!this.messageListener_) return;
-		this.messageListener_(event.message);
+		return this.messageListener_(event.message);
 	}
 
-	public onMessage(callback:any) {
+	public onMessage(callback: any) {
 		this.messageListener_ = callback;
+	}
+
+	// ---------------------------------------------
+	// Specific to panels
+	// ---------------------------------------------
+
+	public async show(show: boolean = true): Promise<void> {
+		this.store.dispatch({
+			type: 'MAIN_LAYOUT_SET_ITEM_PROP',
+			itemKey: this.handle,
+			propName: 'visible',
+			propValue: show,
+		});
+	}
+
+	public async hide(): Promise<void> {
+		return this.show(false);
+	}
+
+	public get visible(): boolean {
+		const mainLayout = this.store.getState().mainLayout;
+		const item = findItemByKey(mainLayout, this.handle);
+		return item ? item.visible : false;
 	}
 
 	// ---------------------------------------------
 	// Specific to dialogs
 	// ---------------------------------------------
 
-	public async open():Promise<ButtonId> {
+	public async open(): Promise<DialogResult> {
 		this.setStoreProp('opened', true);
 
-		return new Promise((resolve:Function, reject:Function) => {
+		return new Promise((resolve: Function, reject: Function) => {
 			this.closeResponse_ = { resolve, reject };
 		});
 	}
 
-	public async close() {
+	public close() {
 		this.setStoreProp('opened', false);
 	}
 
-	public closeWithResponse(result:ButtonId) {
+	public closeWithResponse(result: DialogResult) {
 		this.close();
 		this.closeResponse_.resolve(result);
 	}
 
-	public get buttons():ButtonSpec[] {
+	public get buttons(): ButtonSpec[] {
 		return this.storeView.buttons;
 	}
 
-	public set buttons(buttons:ButtonSpec[]) {
+	public set buttons(buttons: ButtonSpec[]) {
 		this.setStoreProp('buttons', buttons);
 	}
 

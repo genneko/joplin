@@ -1,10 +1,10 @@
 import shim from '@joplin/lib/shim';
-const Setting = require('@joplin/lib/models/Setting').default;
-const Note = require('@joplin/lib/models/Note.js');
-const BaseModel = require('@joplin/lib/BaseModel').default;
-const Resource = require('@joplin/lib/models/Resource.js');
+import Setting from '@joplin/lib/models/Setting';
+import Note from '@joplin/lib/models/Note';
+import BaseModel from '@joplin/lib/BaseModel';
+import Resource from '@joplin/lib/models/Resource';
 const bridge = require('electron').remote.require('./bridge').default;
-const ResourceFetcher = require('@joplin/lib/services/ResourceFetcher.js');
+import ResourceFetcher from '@joplin/lib/services/ResourceFetcher';
 const { reg } = require('@joplin/lib/registry.js');
 const joplinRendererUtils = require('@joplin/renderer').utils;
 const { clipboard } = require('electron');
@@ -52,7 +52,7 @@ export async function attachedResources(noteBody: string): Promise<any> {
 	return output;
 }
 
-export async function commandAttachFileToBody(body:string, filePaths:string[] = null, options:any = null) {
+export async function commandAttachFileToBody(body: string, filePaths: string[] = null, options: any = null) {
 	options = {
 		createFileURL: false,
 		position: 0,
@@ -101,7 +101,7 @@ export function resourcesStatus(resourceInfos: any) {
 	return joplinRendererUtils.resourceStatusName(lowestIndex);
 }
 
-export async function handlePasteEvent(event:any) {
+export async function handlePasteEvent(event: any) {
 	const output = [];
 	const formats = clipboard.availableFormats();
 	for (let i = 0; i < formats.length; i++) {

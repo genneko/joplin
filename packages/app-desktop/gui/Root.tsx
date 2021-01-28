@@ -6,16 +6,15 @@ import OneDriveLoginScreen from './OneDriveLoginScreen';
 import DropboxLoginScreen from './DropboxLoginScreen';
 import ErrorBoundary from './ErrorBoundary';
 import { themeStyle } from '@joplin/lib/theme';
-import { Size } from './ResizableLayout/ResizableLayout';
+import { Size } from './ResizableLayout/utils/types';
 import MenuBar from './MenuBar';
 import { _ } from '@joplin/lib/locale';
 const React = require('react');
 
 const { render } = require('react-dom');
 const { connect, Provider } = require('react-redux');
-const Setting = require('@joplin/lib/models/Setting').default;
-const shim = require('@joplin/lib/shim').default;
-shim.setReact(React);
+import Setting from '@joplin/lib/models/Setting';
+import shim from '@joplin/lib/shim';
 const { ImportScreen } = require('./ImportScreen.min.js');
 const { ResourceScreen } = require('./ResourceScreen.js');
 const { Navigator } = require('./Navigator.min.js');
@@ -24,22 +23,26 @@ const { ThemeProvider, StyleSheetManager, createGlobalStyle } = require('styled-
 const bridge = require('electron').remote.require('./bridge').default;
 
 interface Props {
-	themeId: number,
-	appState: string,
-	dispatch: Function,
-	size: Size,
-	zoomFactor: number,
+	themeId: number;
+	appState: string;
+	dispatch: Function;
+	size: Size;
+	zoomFactor: number;
 }
 
 const GlobalStyle = createGlobalStyle`
+	* {
+		box-sizing: border-box;
+	}
+
 	div, span, a {
-		/*color: ${(props:any) => props.theme.color};*/
-		/*font-size: ${(props:any) => props.theme.fontSize}px;*/
-		font-family: ${(props:any) => props.theme.fontFamily};
+		/*color: ${(props: any) => props.theme.color};*/
+		/*font-size: ${(props: any) => props.theme.fontSize}px;*/
+		font-family: ${(props: any) => props.theme.fontFamily};
 	}
 `;
 
-let wcsTimeoutId_:any = null;
+let wcsTimeoutId_: any = null;
 
 async function initialize() {
 	bridge().window().on('resize', function() {
@@ -67,20 +70,10 @@ async function initialize() {
 		type: 'NOTE_VISIBLE_PANES_SET',
 		panes: Setting.value('noteVisiblePanes'),
 	});
-
-	store.dispatch({
-		type: 'SIDEBAR_VISIBILITY_SET',
-		visibility: Setting.value('sidebarVisibility'),
-	});
-
-	store.dispatch({
-		type: 'NOTELIST_VISIBILITY_SET',
-		visibility: Setting.value('noteListVisibility'),
-	});
 }
 
 class RootComponent extends React.Component<Props, any> {
-	async componentDidMount() {
+	public async componentDidMount() {
 		if (this.props.appState == 'starting') {
 			this.props.dispatch({
 				type: 'APP_STATE_SET',
@@ -98,7 +91,7 @@ class RootComponent extends React.Component<Props, any> {
 		await WelcomeUtils.install(this.props.dispatch);
 	}
 
-	render() {
+	public render() {
 		const navigatorStyle = {
 			width: this.props.size.width / this.props.zoomFactor,
 			height: this.props.size.height / this.props.zoomFactor,
@@ -128,7 +121,7 @@ class RootComponent extends React.Component<Props, any> {
 	}
 }
 
-const mapStateToProps = (state:any) => {
+const mapStateToProps = (state: any) => {
 	return {
 		size: state.windowContentSize,
 		zoomFactor: state.settings.windowContentZoomFactor / 100,

@@ -1,6 +1,8 @@
 const moment = require('moment');
+const { basicDelta } = require('./file-api');
 const { dirname, basename } = require('./path-utils');
 const shim = require('./shim').default;
+const Buffer = require('buffer').Buffer;
 
 class FileApiDriverOneDrive {
 	constructor(api) {
@@ -40,7 +42,7 @@ class FileApiDriverOneDrive {
 			output.isDeleted = true;
 		} else {
 			// output.created_time = moment(odItem.fileSystemInfo.createdDateTime, 'YYYY-MM-DDTHH:mm:ss.SSSZ').format('x');
-			output.updated_time = moment(odItem.fileSystemInfo.lastModifiedDateTime, 'YYYY-MM-DDTHH:mm:ss.SSSZ').format('x');
+			output.updated_time = Number(moment(odItem.fileSystemInfo.lastModifiedDateTime, 'YYYY-MM-DDTHH:mm:ss.SSSZ').format('x'));
 		}
 
 		return output;
@@ -82,10 +84,12 @@ class FileApiDriverOneDrive {
 			context: null,
 		}, options);
 
-		let query = this.itemFilter_();
+		let query = Object.assign({}, this.itemFilter_(), { '$top': 1000 });
 		let url = `${this.makePath_(path)}:/children`;
 
 		if (options.context) {
+			// If there's a context, it already includes all required query
+			// parameters, including $top
 			query = null;
 			url = options.context;
 		}
@@ -133,16 +137,18 @@ class FileApiDriverOneDrive {
 		if (!options) options = {};
 
 		let response = null;
+		// We need to check the file size as files > 4 MBs are uploaded in a different way than files < 4 MB (see https://docs.microsoft.com/de-de/onedrive/developer/rest-api/concepts/upload?view=odsp-graph-online)
+		let byteSize = null;
 
 		if (options.source == 'file') {
-			// We need to check the file size as files > 4 MBs are uploaded in a different way than files < 4 MB (see https://docs.microsoft.com/de-de/onedrive/developer/rest-api/concepts/upload?view=odsp-graph-online)
-			const fileSize = (await shim.fsDriver().stat(options.path)).size;
-			path = fileSize < 4 * 1024 * 1024 ? `${this.makePath_(path)}:/content` : `${this.makePath_(path)}:/createUploadSession`;
-			response = await this.api_.exec('PUT', path, null, null, options);
+			byteSize = (await shim.fsDriver().stat(options.path)).size;
 		} else {
 			options.headers = { 'Content-Type': 'text/plain' };
-			response = await this.api_.exec('PUT', `${this.makePath_(path)}:/content`, null, content, options);
+			byteSize = Buffer.byteLength(content);
 		}
+
+		path = byteSize < 4 * 1024 * 1024 ? `${this.makePath_(path)}:/content` : `${this.makePath_(path)}:/createUploadSession`;
+		response = await this.api_.exec('PUT', path, null, content, options);
 
 		return response;
 	}
@@ -210,6 +216,24 @@ class FileApiDriverOneDrive {
 	}
 
 	async delta(path, options = null) {
+		const getDirStats = async path => {
+			let items = [];
+			let context = null;
+
+			while (true) {
+				const result = await this.list(path, { includeDirs: false, context: context });
+				items = items.concat(result.items);
+				context = result.context;
+				if (!result.hasMore) break;
+			}
+
+			return items;
+		};
+
+		return await basicDelta(path, getDirStats, options);
+	}
+
+	async delta_BROKEN(path, options = null) {
 		const output = {
 			hasMore: false,
 			context: {},
@@ -217,9 +241,8 @@ class FileApiDriverOneDrive {
 		};
 
 		const freshStartDelta = () => {
-			// Business Accounts are only allowed to make delta requests to the root. For some reason /delta gives an error for personal accounts and :/delta an error for business accounts
 			const accountProperties = this.api_.accountProperties_;
-			const url = (accountProperties.accountType === 'business') ? `/drives/${accountProperties.driveId}/root/delta` : `${this.makePath_(path)}:/delta`;
+			const url = `/drives/${accountProperties.driveId}/root/delta`;
 			const query = this.itemFilter_();
 			query.select += ',deleted';
 			return { url: url, query: query };

@@ -1,13 +1,13 @@
 import shim from '@joplin/lib/shim';
 const { dirname } = require('@joplin/lib/path-utils');
-const Setting = require('@joplin/lib/models/Setting').default;
+import Setting from '@joplin/lib/models/Setting';
 const pluginAssets = require('./pluginAssets/index');
-const KvStore = require('@joplin/lib/services/KvStore').default;
+import KvStore from '@joplin/lib/services/KvStore';
 
 export default class PluginAssetsLoader {
 
-	static instance_:PluginAssetsLoader = null;
-	logger_:any = null;
+	static instance_: PluginAssetsLoader = null;
+	logger_: any = null;
 
 	static instance() {
 		if (PluginAssetsLoader.instance_) return PluginAssetsLoader.instance_;
@@ -15,7 +15,7 @@ export default class PluginAssetsLoader {
 		return PluginAssetsLoader.instance_;
 	}
 
-	setLogger(logger:any) {
+	setLogger(logger: any) {
 		this.logger_ = logger;
 	}
 
@@ -49,7 +49,7 @@ export default class PluginAssetsLoader {
 			this.logger().error(error);
 		}
 
-		KvStore.instance().setValue('PluginAssetsLoader.lastHash', hash);
+		await KvStore.instance().setValue('PluginAssetsLoader.lastHash', hash);
 	}
 
 }

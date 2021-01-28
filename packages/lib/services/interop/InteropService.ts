@@ -3,12 +3,12 @@ import InteropService_Importer_Custom from './InteropService_Importer_Custom';
 import InteropService_Exporter_Custom from './InteropService_Exporter_Custom';
 import shim from '../../shim';
 import { _ } from '../../locale';
-const BaseItem = require('../../models/BaseItem.js');
-const BaseModel = require('../../BaseModel').default;
-const Resource = require('../../models/Resource.js');
-const Folder = require('../../models/Folder.js');
-const NoteTag = require('../../models/NoteTag.js');
-const Note = require('../../models/Note.js');
+import BaseItem from '../../models/BaseItem';
+import BaseModel from '../../BaseModel';
+import Resource from '../../models/Resource';
+import Folder from '../../models/Folder';
+import NoteTag from '../../models/NoteTag';
+import Note from '../../models/Note';
 const ArrayUtils = require('../../ArrayUtils');
 const { sprintf } = require('sprintf-js');
 const { fileExtension } = require('../../path-utils');
@@ -17,12 +17,12 @@ const EventEmitter = require('events');
 
 export default class InteropService {
 
-	private defaultModules_:Module[];
-	private userModules_:Module[] = [];
-	private eventEmitter_:any = null;
-	private static instance_:InteropService;
+	private defaultModules_: Module[];
+	private userModules_: Module[] = [];
+	private eventEmitter_: any = null;
+	private static instance_: InteropService;
 
-	public static instance():InteropService {
+	public static instance(): InteropService {
 		if (!this.instance_) this.instance_ = new InteropService();
 		return this.instance_;
 	}
@@ -31,17 +31,17 @@ export default class InteropService {
 		this.eventEmitter_ = new EventEmitter();
 	}
 
-	on(eventName:string, callback:Function) {
+	on(eventName: string, callback: Function) {
 		return this.eventEmitter_.on(eventName, callback);
 	}
 
-	off(eventName:string, callback:Function) {
+	off(eventName: string, callback: Function) {
 		return this.eventEmitter_.removeListener(eventName, callback);
 	}
 
 	modules() {
 		if (!this.defaultModules_) {
-			const importModules:Module[] = [
+			const importModules: Module[] = [
 				{
 					...defaultImportExportModule(ModuleType.Importer),
 					format: 'jex',
@@ -84,7 +84,7 @@ export default class InteropService {
 				},
 			];
 
-			const exportModules:Module[] = [
+			const exportModules: Module[] = [
 				{
 					...defaultImportExportModule(ModuleType.Exporter),
 					format: 'jex',
@@ -126,7 +126,7 @@ export default class InteropService {
 		return this.defaultModules_.concat(this.userModules_);
 	}
 
-	public registerModule(module:Module) {
+	public registerModule(module: Module) {
 		module = {
 			...defaultImportExportModule(module.type),
 			...module,
@@ -142,7 +142,7 @@ export default class InteropService {
 	// or exporters, such as ENEX. In this case, the one marked as "isDefault"
 	// is returned. This is useful to auto-detect the module based on the format.
 	// For more precise matching, newModuleFromPath_ should be used.
-	findModuleByFormat_(type:ModuleType, format:string, target:FileSystemItem = null, outputFormat:ImportModuleOutputFormat = null) {
+	findModuleByFormat_(type: ModuleType, format: string, target: FileSystemItem = null, outputFormat: ImportModuleOutputFormat = null) {
 		const modules = this.modules();
 		const matches = [];
 		for (let i = 0; i < modules.length; i++) {
@@ -164,7 +164,7 @@ export default class InteropService {
 		return matches.length ? matches[0] : null;
 	}
 
-	private modulePath(module:Module) {
+	private modulePath(module: Module) {
 		let className = '';
 		if (module.type === ModuleType.Importer) {
 			className = module.importerClass || `InteropService_Importer_${toTitleCase(module.format)}`;
@@ -174,7 +174,7 @@ export default class InteropService {
 		return `./${className}`;
 	}
 
-	private newModuleFromCustomFactory(module:Module) {
+	private newModuleFromCustomFactory(module: Module) {
 		if (module.type === ModuleType.Importer) {
 			return new InteropService_Importer_Custom(module);
 		} else {
@@ -189,7 +189,7 @@ export default class InteropService {
 	 * https://github.com/laurent22/joplin/pull/1795#discussion_r322379121) but
 	 * we can do it if it ever becomes necessary.
 	 */
-	newModuleByFormat_(type:ModuleType, format:string, outputFormat:ImportModuleOutputFormat = ImportModuleOutputFormat.Markdown) {
+	newModuleByFormat_(type: ModuleType, format: string, outputFormat: ImportModuleOutputFormat = ImportModuleOutputFormat.Markdown) {
 		const moduleMetadata = this.findModuleByFormat_(type, format, null, outputFormat);
 		if (!moduleMetadata) throw new Error(_('Cannot load "%s" module for format "%s" and output "%s"', type, format, outputFormat));
 
@@ -215,22 +215,16 @@ export default class InteropService {
 	 *
 	 * https://github.com/laurent22/joplin/pull/1795#pullrequestreview-281574417
 	 */
-	newModuleFromPath_(type:ModuleType, options:any) {
-		let modulePath = options && options.modulePath ? options.modulePath : '';
-
-		if (!modulePath) {
-			const moduleMetadata = this.findModuleByFormat_(type, options.format, options.target);
-			if (!moduleMetadata) throw new Error(_('Cannot load "%s" module for format "%s" and target "%s"', type, options.format, options.target));
-			modulePath = this.modulePath(moduleMetadata);
-		}
-
+	newModuleFromPath_(type: ModuleType, options: any) {
 		const moduleMetadata = this.findModuleByFormat_(type, options.format, options.target);
+		if (!moduleMetadata) throw new Error(_('Cannot load "%s" module for format "%s" and target "%s"', type, options.format, options.target));
 
 		let output = null;
 
 		if (moduleMetadata.isCustom) {
 			output = this.newModuleFromCustomFactory(moduleMetadata);
 		} else {
+			const modulePath = this.modulePath(moduleMetadata);
 			const ModuleClass = require(modulePath).default;
 			output = new ModuleClass();
 		}
@@ -238,9 +232,32 @@ export default class InteropService {
 		output.setMetadata({ options, ...moduleMetadata });
 
 		return output;
+
+		// let modulePath = options && options.modulePath ? options.modulePath : '';
+
+		// if (!modulePath) {
+		// 	const moduleMetadata = this.findModuleByFormat_(type, options.format, options.target);
+		// 	if (!moduleMetadata) throw new Error(_('Cannot load "%s" module for format "%s" and target "%s"', type, options.format, options.target));
+		// 	modulePath = this.modulePath(moduleMetadata);
+		// }
+
+		// const moduleMetadata = this.findModuleByFormat_(type, options.format, options.target);
+
+		// let output = null;
+
+		// if (moduleMetadata.isCustom) {
+		// 	output = this.newModuleFromCustomFactory(moduleMetadata);
+		// } else {
+		// 	const ModuleClass = require(modulePath).default;
+		// 	output = new ModuleClass();
+		// }
+
+		// output.setMetadata({ options, ...moduleMetadata });
+
+		// return output;
 	}
 
-	moduleByFileExtension_(type:ModuleType, ext:string) {
+	moduleByFileExtension_(type: ModuleType, ext: string) {
 		ext = ext.toLowerCase();
 
 		const modules = this.modules();
@@ -254,7 +271,7 @@ export default class InteropService {
 		return null;
 	}
 
-	async import(options:ImportOptions):Promise<ImportExportResult> {
+	async import(options: ImportOptions): Promise<ImportExportResult> {
 		if (!(await shim.fsDriver().exists(options.path))) throw new Error(_('Cannot find "%s".', options.path));
 
 		options = {
@@ -278,17 +295,19 @@ export default class InteropService {
 			options.destinationFolder = folder;
 		}
 
-		let result:ImportExportResult = { warnings: [] };
+		let result: ImportExportResult = { warnings: [] };
 
-		let importer = null;
-
+		// let importer = null;
+		//
 		// Not certain the "modulePath" property still has any use at this point. Modules should be looked up
 		// based on their format and outputFormat.
-		if (options.modulePath) {
-			importer = this.newModuleFromPath_(ModuleType.Importer, options);
-		} else {
-			importer = this.newModuleByFormat_(ModuleType.Importer, options.format, options.outputFormat);
-		}
+		// if (options.modulePath) {
+		// 	importer = this.newModuleFromPath_(ModuleType.Importer, options);
+		// } else {
+		//	importer = this.newModuleByFormat_(ModuleType.Importer, options.format, options.outputFormat);
+		// }
+
+		const importer = this.newModuleByFormat_(ModuleType.Importer, options.format, options.outputFormat);
 
 		await importer.init(options.path, options);
 		result = await importer.exec(result);
@@ -296,7 +315,7 @@ export default class InteropService {
 		return result;
 	}
 
-	async export(options:ExportOptions):Promise<ImportExportResult> {
+	async export(options: ExportOptions): Promise<ImportExportResult> {
 		options = {
 			format: 'jex',
 			...options,
@@ -305,10 +324,10 @@ export default class InteropService {
 		const exportPath = options.path ? options.path : null;
 		let sourceFolderIds = options.sourceFolderIds ? options.sourceFolderIds : [];
 		const sourceNoteIds = options.sourceNoteIds ? options.sourceNoteIds : [];
-		const result:ImportExportResult = { warnings: [] };
-		const itemsToExport:any[] = [];
+		const result: ImportExportResult = { warnings: [] };
+		const itemsToExport: any[] = [];
 
-		const queueExportItem = (itemType:number, itemOrId:any) => {
+		const queueExportItem = (itemType: number, itemOrId: any) => {
 			itemsToExport.push({
 				type: itemType,
 				itemOrId: itemOrId,
@@ -316,10 +335,12 @@ export default class InteropService {
 		};
 
 		const exportedNoteIds = [];
-		let resourceIds:string[] = [];
+		let resourceIds: string[] = [];
 
 		// Recursively get all the folders that have valid parents
-		const folderIds = await Folder.childrenIds('', true);
+		const folderIds = await Folder.childrenIds('');
+
+		if (options.includeConflicts) folderIds.push(Folder.conflictFolderId());
 
 		let fullSourceFolderIds = sourceFolderIds.slice();
 		for (let i = 0; i < sourceFolderIds.length; i++) {
@@ -335,7 +356,7 @@ export default class InteropService {
 
 			if (!sourceNoteIds.length) await queueExportItem(BaseModel.TYPE_FOLDER, folderId);
 
-			const noteIds = await Folder.noteIds(folderId);
+			const noteIds = await Folder.noteIds(folderId, { includeConflicts: !!options.includeConflicts });
 
 			for (let noteIndex = 0; noteIndex < noteIds.length; noteIndex++) {
 				const noteId = noteIds[noteIndex];
@@ -374,7 +395,7 @@ export default class InteropService {
 		await exporter.init(exportPath, options);
 
 		const typeOrder = [BaseModel.TYPE_FOLDER, BaseModel.TYPE_RESOURCE, BaseModel.TYPE_NOTE, BaseModel.TYPE_TAG, BaseModel.TYPE_NOTE_TAG];
-		const context:any = {
+		const context: any = {
 			resourcePaths: {},
 		};
 

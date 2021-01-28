@@ -1,31 +1,33 @@
 import MenuUtils from '@joplin/lib/services/commands/MenuUtils';
 import ToolbarButtonUtils from '@joplin/lib/services/commands/ToolbarButtonUtils';
 import CommandService, { CommandDeclaration, CommandRuntime } from '@joplin/lib/services/CommandService';
+import stateToWhenClauseContext from '@joplin/lib/services/commands/stateToWhenClauseContext';
+import KeymapService from '@joplin/lib/services/KeymapService';
 
-const { asyncTest, setupDatabaseAndSynchronizer, switchClient, expectThrow, expectNotThrow } = require('./test-utils.js');
+const { setupDatabaseAndSynchronizer, switchClient, expectThrow, expectNotThrow } = require('./test-utils.js');
 
 interface TestCommand {
-	declaration: CommandDeclaration,
-	runtime: CommandRuntime,
+	declaration: CommandDeclaration;
+	runtime: CommandRuntime;
 }
 
-function newService():CommandService {
+function newService(): CommandService {
 	const service = new CommandService();
 	const mockStore = {
 		getState: () => {
 			return {};
 		},
 	};
-	service.initialize(mockStore, true);
+	service.initialize(mockStore, true, stateToWhenClauseContext);
 	return service;
 }
 
-function createCommand(name:string, options:any):TestCommand {
-	const declaration:CommandDeclaration = {
+function createCommand(name: string, options: any): TestCommand {
+	const declaration: CommandDeclaration = {
 		name: name,
 	};
 
-	const runtime:CommandRuntime = {
+	const runtime: CommandRuntime = {
 		execute: options.execute,
 	};
 
@@ -34,7 +36,7 @@ function createCommand(name:string, options:any):TestCommand {
 	return { declaration, runtime };
 }
 
-function registerCommand(service:CommandService, cmd:TestCommand) {
+function registerCommand(service: CommandService, cmd: TestCommand) {
 	service.registerDeclaration(cmd.declaration);
 	service.registerRuntime(cmd.declaration.name, cmd.runtime);
 }
@@ -42,16 +44,19 @@ function registerCommand(service:CommandService, cmd:TestCommand) {
 describe('services_CommandService', function() {
 
 	beforeEach(async (done) => {
+		KeymapService.destroyInstance();
+		KeymapService.instance().initialize();
+
 		await setupDatabaseAndSynchronizer(1);
 		await switchClient(1);
 		done();
 	});
 
-	it('should create toolbar button infos from commands', asyncTest(async () => {
+	it('should create toolbar button infos from commands', (async () => {
 		const service = newService();
 		const toolbarButtonUtils = new ToolbarButtonUtils(service);
 
-		const executedCommands:string[] = [];
+		const executedCommands: string[] = [];
 
 		registerCommand(service, createCommand('test1', {
 			execute: () => {
@@ -75,7 +80,7 @@ describe('services_CommandService', function() {
 		expect(toolbarInfos[1].enabled).toBe(true);
 	}));
 
-	it('should enable and disable toolbar buttons depending on state', asyncTest(async () => {
+	it('should enable and disable toolbar buttons depending on state', (async () => {
 		const service = newService();
 		const toolbarButtonUtils = new ToolbarButtonUtils(service);
 
@@ -98,7 +103,7 @@ describe('services_CommandService', function() {
 		expect(toolbarInfos[1].enabled).toBe(true);
 	}));
 
-	it('should enable commands by default', asyncTest(async () => {
+	it('should enable commands by default', (async () => {
 		const service = newService();
 
 		registerCommand(service, createCommand('test1', {
@@ -108,7 +113,7 @@ describe('services_CommandService', function() {
 		expect(service.isEnabled('test1', {})).toBe(true);
 	}));
 
-	it('should return the same toolbarButtons array if nothing has changed', asyncTest(async () => {
+	it('should return the same toolbarButtons array if nothing has changed', (async () => {
 		const service = newService();
 		const toolbarButtonUtils = new ToolbarButtonUtils(service);
 
@@ -136,7 +141,7 @@ describe('services_CommandService', function() {
 		expect(toolbarInfos1[0] === toolbarInfos2[0]).toBe(true);
 		expect(toolbarInfos1[1] === toolbarInfos2[1]).toBe(true);
 
-		const toolbarInfos3 =  toolbarButtonUtils.commandsToToolbarButtons(['test1', 'test2'], {
+		const toolbarInfos3 = toolbarButtonUtils.commandsToToolbarButtons(['test1', 'test2'], {
 			cond1: true,
 			cond2: true,
 		});
@@ -156,7 +161,7 @@ describe('services_CommandService', function() {
 		}
 	}));
 
-	it('should create menu items from commands', asyncTest(async () => {
+	it('should create menu items from commands', (async () => {
 		const service = newService();
 		const utils = new MenuUtils(service);
 
@@ -168,9 +173,9 @@ describe('services_CommandService', function() {
 			execute: () => {},
 		}));
 
-		const clickedCommands:string[] = [];
+		const clickedCommands: string[] = [];
 
-		const onClick = (commandName:string) => {
+		const onClick = (commandName: string) => {
 			clickedCommands.push(commandName);
 		};
 
@@ -185,7 +190,7 @@ describe('services_CommandService', function() {
 		expect(utils.commandsToMenuItems(['test1', 'test2'], onClick)).toBe(utils.commandsToMenuItems(['test1', 'test2'], onClick));
 	}));
 
-	it('should give menu item props from state', asyncTest(async () => {
+	it('should give menu item props from state', (async () => {
 		const service = newService();
 		const utils = new MenuUtils(service);
 
@@ -223,14 +228,14 @@ describe('services_CommandService', function() {
 			.toBe(utils.commandsToMenuItemProps(['test1', 'test2'], { cond1: true, cond2: true }));
 	}));
 
-	it('should create stateful menu items', asyncTest(async () => {
+	it('should create stateful menu items', (async () => {
 		const service = newService();
 		const utils = new MenuUtils(service);
 
 		let propValue = null;
 
 		registerCommand(service, createCommand('test1', {
-			execute: (_context:any, greeting:string) => {
+			execute: (_context: any, greeting: string) => {
 				propValue = greeting;
 			},
 		}));
@@ -241,7 +246,7 @@ describe('services_CommandService', function() {
 		expect(propValue).toBe('hello');
 	}));
 
-	it('should throw an error for invalid when clause keys in dev mode', asyncTest(async () => {
+	it('should throw an error for invalid when clause keys in dev mode', (async () => {
 		const service = newService();
 
 		registerCommand(service, createCommand('test1', {

@@ -1,15 +1,15 @@
 import shim from '../../../shim';
 import MigrationHandler from '../MigrationHandler';
 const { useEffect, useState } = shim.react();
-const Setting = require('../../../models/Setting').default;
+import Setting from '../../../models/Setting';
 const { reg } = require('../../../registry');
 
 export interface SyncTargetUpgradeResult {
-	done: boolean,
-	error: any,
+	done: boolean;
+	error: any;
 }
 
-export default function useSyncTargetUpgrade():SyncTargetUpgradeResult {
+export default function useSyncTargetUpgrade(): SyncTargetUpgradeResult {
 	const [upgradeResult, setUpgradeResult] = useState({
 		done: false,
 		error: null,
@@ -51,7 +51,7 @@ export default function useSyncTargetUpgrade():SyncTargetUpgradeResult {
 	}
 
 	useEffect(function() {
-		upgradeSyncTarget();
+		void upgradeSyncTarget();
 	}, []);
 
 	return upgradeResult;

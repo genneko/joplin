@@ -1,8 +1,8 @@
 /* eslint-disable import/prefer-default-export */
 
 import KeychainService from './keychain/KeychainService';
-const Setting = require('../models/Setting').default;
-const uuid = require('../uuid').default;
+import Setting from '../models/Setting';
+import uuid from '../uuid';
 
 // This function takes care of initialising both the keychain service and settings.
 //
@@ -12,7 +12,7 @@ const uuid = require('../uuid').default;
 // In other words, it's not possible to load the settings without the KS service and it's not
 // possible to initialise the KS service without the settings.
 // The solution is to fetch just the client ID directly from the database.
-export async function loadKeychainServiceAndSettings(KeychainServiceDriver:any) {
+export async function loadKeychainServiceAndSettings(KeychainServiceDriver: any) {
 	const clientIdSetting = await Setting.loadOne('clientId');
 	const clientId = clientIdSetting ? clientIdSetting.value : uuid.create();
 	KeychainService.instance().initialize(new KeychainServiceDriver(Setting.value('appId'), clientId));

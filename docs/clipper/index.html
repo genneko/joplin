@@ -81,7 +81,7 @@ https://github.com/laurent22/joplin/blob/dev/readme/clipper.md
 		background-color: #eee;
 		border: 1px solid #ccc;
 		font-size: .85em;
-		word-break: break-all;
+	/*	word-break: break-all; */
 	}
 	pre code {
 		border: none;
@@ -347,17 +347,25 @@ https://github.com/laurent22/joplin/blob/dev/readme/clipper.md
 <li><a href="https://joplinapp.org/e2ee/">How to enable end-to-end encryption</a></li>
 <li><a href="https://joplinapp.org/conflict/">What is a conflict?</a></li>
 <li><a href="https://joplinapp.org/debugging/">How to enable debug mode</a></li>
+<li><a href="https://joplinapp.org/rich_text_editor/">About the Rich Text editor limitations</a></li>
 <li><a href="https://joplinapp.org/faq/">FAQ</a></li>
 </ul>
 </li>
 <li>
-<p>Joplin API</p>
+<p>Joplin API - Get Started</p>
 <ul>
 <li><a href="https://joplinapp.org/api/overview/">Joplin API Overview</a></li>
 <li><a href="https://joplinapp.org/api/get_started/plugins/">Plugin development</a></li>
 <li><a href="https://joplinapp.org/api/tutorials/toc_plugin/">Plugin tutorial</a></li>
+</ul>
+</li>
+<li>
+<p>Joplin API - References</p>
+<ul>
 <li><a href="https://joplinapp.org/api/references/plugin_api/classes/joplin.html">Plugin API</a></li>
-<li><a href="https://joplinapp.org/api/references/rest_api/">Data API documentation</a></li>
+<li><a href="https://joplinapp.org/api/references/rest_api/">Data API</a></li>
+<li><a href="https://joplinapp.org/api/references/plugin_manifest/">Plugin manifest</a></li>
+<li><a href="https://joplinapp.org/api/references/plugin_loading_rules/">Plugin loading rules</a></li>
 </ul>
 </li>
 <li>
@@ -369,6 +377,8 @@ https://github.com/laurent22/joplin/blob/dev/readme/clipper.md
 <li><a href="https://joplinapp.org/spec/sync_lock/">Sync Lock spec</a></li>
 <li><a href="https://joplinapp.org/spec/plugins/">Plugin Architecture spec</a></li>
 <li><a href="https://joplinapp.org/spec/search_sorting/">Search Sorting spec</a></li>
+<li><a href="https://joplinapp.org/spec/server_file_url_format/">Server: File URL Format</a></li>
+<li><a href="https://joplinapp.org/spec/server_delta_sync/">Server: Delta Sync</a></li>
 </ul>
 </li>
 <li>
@@ -396,7 +406,7 @@ https://github.com/laurent22/joplin/blob/dev/readme/clipper.md
 <img src="https://joplinapp.org/images/WebExtensionScreenshot.png" style="max-width: 50%; border: 1px solid gray;">
 <h1>Troubleshooting the web clipper service<a name="troubleshooting-the-web-clipper-service" href="#troubleshooting-the-web-clipper-service" class="heading-anchor">🔗</a></h1>
 <p>The web clipper extension and the Joplin application communicates via a service, which is started by the Joplin desktop app.</p>
-<p>However certain things can interfer with this service and prevent it from being accessible or from starting. If something does not work, check the following:</p>
+<p>However certain things can interfere with this service and prevent it from being accessible or from starting. If something does not work, check the following:</p>
 <ul>
 <li>Check that the service is started. You can check this in the Web clipper options in the desktop app.</li>
 <li>Check that the port used by the service is not blocked by a firewall. You can find the port number in the Web clipper options in the desktop Joplin application.</li>
@@ -463,7 +473,7 @@ https://github.com/laurent22/joplin/blob/dev/readme/clipper.md
 </div></div>
 
 <div class="footer">
-Copyright (C) 2016-2020 Laurent Cozic
+Copyright (C) 2016-2021 Laurent Cozic
 </div>
 </body>
 </html>

@@ -1,7 +1,7 @@
 import { CommandDeclaration } from '@joplin/lib/services/CommandService';
 import { _ } from '@joplin/lib/locale';
 
-const declarations:CommandDeclaration[] = [
+const declarations: CommandDeclaration[] = [
 	{
 		name: 'insertText',
 	},
@@ -84,10 +84,52 @@ const declarations:CommandDeclaration[] = [
 		iconName: 'icon-add-date',
 	},
 	{
+		name: 'editor.deleteLine',
+		label: () => _('Delete line'),
+	},
+	{
+		name: 'editor.undo',
+		label: () => _('Undo'),
+	},
+	{
+		name: 'editor.redo',
+		label: () => _('Redo'),
+	},
+	{
+		name: 'editor.indentLess',
+		label: () => _('Indent less'),
+	},
+	{
+		name: 'editor.indentMore',
+		label: () => _('Indent more'),
+	},
+	{
+		name: 'editor.toggleComment',
+		label: () => _('Toggle comment'),
+	},
+	{
+		name: 'editor.sortSelectedLines',
+		label: () => _('Sort selected lines'),
+	},
+	{
+		name: 'editor.swapLineUp',
+		label: () => _('Swap line up'),
+	},
+	{
+		name: 'editor.swapLineDown',
+		label: () => _('Swap line down'),
+	},
+	{
 		name: 'selectedText',
 	},
 	{
 		name: 'replaceSelection',
+	},
+	{
+		name: 'editor.setText',
+	},
+	{
+		name: 'editor.focus',
 	},
 ];
 

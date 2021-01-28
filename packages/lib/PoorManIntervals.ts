@@ -6,16 +6,16 @@
 // whenever the update() function is called, and in mobile it's called for
 // example on the Redux action middleware or when the app gets focus.
 
-const time = require('./time').default;
+import time from './time';
 
 type IntervalId = number;
 
 interface Interval {
-	id: IntervalId,
-	callback: Function,
-	interval: number,
-	lastIntervalTime: number,
-	isTimeout: boolean,
+	id: IntervalId;
+	callback: Function;
+	interval: number;
+	lastIntervalTime: number;
+	isTimeout: boolean;
 }
 
 interface Intervals {
@@ -25,11 +25,11 @@ interface Intervals {
 export default class PoorManIntervals {
 
 	private static maxNativeTimerDuration_ = 10 * 1000;
-	private static lastUpdateTime_:number = 0;
-	private static intervalId_:IntervalId = 0;
-	private static intervals_:Intervals = {};
+	private static lastUpdateTime_: number = 0;
+	private static intervalId_: IntervalId = 0;
+	private static intervals_: Intervals = {};
 
-	public static setInterval(callback:Function, interval:number):IntervalId {
+	public static setInterval(callback: Function, interval: number): IntervalId {
 		if (interval <= this.maxNativeTimerDuration_) return setInterval(callback, interval);
 
 		this.intervalId_++;
@@ -46,7 +46,7 @@ export default class PoorManIntervals {
 		return id;
 	}
 
-	public static setTimeout(callback:Function, interval:number):IntervalId {
+	public static setTimeout(callback: Function, interval: number): IntervalId {
 		if (interval <= this.maxNativeTimerDuration_) return setTimeout(callback, interval);
 
 		this.intervalId_++;
@@ -63,7 +63,7 @@ export default class PoorManIntervals {
 		return id;
 	}
 
-	public static clearInterval(id:IntervalId) {
+	public static clearInterval(id: IntervalId) {
 		const r = this.intervals_[id];
 		if (!r) {
 			clearInterval(id);
@@ -72,7 +72,7 @@ export default class PoorManIntervals {
 		}
 	}
 
-	public static clearTimeout(id:IntervalId) {
+	public static clearTimeout(id: IntervalId) {
 		const r = this.intervals_[id];
 		if (!r) {
 			clearTimeout(id);

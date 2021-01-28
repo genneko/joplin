@@ -1,18 +1,18 @@
 import { utils, CommandRuntime, CommandDeclaration, CommandContext } from '@joplin/lib/services/CommandService';
 import { _ } from '@joplin/lib/locale';
-const Setting = require('@joplin/lib/models/Setting').default;
-const Note = require('@joplin/lib/models/Note');
+import Setting from '@joplin/lib/models/Setting';
+import Note from '@joplin/lib/models/Note';
 const TemplateUtils = require('@joplin/lib/TemplateUtils');
 
-export const declaration:CommandDeclaration = {
+export const declaration: CommandDeclaration = {
 	name: 'newNote',
 	label: () => _('New note'),
 	iconName: 'fa-file',
 };
 
-export const runtime = ():CommandRuntime => {
+export const runtime = (): CommandRuntime => {
 	return {
-		execute: async (_context:CommandContext, template:string = null, isTodo:boolean = false) => {
+		execute: async (_context: CommandContext, template: string = null, isTodo: boolean = false) => {
 			const folderId = Setting.value('activeFolderId');
 			if (!folderId) return;
 

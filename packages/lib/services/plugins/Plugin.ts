@@ -6,75 +6,97 @@ import { ContentScriptType } from './api/types';
 import Logger from '../../Logger';
 const EventEmitter = require('events');
 
+const logger = Logger.create('Plugin');
+
 interface ViewControllers {
-	[key:string]: ViewController
+	[key: string]: ViewController;
 }
 
 export interface ContentScript {
-	id: string,
-	path: string,
+	id: string;
+	path: string;
 }
 
 interface ContentScripts {
-	[type:string]: ContentScript[];
+	[type: string]: ContentScript[];
 }
 
 export default class Plugin {
 
-	private id_:string;
-	private baseDir_:string;
-	private manifest_:PluginManifest;
-	private scriptText_:string;
-	private enabled_:boolean = true;
-	private logger_:Logger = null;
-	private viewControllers_:ViewControllers = {};
-	private contentScripts_:ContentScripts = {};
-	private dispatch_:Function;
-	private eventEmitter_:any;
+	private baseDir_: string;
+	private manifest_: PluginManifest;
+	private scriptText_: string;
+	private viewControllers_: ViewControllers = {};
+	private contentScripts_: ContentScripts = {};
+	private dispatch_: Function;
+	private eventEmitter_: any;
+	private devMode_: boolean = false;
+	private messageListener_: Function = null;
+	private contentScriptMessageListeners_: Record<string, Function> = {};
+	private dataDir_: string;
+	private dataDirCreated_: boolean = false;
 
-	constructor(id:string, baseDir:string, manifest:PluginManifest, scriptText:string, logger:Logger, dispatch:Function) {
-		this.id_ = id;
+	constructor(baseDir: string, manifest: PluginManifest, scriptText: string, dispatch: Function, dataDir: string) {
 		this.baseDir_ = shim.fsDriver().resolve(baseDir);
 		this.manifest_ = manifest;
 		this.scriptText_ = scriptText;
-		this.logger_ = logger;
 		this.dispatch_ = dispatch;
+		this.dataDir_ = dataDir;
 		this.eventEmitter_ = new EventEmitter();
 	}
 
-	public get id():string {
-		return this.id_;
+	public get id(): string {
+		return this.manifest.id;
 	}
 
-	public get enabled():boolean {
-		return this.enabled_;
+	public get devMode(): boolean {
+		return this.devMode_;
 	}
 
-	public get manifest():PluginManifest {
+	public set devMode(v: boolean) {
+		this.devMode_ = v;
+	}
+
+	public get manifest(): PluginManifest {
 		return this.manifest_;
 	}
 
-	public get scriptText():string {
+	public get scriptText(): string {
 		return this.scriptText_;
 	}
 
-	public get baseDir():string {
+	public get baseDir(): string {
 		return this.baseDir_;
 	}
 
-	on(eventName:string, callback:Function) {
+	public async dataDir(): Promise<string> {
+		if (this.dataDirCreated_) return this.dataDir_;
+
+		if (!(await shim.fsDriver().exists(this.dataDir_))) {
+			await shim.fsDriver().mkdir(this.dataDir_);
+			this.dataDirCreated_ = true;
+		}
+
+		return this.dataDir_;
+	}
+
+	public get viewCount(): number {
+		return Object.keys(this.viewControllers_).length;
+	}
+
+	public on(eventName: string, callback: Function) {
 		return this.eventEmitter_.on(eventName, callback);
 	}
 
-	off(eventName:string, callback:Function) {
+	public off(eventName: string, callback: Function) {
 		return this.eventEmitter_.removeListener(eventName, callback);
 	}
 
-	emit(eventName:string, event:any = null) {
+	public emit(eventName: string, event: any = null) {
 		return this.eventEmitter_.emit(eventName, event);
 	}
 
-	public async registerContentScript(type:ContentScriptType, id:string, path:string) {
+	public async registerContentScript(type: ContentScriptType, id: string, path: string) {
 		if (!this.contentScripts_[type]) this.contentScripts_[type] = [];
 
 		const absolutePath = shim.fsDriver().resolveRelativePathWithinDir(this.baseDir, path);
@@ -83,7 +105,7 @@ export default class Plugin {
 
 		this.contentScripts_[type].push({ id, path: absolutePath });
 
-		this.logger_.debug(`Plugin: ${this.id}: Registered content script: ${type}: ${id}: ${absolutePath}`);
+		logger.debug(`"${this.id}": Registered content script: ${type}: ${id}: ${absolutePath}`);
 
 		this.dispatch_({
 			type: 'PLUGIN_CONTENT_SCRIPTS_ADD',
@@ -96,18 +118,57 @@ export default class Plugin {
 		});
 	}
 
-	public contentScriptsByType(type:ContentScriptType):ContentScript[] {
+	public contentScriptsByType(type: ContentScriptType): ContentScript[] {
 		return this.contentScripts_[type] ? this.contentScripts_[type] : [];
 	}
 
-	public addViewController(v:ViewController) {
-		if (this.viewControllers_[v.handle]) throw new Error(`View already added: ${v.handle}`);
+	public contentScriptById(id: string): ContentScript {
+		for (const type in this.contentScripts_) {
+			const cs = this.contentScripts_[type];
+			for (const c of cs) {
+				if (c.id === id) return c;
+			}
+		}
+
+		return null;
+	}
+
+	public addViewController(v: ViewController) {
+		if (this.viewControllers_[v.handle]) throw new Error(`View already added or there is already a view with this ID: ${v.handle}`);
 		this.viewControllers_[v.handle] = v;
 	}
 
-	public viewController(handle:ViewHandle):ViewController {
+	public viewController(handle: ViewHandle): ViewController {
 		if (!this.viewControllers_[handle]) throw new Error(`View not found: ${handle}`);
 		return this.viewControllers_[handle];
+	}
+
+	public deprecationNotice(goneInVersion: string, message: string) {
+		logger.warn(`"${this.id}": DEPRECATION NOTICE: ${message} This will stop working in version ${goneInVersion}.`);
+	}
+
+	public emitMessage(message: any) {
+		if (!this.messageListener_) return;
+		return this.messageListener_(message);
+	}
+
+	public onMessage(callback: any) {
+		this.messageListener_ = callback;
+	}
+
+	public onContentScriptMessage(id: string, callback: any) {
+		if (!this.contentScriptById(id)) {
+			// The script could potentially be registered later on, but still
+			// best to print a warning to notify the user of a possible bug.
+			logger.warn(`onContentScriptMessage: No such content script: ${id}`);
+		}
+
+		this.contentScriptMessageListeners_[id] = callback;
+	}
+
+	public emitContentScriptMessage(id: string, message: any) {
+		if (!this.contentScriptMessageListeners_[id]) return;
+		return this.contentScriptMessageListeners_[id](message);
 	}
 
 }

@@ -5,13 +5,14 @@ import BasePluginRunner from '@joplin/lib/services/plugins/BasePluginRunner';
 import executeSandboxCall from '@joplin/lib/services/plugins/utils/executeSandboxCall';
 import Global from '@joplin/lib/services/plugins/api/Global';
 import mapEventHandlersToIds, { EventHandlers } from '@joplin/lib/services/plugins/utils/mapEventHandlersToIds';
+import uuid from '@joplin/lib/uuid';
 
-function createConsoleWrapper(pluginId:string) {
-	const wrapper:any = {};
+function createConsoleWrapper(pluginId: string) {
+	const wrapper: any = {};
 
 	for (const n in console) {
 		if (!console.hasOwnProperty(n)) continue;
-		wrapper[n] = (...args:any[]) => {
+		wrapper[n] = (...args: any[]) => {
 			const newArgs = args.slice();
 			newArgs.splice(0, 0, `Plugin "${pluginId}":`);
 			return (console as any)[n](...newArgs);
@@ -30,7 +31,8 @@ function createConsoleWrapper(pluginId:string) {
 
 export default class PluginRunner extends BasePluginRunner {
 
-	private eventHandlers_:EventHandlers = {};
+	private eventHandlers_: EventHandlers = {};
+	private activeSandboxCalls_: any = {};
 
 	constructor() {
 		super();
@@ -38,14 +40,20 @@ export default class PluginRunner extends BasePluginRunner {
 		this.eventHandler = this.eventHandler.bind(this);
 	}
 
-	private async eventHandler(eventHandlerId:string, args:any[]) {
+	private async eventHandler(eventHandlerId: string, args: any[]) {
 		const cb = this.eventHandlers_[eventHandlerId];
 		return cb(...args);
 	}
 
-	private newSandboxProxy(pluginId:string, sandbox:Global) {
-		const target = async (path:string, args:any[]) => {
-			return executeSandboxCall(pluginId, sandbox, `joplin.${path}`, mapEventHandlersToIds(args, this.eventHandlers_), this.eventHandler);
+	private newSandboxProxy(pluginId: string, sandbox: Global) {
+		const target = async (path: string, args: any[]) => {
+			const callId = `${pluginId}::${path}::${uuid.createNano()}`;
+			this.activeSandboxCalls_[callId] = true;
+			const promise = executeSandboxCall(pluginId, sandbox, `joplin.${path}`, mapEventHandlersToIds(args, this.eventHandlers_), this.eventHandler);
+			promise.finally(() => {
+				delete this.activeSandboxCalls_[callId];
+			});
+			return promise;
 		};
 
 		return {
@@ -54,8 +62,8 @@ export default class PluginRunner extends BasePluginRunner {
 		};
 	}
 
-	async run(plugin:Plugin, sandbox:Global):Promise<void> {
-		return new Promise((resolve:Function, reject:Function) => {
+	async run(plugin: Plugin, sandbox: Global): Promise<void> {
+		return new Promise((resolve: Function, reject: Function) => {
 			const onStarted = () => {
 				plugin.off('started', onStarted);
 				resolve();
@@ -69,9 +77,24 @@ export default class PluginRunner extends BasePluginRunner {
 				vm.runInContext(plugin.scriptText, vmSandbox);
 			} catch (error) {
 				reject(error);
-				// this.logger().error(`In plugin ${plugin.id}:`, error);
-				// return;
 			}
+		});
+	}
+
+	public async waitForSandboxCalls(): Promise<void> {
+		const startTime = Date.now();
+		return new Promise((resolve: Function, reject: Function) => {
+			const iid = setInterval(() => {
+				if (!Object.keys(this.activeSandboxCalls_).length) {
+					clearInterval(iid);
+					resolve();
+				}
+
+				if (Date.now() - startTime > 4000) {
+					clearInterval(iid);
+					reject(new Error(`Timeout while waiting for sandbox calls to complete: ${JSON.stringify(this.activeSandboxCalls_)}`));
+				}
+			}, 10);
 		});
 	}
 

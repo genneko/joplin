@@ -1,10 +1,11 @@
 import eventManager from '../eventManager';
 import shim from '../shim';
 import { _ } from '../locale';
+import keysRegExp from './KeymapService_keysRegExp';
+import keycodeToElectronMap from './KeymapService_keycodeToElectronMap';
 
-const BaseService = require('./BaseService').default;
+import BaseService from './BaseService';
 
-const keysRegExp = /^([0-9A-Z)!@#$%^&*(:+<_>?~{|}";=,\-./`[\\\]']|F1*[1-9]|F10|F2[0-4]|Plus|Space|Tab|Backspace|Delete|Insert|Return|Enter|Up|Down|Left|Right|Home|End|PageUp|PageDown|Escape|Esc|VolumeUp|VolumeDown|VolumeMute|MediaNextTrack|MediaPreviousTrack|MediaStop|MediaPlayPause|PrintScreen)$/;
 const modifiersRegExp = {
 	darwin: /^(Ctrl|Option|Shift|Cmd)$/,
 	default: /^(Ctrl|Alt|AltGr|Shift|Super)$/,
@@ -44,6 +45,15 @@ const defaultKeymapItems = {
 		{ accelerator: 'Cmd+P', command: 'gotoAnything' },
 		{ accelerator: 'Shift+Cmd+P', command: 'commandPalette' },
 		{ accelerator: 'F1', command: 'help' },
+		{ accelerator: 'Cmd+D', command: 'editor.deleteLine' },
+		{ accelerator: 'Cmd+Z', command: 'editor.undo' },
+		{ accelerator: 'Cmd+Y', command: 'editor.redo' },
+		{ accelerator: 'Cmd+[', command: 'editor.indentLess' },
+		{ accelerator: 'Cmd+]', command: 'editor.indentMore' },
+		{ accelerator: 'Cmd+/', command: 'editor.toggleComment' },
+		{ accelerator: 'Option+Cmd+A', command: 'editor.sortSelectedLines' },
+		{ accelerator: 'Option+Up', command: 'editor.swapLineUp' },
+		{ accelerator: 'Option+Down', command: 'editor.swapLineDown' },
 	],
 	default: [
 		{ accelerator: 'Ctrl+N', command: 'newNote' },
@@ -76,6 +86,15 @@ const defaultKeymapItems = {
 		{ accelerator: 'Ctrl+P', command: 'gotoAnything' },
 		{ accelerator: 'Ctrl+Shift+P', command: 'commandPalette' },
 		{ accelerator: 'F1', command: 'help' },
+		{ accelerator: 'Ctrl+D', command: 'editor.deleteLine' },
+		{ accelerator: 'Ctrl+Z', command: 'editor.undo' },
+		{ accelerator: 'Ctrl+Y', command: 'editor.redo' },
+		{ accelerator: 'Ctrl+[', command: 'editor.indentLess' },
+		{ accelerator: 'Ctrl+]', command: 'editor.indentMore' },
+		{ accelerator: 'Ctrl+/', command: 'editor.toggleComment' },
+		{ accelerator: 'Ctrl+Alt+S', command: 'editor.sortSelectedLines' },
+		{ accelerator: 'Alt+Up', command: 'editor.swapLineUp' },
+		{ accelerator: 'Alt+Down', command: 'editor.swapLineDown' },
 	],
 };
 
@@ -94,7 +113,8 @@ export default class KeymapService extends BaseService {
 	private platform: string;
 	private customKeymapPath: string;
 	private defaultKeymapItems: KeymapItem[];
-	private lastSaveTime_:number;
+	private lastSaveTime_: number;
+	private modifiersRegExp: any;
 
 	public constructor() {
 		super();
@@ -102,7 +122,7 @@ export default class KeymapService extends BaseService {
 		this.lastSaveTime_ = Date.now();
 	}
 
-	public get lastSaveTime():number {
+	public get lastSaveTime(): number {
 		return this.lastSaveTime_;
 	}
 
@@ -110,7 +130,7 @@ export default class KeymapService extends BaseService {
 	// **except** if they are already in it. Basically this is a mechanism
 	// to add all the commands from the command service to the default
 	// keymap.
-	public initialize(additionalDefaultCommandNames:string[] = [], platform: string = shim.platformName()) {
+	public initialize(additionalDefaultCommandNames: string[] = [], platform: string = shim.platformName()) {
 		this.platform = platform;
 
 		switch (platform) {
@@ -124,7 +144,7 @@ export default class KeymapService extends BaseService {
 		}
 
 		for (const name of additionalDefaultCommandNames) {
-			if (this.defaultKeymapItems.find((item:KeymapItem) => item.command === name)) continue;
+			if (this.defaultKeymapItems.find((item: KeymapItem) => item.command === name)) continue;
 			this.defaultKeymapItems.push({
 				command: name,
 				accelerator: null,
@@ -180,14 +200,14 @@ export default class KeymapService extends BaseService {
 		return !!this.keymap[command];
 	}
 
-	private convertToPlatform(accelerator:string) {
+	private convertToPlatform(accelerator: string) {
 		return accelerator
 			.replace(/CmdOrCtrl/g, this.platform === 'darwin' ? 'Cmd' : 'Ctrl')
 			.replace(/Option/g, this.platform === 'darwin' ? 'Option' : 'Alt')
 			.replace(/Alt/g, this.platform === 'darwin' ? 'Option' : 'Alt');
 	}
 
-	public registerCommandAccelerator(commandName:string, accelerator:string) {
+	public registerCommandAccelerator(commandName: string, accelerator: string) {
 		// If the command is already registered, we don't register it again and
 		// we don't update the accelerator. This is because it might have been
 		// modified by the user and we don't want the plugin to overwrite this.
@@ -243,7 +263,7 @@ export default class KeymapService extends BaseService {
 		});
 
 		for (const commandName in this.keymap) {
-			if (!this.defaultKeymapItems.find((item:KeymapItem) => item.command === commandName)) {
+			if (!this.defaultKeymapItems.find((item: KeymapItem) => item.command === commandName)) {
 				customkeymapItems.push(this.keymap[commandName]);
 			}
 		}
@@ -349,11 +369,15 @@ export default class KeymapService extends BaseService {
 		if (!isValid) throw new Error(_('Accelerator "%s" is not valid.', accelerator));
 	}
 
-	public domToElectronAccelerator(event:any) {
+	public domToElectronAccelerator(event: any) {
 		const parts = [];
-		const { key, ctrlKey, metaKey, altKey, shiftKey } = event;
+
+		// We use the "keyCode" and not "key" because the modifier keys
+		// would change the "key" value. eg "Option+U" would give "º" as a key instead of "U"
+		const { keyCode, ctrlKey, metaKey, altKey, shiftKey } = event;
 
 		// First, the modifiers
+		// We have to use the following js events, because modifiers won't stick otherwise
 		if (ctrlKey) parts.push('Ctrl');
 		switch (this.platform) {
 		case 'darwin':
@@ -367,40 +391,12 @@ export default class KeymapService extends BaseService {
 		}
 
 		// Finally, the key
-		const electronKey = KeymapService.domToElectronKey(key);
-		if (electronKey) parts.push(electronKey);
+		// String.fromCharCode expects unicode charcodes as an argument; e.keyCode returns javascript keycodes.
+		// Javascript keycodes and unicode charcodes are not the same thing!
+		const electronKey = keycodeToElectronMap[keyCode];
+		if (electronKey && keysRegExp.test(electronKey)) parts.push(electronKey);
 
 		return parts.join('+');
-	}
-
-	private static domToElectronKey(domKey: string) {
-		let electronKey;
-
-		if (/^([a-z])$/.test(domKey)) {
-			electronKey = domKey.toUpperCase();
-		} else if (/^Arrow(Up|Down|Left|Right)|Audio(VolumeUp|VolumeDown|VolumeMute)$/.test(domKey)) {
-			electronKey = domKey.slice(5);
-		} else {
-			switch (domKey) {
-			case ' ':
-				electronKey = 'Space';
-				break;
-			case '+':
-				electronKey = 'Plus';
-				break;
-			case 'MediaTrackNext':
-				electronKey = 'MediaNextTrack';
-				break;
-			case 'MediaTrackPrevious':
-				electronKey = 'MediaPreviousTrack';
-				break;
-			default:
-				electronKey = domKey;
-			}
-		}
-
-		if (keysRegExp.test(electronKey)) return electronKey;
-		else return null;
 	}
 
 	public on(eventName: string, callback: Function) {
@@ -411,9 +407,13 @@ export default class KeymapService extends BaseService {
 		eventManager.off(eventName, callback);
 	}
 
-	private static instance_:KeymapService = null;
+	private static instance_: KeymapService = null;
 
-	public static instance():KeymapService {
+	public static destroyInstance() {
+		this.instance_ = null;
+	}
+
+	public static instance(): KeymapService {
 		if (this.instance_) return this.instance_;
 
 		this.instance_ = new KeymapService();

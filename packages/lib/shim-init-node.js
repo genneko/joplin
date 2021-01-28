@@ -5,8 +5,8 @@ const { FileApiDriverLocal } = require('./file-api-driver-local.js');
 const { setLocale, defaultLocale, closestSupportedLocale } = require('./locale');
 const FsDriverNode = require('./fs-driver-node').default;
 const mimeUtils = require('./mime-utils.js').mime;
-const Note = require('./models/Note.js');
-const Resource = require('./models/Resource.js');
+const Note = require('./models/Note').default;
+const Resource = require('./models/Resource').default;
 const urlValidator = require('valid-url');
 const { _ } = require('./locale');
 const HttpsProxyAgent = require('https-proxy-agent');
@@ -52,7 +52,7 @@ const gunzipFile = function(source, destination) {
 	});
 };
 
-function shimInit(sharp = null, keytar = null) {
+function shimInit(sharp = null, keytar = null, React = null) {
 	keytar = (shim.isWindows() || shim.isMac()) && !shim.isPortable() ? keytar : null;
 
 	shim.fsDriver = () => {
@@ -67,6 +67,12 @@ function shimInit(sharp = null, keytar = null) {
 		if (!shim.fsDriver_) shim.fsDriver_ = new FsDriverNode();
 		return shim.fsDriver_;
 	};
+
+	if (React) {
+		shim.react = () => {
+			return React;
+		};
+	}
 
 	shim.randomBytes = async count => {
 		const buffer = require('crypto').randomBytes(count);
@@ -240,7 +246,7 @@ function shimInit(sharp = null, keytar = null) {
 		const fileStat = await shim.fsDriver().stat(targetPath);
 		resource.size = fileStat.size;
 
-		const saveOptions =  { isNew: true };
+		const saveOptions = { isNew: true };
 		if (options.userSideValidation) saveOptions.userSideValidation = true;
 		return Resource.save(resource, saveOptions);
 	};
@@ -288,7 +294,7 @@ function shimInit(sharp = null, keytar = null) {
 		const newNote = Object.assign({}, note, {
 			body: newBody,
 		});
-		return await Note.save(newNote);
+		return Note.save(newNote);
 	};
 
 	shim.imageFromDataUrl = async function(imageDataUrl, filePath, options = null) {
@@ -546,6 +552,10 @@ function shimInit(sharp = null, keytar = null) {
 
 	shim.keytar = () => {
 		return keytar;
+	};
+
+	shim.requireDynamic = (path) => {
+		return require(path);
 	};
 }
 

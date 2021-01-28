@@ -6,16 +6,17 @@ const { buildStyle } = require('@joplin/lib/theme');
 const bridge = require('electron').remote.require('./bridge').default;
 
 interface MultiNoteActionsProps {
-	themeId: number,
-	selectedNoteIds: string[],
-	notes: any[],
-	dispatch: Function,
-	watchedNoteFiles: string[],
-	plugins: PluginStates,
+	themeId: number;
+	selectedNoteIds: string[];
+	notes: any[];
+	dispatch: Function;
+	watchedNoteFiles: string[];
+	plugins: PluginStates;
+	inConflictFolder: boolean;
 }
 
-function styles_(props:MultiNoteActionsProps) {
-	return buildStyle('MultiNoteActions', props.themeId, (theme:any) => {
+function styles_(props: MultiNoteActionsProps) {
+	return buildStyle('MultiNoteActions', props.themeId, (theme: any) => {
 		return {
 			root: {
 				display: 'inline-flex',
@@ -35,10 +36,10 @@ function styles_(props:MultiNoteActionsProps) {
 	});
 }
 
-export default function MultiNoteActions(props:MultiNoteActionsProps) {
+export default function MultiNoteActions(props: MultiNoteActionsProps) {
 	const styles = styles_(props);
 
-	const multiNotesButton_click = (item:any) => {
+	const multiNotesButton_click = (item: any) => {
 		if (item.submenu) {
 			item.submenu.popup(bridge().window());
 		} else {
@@ -51,6 +52,7 @@ export default function MultiNoteActions(props:MultiNoteActionsProps) {
 		dispatch: props.dispatch,
 		watchedNoteFiles: props.watchedNoteFiles,
 		plugins: props.plugins,
+		inConflictFolder: props.inConflictFolder,
 	});
 
 	const itemComps = [];
