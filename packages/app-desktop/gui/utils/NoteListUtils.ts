@@ -7,22 +7,23 @@ import InteropServiceHelper from '../../InteropServiceHelper';
 import { _ } from '@joplin/lib/locale';
 import { MenuItemLocation } from '@joplin/lib/services/plugins/api/types';
 
-const BaseModel = require('@joplin/lib/BaseModel').default;
+import BaseModel from '@joplin/lib/BaseModel';
 const bridge = require('electron').remote.require('./bridge').default;
 const Menu = bridge().Menu;
 const MenuItem = bridge().MenuItem;
-const Note = require('@joplin/lib/models/Note');
+import Note from '@joplin/lib/models/Note';
 const { substrWithEllipsis } = require('@joplin/lib/string-utils');
 
 interface ContextMenuProps {
-	notes: any[],
-	dispatch: Function,
-	watchedNoteFiles: string[],
-	plugins: PluginStates,
+	notes: any[];
+	dispatch: Function;
+	watchedNoteFiles: string[];
+	plugins: PluginStates;
+	inConflictFolder: boolean;
 }
 
 export default class NoteListUtils {
-	static makeContextMenu(noteIds:string[], props:ContextMenuProps) {
+	static makeContextMenu(noteIds: string[], props: ContextMenuProps) {
 		const cmdService = CommandService.instance();
 
 		const menuUtils = new MenuUtils(cmdService);
@@ -86,7 +87,7 @@ export default class NoteListUtils {
 					})
 				);
 			} else {
-				const switchNoteType = async (noteIds:string[], type:string) => {
+				const switchNoteType = async (noteIds: string[], type: string) => {
 					for (let i = 0; i < noteIds.length; i++) {
 						const note = await Note.load(noteIds[i]);
 						const newNote = Note.changeNoteType(note, type);
@@ -149,7 +150,11 @@ export default class NoteListUtils {
 					new MenuItem({
 						label: module.fullLabel(),
 						click: async () => {
-							await InteropServiceHelper.export(props.dispatch.bind(this), module, { sourceNoteIds: noteIds });
+							await InteropServiceHelper.export(props.dispatch.bind(this), module, {
+								sourceNoteIds: noteIds,
+								includeConflicts: props.inConflictFolder,
+								plugins: props.plugins,
+							});
 						},
 					})
 				);
@@ -179,17 +184,17 @@ export default class NoteListUtils {
 
 		for (const info of pluginViewInfos) {
 			const location = info.view.location;
-			if (location !== MenuItemLocation.Context) continue;
+			if (location !== MenuItemLocation.Context && location !== MenuItemLocation.NoteListContextMenu) continue;
 
 			menu.append(
-				new MenuItem(menuUtils.commandToStatefulMenuItem(info.view.commandName))
+				new MenuItem(menuUtils.commandToStatefulMenuItem(info.view.commandName, noteIds))
 			);
 		}
 
 		return menu;
 	}
 
-	static async confirmDeleteNotes(noteIds:string[]) {
+	static async confirmDeleteNotes(noteIds: string[]) {
 		if (!noteIds.length) return;
 
 		let msg = '';

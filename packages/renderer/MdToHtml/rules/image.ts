@@ -1,12 +1,11 @@
 import { RuleOptions } from '../../MdToHtml';
+import htmlUtils from '../../htmlUtils';
+import utils from '../../utils';
 
-const utils = require('../../utils');
-const htmlUtils = require('../../htmlUtils.js');
-
-function plugin(markdownIt:any, ruleOptions:RuleOptions) {
+function plugin(markdownIt: any, ruleOptions: RuleOptions) {
 	const defaultRender = markdownIt.renderer.rules.image;
 
-	markdownIt.renderer.rules.image = (tokens:any[], idx:number, options:any, env:any, self:any) => {
+	markdownIt.renderer.rules.image = (tokens: any[], idx: number, options: any, env: any, self: any) => {
 		const Resource = ruleOptions.ResourceModel;
 
 		const token = tokens[idx];
@@ -23,7 +22,9 @@ function plugin(markdownIt:any, ruleOptions:RuleOptions) {
 				const id = r['data-resource-id'];
 
 				const longPressHandler = `${ruleOptions.postMessageSyntax}('longclick:${id}')`;
-				const touchStart = `t=setTimeout(()=>{t=null; ${longPressHandler};}, ${ruleOptions.longPressDelay});`;
+				// if t is set when ontouchstart is called it means the user has already touched the screen once and this is the 2nd touch
+				// in this case we assume the user is trying to zoom and we don't want to show the menu
+				const touchStart = `if (typeof(t) !== 'undefined' && !!t) { clearTimeout(t); t = null; } else { t = setTimeout(() => { t = null; ${longPressHandler}; }, ${utils.longPressDelay}); }`;
 				const cancel = 'if (!!t) clearTimeout(t); t=null';
 
 				js = ` ontouchstart="${touchStart}" ontouchend="${cancel}" ontouchcancel="${cancel}" ontouchmove="${cancel}"`;

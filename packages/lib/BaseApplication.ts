@@ -1,77 +1,75 @@
 import Setting from './models/Setting';
-import Logger, { TargetType } from './Logger';
+import Logger, { TargetType, LoggerWrapper } from './Logger';
 import shim from './shim';
 import BaseService from './services/BaseService';
 import reducer from './reducer';
 import KeychainServiceDriver from './services/keychain/KeychainServiceDriver.node';
 import { _, setLocale } from './locale';
 import KvStore from './services/KvStore';
+import SyncTargetJoplinServer from './SyncTargetJoplinServer';
+import SyncTargetOneDrive from './SyncTargetOneDrive';
 
 const { createStore, applyMiddleware } = require('redux');
 const { defaultState, stateUtils } = require('./reducer');
 const { JoplinDatabase } = require('./joplin-database.js');
 const { FoldersScreenUtils } = require('./folders-screen-utils.js');
 const { DatabaseDriverNode } = require('./database-driver-node.js');
-const BaseModel = require('./BaseModel').default;
-const Folder = require('./models/Folder.js');
-const BaseItem = require('./models/BaseItem.js');
-const Note = require('./models/Note.js');
-const Tag = require('./models/Tag.js');
+import BaseModel from './BaseModel';
+import Folder from './models/Folder';
+import BaseItem from './models/BaseItem';
+import Note from './models/Note';
+import Tag from './models/Tag';
 const { splitCommandString } = require('./string-utils.js');
 const { reg } = require('./registry.js');
-const time = require('./time').default;
+import time from './time';
 const BaseSyncTarget = require('./BaseSyncTarget.js');
 const reduxSharedMiddleware = require('./components/shared/reduxSharedMiddleware');
 const os = require('os');
 const fs = require('fs-extra');
 const JoplinError = require('./JoplinError');
 const EventEmitter = require('events');
-const syswidecas = require('syswide-cas');
+const syswidecas = require('./vendor/syswide-cas');
 const SyncTargetRegistry = require('./SyncTargetRegistry.js');
 const SyncTargetFilesystem = require('./SyncTargetFilesystem.js');
-const SyncTargetOneDrive = require('./SyncTargetOneDrive.js');
 const SyncTargetNextcloud = require('./SyncTargetNextcloud.js');
 const SyncTargetWebDAV = require('./SyncTargetWebDAV.js');
 const SyncTargetDropbox = require('./SyncTargetDropbox.js');
 const SyncTargetAmazonS3 = require('./SyncTargetAmazonS3.js');
-const EncryptionService = require('./services/EncryptionService');
-const ResourceFetcher = require('./services/ResourceFetcher');
-const SearchEngineUtils = require('./services/searchengine/SearchEngineUtils');
-const SearchEngine = require('./services/searchengine/SearchEngine');
-const RevisionService = require('./services/RevisionService');
-const ResourceService = require('./services/RevisionService');
-const DecryptionWorker = require('./services/DecryptionWorker');
+import EncryptionService from './services/EncryptionService';
+import ResourceFetcher from './services/ResourceFetcher';
+import SearchEngineUtils from './services/searchengine/SearchEngineUtils';
+import SearchEngine from './services/searchengine/SearchEngine';
+import RevisionService from './services/RevisionService';
+import ResourceService from './services/ResourceService';
+import DecryptionWorker from './services/DecryptionWorker';
 const { loadKeychainServiceAndSettings } = require('./services/SettingUtils');
-const MigrationService = require('./services/MigrationService');
+import MigrationService from './services/MigrationService';
 const { toSystemSlashes } = require('./path-utils');
 const { setAutoFreeze } = require('immer');
+
+const appLogger: LoggerWrapper = Logger.create('App');
 
 // const ntpClient = require('./vendor/ntp-client');
 // ntpClient.dgram = require('dgram');
 
 export default class BaseApplication {
 
-	private logger_:Logger;
-	private dbLogger_:Logger;
-	private eventEmitter_:any;
-	private scheduleAutoAddResourcesIID_:any = null;
-	private database_:any = null;
+	private eventEmitter_: any;
+	private scheduleAutoAddResourcesIID_: any = null;
+	private database_: any = null;
 
-	protected showStackTraces_:boolean = false;
-	protected showPromptString_:boolean = false;
+	protected showStackTraces_: boolean = false;
+	protected showPromptString_: boolean = false;
 
 	// Note: this is basically a cache of state.selectedFolderId. It should *only*
 	// be derived from the state and not set directly since that would make the
 	// state and UI out of sync.
-	private currentFolder_:any = null;
+	private currentFolder_: any = null;
 
-	protected store_:any = null;
+	protected store_: any = null;
 
 	constructor() {
-		this.logger_ = new Logger();
-		this.dbLogger_ = new Logger();
 		this.eventEmitter_ = new EventEmitter();
-
 		this.decryptionWorker_resourceMetadataButNotBlobDecrypted = this.decryptionWorker_resourceMetadataButNotBlobDecrypted.bind(this);
 	}
 
@@ -96,20 +94,19 @@ export default class BaseApplication {
 		BaseItem.revisionService_ = null;
 		RevisionService.instance_ = null;
 		ResourceService.instance_ = null;
-		ResourceService.isRunningInBackground = false;
+		ResourceService.isRunningInBackground_ = false;
+		// ResourceService.isRunningInBackground_ = false;
 		ResourceFetcher.instance_ = null;
 		EncryptionService.instance_ = null;
 		DecryptionWorker.instance_ = null;
 
-		this.logger_.info('Base application terminated...');
-		this.logger_ = null;
-		this.dbLogger_ = null;
+		appLogger.info('Base application terminated...');
 		this.eventEmitter_ = null;
 		this.decryptionWorker_resourceMetadataButNotBlobDecrypted = null;
 	}
 
-	logger() {
-		return this.logger_;
+	logger(): LoggerWrapper {
+		return appLogger;
 	}
 
 	public store() {
@@ -129,7 +126,7 @@ export default class BaseApplication {
 		this.switchCurrentFolder(newFolder);
 	}
 
-	switchCurrentFolder(folder:any) {
+	switchCurrentFolder(folder: any) {
 		if (!this.hasGui()) {
 			this.currentFolder_ = Object.assign({}, folder);
 			Setting.setValue('activeFolderId', folder ? folder.id : '');
@@ -143,8 +140,8 @@ export default class BaseApplication {
 
 	// Handles the initial flags passed to main script and
 	// returns the remaining args.
-	async handleStartFlags_(argv:string[], setDefaults:boolean = true) {
-		const matched:any = {};
+	async handleStartFlags_(argv: string[], setDefaults: boolean = true) {
+		const matched: any = {};
 		argv = argv.slice(0);
 		argv.splice(0, 2); // First arguments are the node executable, and the node JS file
 
@@ -262,7 +259,7 @@ export default class BaseApplication {
 		};
 	}
 
-	on(eventName:string, callback:Function) {
+	on(eventName: string, callback: Function) {
 		return this.eventEmitter_.on(eventName, callback);
 	}
 
@@ -271,7 +268,7 @@ export default class BaseApplication {
 		process.exit(code);
 	}
 
-	async refreshNotes(state:any, useSelectedNoteId:boolean = false, noteHash:string = '') {
+	async refreshNotes(state: any, useSelectedNoteId: boolean = false, noteHash: string = '') {
 		let parentType = state.notesParentType;
 		let parentId = null;
 
@@ -289,7 +286,7 @@ export default class BaseApplication {
 			parentType = BaseModel.TYPE_SMART_FILTER;
 		}
 
-		this.logger().debug('Refreshing notes:', parentType, parentId);
+		appLogger.debug('Refreshing notes:', parentType, parentId);
 
 		const options = {
 			order: stateUtils.notesOrder(state.settings),
@@ -367,9 +364,9 @@ export default class BaseApplication {
 		}
 	}
 
-	resourceFetcher_downloadComplete(event:any) {
+	resourceFetcher_downloadComplete(event: any) {
 		if (event.encrypted) {
-			DecryptionWorker.instance().scheduleStart();
+			void DecryptionWorker.instance().scheduleStart();
 		}
 	}
 
@@ -377,7 +374,7 @@ export default class BaseApplication {
 		ResourceFetcher.instance().scheduleAutoAddResources();
 	}
 
-	reducerActionToString(action:any) {
+	reducerActionToString(action: any) {
 		const o = [action.type];
 		if ('id' in action) o.push(action.id);
 		if ('noteId' in action) o.push(action.noteId);
@@ -398,15 +395,15 @@ export default class BaseApplication {
 	}
 
 	generalMiddlewareFn() {
-		const middleware = (store:any) => (next:any) => (action:any) => {
+		const middleware = (store: any) => (next: any) => (action: any) => {
 			return this.generalMiddleware(store, next, action);
 		};
 
 		return middleware;
 	}
 
-	async applySettingsSideEffects(action:any = null) {
-		const sideEffects:any = {
+	async applySettingsSideEffects(action: any = null) {
+		const sideEffects: any = {
 			'dateFormat': async () => {
 				time.setLocale(Setting.value('locale'));
 				time.setDateFormat(Setting.value('dateFormat'));
@@ -426,7 +423,7 @@ export default class BaseApplication {
 			'encryption.enabled': async () => {
 				if (this.hasGui()) {
 					await EncryptionService.instance().loadMasterKeysFromSettings();
-					DecryptionWorker.instance().scheduleStart();
+					void DecryptionWorker.instance().scheduleStart();
 					const loadedMasterKeyIds = EncryptionService.instance().loadedMasterKeyIds();
 
 					this.dispatch({
@@ -459,13 +456,13 @@ export default class BaseApplication {
 		}
 	}
 
-	async generalMiddleware(store:any, next:any, action:any) {
-		// this.logger().debug('Reducer action', this.reducerActionToString(action));
+	async generalMiddleware(store: any, next: any, action: any) {
+		// appLogger.debug('Reducer action', this.reducerActionToString(action));
 
 		const result = next(action);
 		const newState = store.getState();
 		let refreshNotes = false;
-		let refreshFolders:boolean | string = false;
+		let refreshFolders: boolean | string = false;
 		// let refreshTags = false;
 		let refreshNotesUseSelectedNoteId = false;
 		let refreshNotesHash = '';
@@ -547,7 +544,11 @@ export default class BaseApplication {
 		}
 
 		if (action.type === 'NOTE_UPDATE_ONE') {
-			if (!action.changedFields.length || action.changedFields.includes('parent_id') || action.changedFields.includes('encryption_applied')) {
+			if (!action.changedFields.length ||
+				action.changedFields.includes('parent_id') ||
+				action.changedFields.includes('encryption_applied') ||
+				action.changedFields.includes('is_conflict')
+			) {
 				refreshFolders = true;
 			}
 		}
@@ -568,11 +569,11 @@ export default class BaseApplication {
 		}
 
 		if (this.hasGui() && action.type === 'SYNC_GOT_ENCRYPTED_ITEM') {
-			DecryptionWorker.instance().scheduleStart();
+			void DecryptionWorker.instance().scheduleStart();
 		}
 
 		if (this.hasGui() && action.type === 'SYNC_CREATED_OR_UPDATED_RESOURCE') {
-			ResourceFetcher.instance().autoAddResources();
+			void ResourceFetcher.instance().autoAddResources();
 		}
 
 		if (action.type == 'SETTING_UPDATE_ONE') {
@@ -591,11 +592,11 @@ export default class BaseApplication {
 		return result;
 	}
 
-	dispatch(action:any) {
+	dispatch(action: any) {
 		if (this.store()) return this.store().dispatch(action);
 	}
 
-	reducer(state:any = defaultState, action:any) {
+	reducer(state: any = defaultState, action: any) {
 		return reducer(state, action);
 	}
 
@@ -619,7 +620,7 @@ export default class BaseApplication {
 		ResourceFetcher.instance().dispatch = function() {};
 	}
 
-	async readFlagsFromFile(flagPath:string) {
+	async readFlagsFromFile(flagPath: string) {
 		if (!fs.existsSync(flagPath)) return {};
 		let flagContent = fs.readFileSync(flagPath, 'utf8');
 		if (!flagContent) return {};
@@ -635,7 +636,7 @@ export default class BaseApplication {
 		return flags.matched;
 	}
 
-	determineProfileDir(initArgs:any) {
+	determineProfileDir(initArgs: any) {
 		let output = '';
 
 		if (initArgs.profileDir) {
@@ -649,7 +650,7 @@ export default class BaseApplication {
 		return toSystemSlashes(output, 'linux');
 	}
 
-	async start(argv:string[]):Promise<any> {
+	async start(argv: string[]): Promise<any> {
 		const startFlags = await this.handleStartFlags_(argv);
 
 		argv = startFlags.argv;
@@ -667,6 +668,7 @@ export default class BaseApplication {
 		const resourceDirName = 'resources';
 		const resourceDir = `${profileDir}/${resourceDirName}`;
 		const tempDir = `${profileDir}/tmp`;
+		const cacheDir = `${profileDir}/cache`;
 
 		Setting.setConstant('env', initArgs.env);
 		Setting.setConstant('profileDir', profileDir);
@@ -674,6 +676,8 @@ export default class BaseApplication {
 		Setting.setConstant('resourceDirName', resourceDirName);
 		Setting.setConstant('resourceDir', resourceDir);
 		Setting.setConstant('tempDir', tempDir);
+		Setting.setConstant('pluginDataDir', `${profileDir}/plugin-data`);
+		Setting.setConstant('cacheDir', cacheDir);
 		Setting.setConstant('pluginDir', `${profileDir}/plugins`);
 
 		SyncTargetRegistry.addClass(SyncTargetFilesystem);
@@ -682,6 +686,7 @@ export default class BaseApplication {
 		SyncTargetRegistry.addClass(SyncTargetWebDAV);
 		SyncTargetRegistry.addClass(SyncTargetDropbox);
 		SyncTargetRegistry.addClass(SyncTargetAmazonS3);
+		SyncTargetRegistry.addClass(SyncTargetJoplinServer);
 
 		try {
 			await shim.fsDriver().remove(tempDir);
@@ -694,6 +699,7 @@ export default class BaseApplication {
 		await fs.mkdirp(profileDir, 0o755);
 		await fs.mkdirp(resourceDir, 0o755);
 		await fs.mkdirp(tempDir, 0o755);
+		await fs.mkdirp(cacheDir, 0o755);
 
 		// Clean up any remaining watched files (they start with "edit-")
 		await shim.fsDriver().removeAllThatStartWith(profileDir, 'edit-');
@@ -701,35 +707,30 @@ export default class BaseApplication {
 		const extraFlags = await this.readFlagsFromFile(`${profileDir}/flags.txt`);
 		initArgs = Object.assign(initArgs, extraFlags);
 
-		this.logger_.addTarget(TargetType.File, { path: `${profileDir}/log.txt` });
-		if (Setting.value('env') === 'dev' && !shim.isTestingEnv()) {
-			// this.logger_.addTarget(TargetType.Console, { level: Logger.LEVEL_DEBUG });
-		}
-		this.logger_.setLevel(initArgs.logLevel);
 
-		reg.setLogger(this.logger_);
+
+
+		const globalLogger = new Logger();
+		globalLogger.addTarget(TargetType.File, { path: `${profileDir}/log.txt` });
+		if (Setting.value('appType') === 'desktop') {
+			globalLogger.addTarget(TargetType.Console);
+		}
+		globalLogger.setLevel(initArgs.logLevel);
+		Logger.initializeGlobalLogger(globalLogger);
+
+
+
+		reg.setLogger(Logger.create(''));
 		reg.dispatch = () => {};
 
-		BaseService.logger_ = this.logger_;
-		// require('lib/ntpDate').setLogger(reg.logger());
+		BaseService.logger_ = globalLogger;
 
-		this.dbLogger_.addTarget(TargetType.File, { path: `${profileDir}/log-database.txt` });
-		this.dbLogger_.setLevel(initArgs.logLevel);
 
-		if (Setting.value('appType') === 'desktop') {
-			this.logger_.addTarget(TargetType.Console, { level: Logger.LEVEL_WARN });
-			this.dbLogger_.addTarget(TargetType.Console, { level: Logger.LEVEL_WARN });
-		}
-
-		if (Setting.value('env') === 'dev') {
-			this.dbLogger_.setLevel(Logger.LEVEL_INFO);
-		}
-
-		this.logger_.info(`Profile directory: ${profileDir}`);
+		appLogger.info(`Profile directory: ${profileDir}`);
 
 		this.database_ = new JoplinDatabase(new DatabaseDriverNode());
 		this.database_.setLogExcludedQueryTypes(['SELECT']);
-		this.database_.setLogger(this.dbLogger_);
+		this.database_.setLogger(globalLogger);
 
 		// if (Setting.value('env') === 'dev') {
 		// 	if (shim.isElectron()) {
@@ -756,7 +757,7 @@ export default class BaseApplication {
 
 		await loadKeychainServiceAndSettings(KeychainServiceDriver);
 
-		this.logger_.info(`Client ID: ${Setting.value('clientId')}`);
+		appLogger.info(`Client ID: ${Setting.value('clientId')}`);
 
 		if (Setting.value('firstStart')) {
 			const locale = shim.detectAndSetLocale(Setting);
@@ -803,9 +804,9 @@ export default class BaseApplication {
 		if ('welcomeDisabled' in initArgs) Setting.setValue('welcome.enabled', !initArgs.welcomeDisabled);
 
 		if (!Setting.value('api.token')) {
-			EncryptionService.instance()
+			void EncryptionService.instance()
 				.randomHexString(64)
-				.then((token:string) => {
+				.then((token: string) => {
 					Setting.setValue('api.token', token);
 				});
 		}
@@ -817,9 +818,9 @@ export default class BaseApplication {
 
 		KvStore.instance().setDb(reg.db());
 
-		EncryptionService.instance().setLogger(this.logger_);
+		EncryptionService.instance().setLogger(globalLogger);
 		BaseItem.encryptionService_ = EncryptionService.instance();
-		DecryptionWorker.instance().setLogger(this.logger_);
+		DecryptionWorker.instance().setLogger(globalLogger);
 		DecryptionWorker.instance().setEncryptionService(EncryptionService.instance());
 		DecryptionWorker.instance().setKvStore(KvStore.instance());
 		await EncryptionService.instance().loadMasterKeysFromSettings();
@@ -828,9 +829,9 @@ export default class BaseApplication {
 		ResourceFetcher.instance().setFileApi(() => {
 			return reg.syncTarget().fileApi();
 		});
-		ResourceFetcher.instance().setLogger(this.logger_);
+		ResourceFetcher.instance().setLogger(globalLogger);
 		ResourceFetcher.instance().on('downloadComplete', this.resourceFetcher_downloadComplete);
-		ResourceFetcher.instance().start();
+		void ResourceFetcher.instance().start();
 
 		SearchEngine.instance().setDb(reg.db());
 		SearchEngine.instance().setLogger(reg.logger());

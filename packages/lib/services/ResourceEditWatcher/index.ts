@@ -1,37 +1,38 @@
 import AsyncActionQueue from '../../AsyncActionQueue';
 import shim from '../../shim';
 import { _ } from '../../locale';
-const Logger = require('../../Logger').default;
-const Setting = require('../../models/Setting').default;
-const Resource = require('../../models/Resource');
+import { toSystemSlashes } from '../../path-utils';
+import Logger from '../../Logger';
+import Setting from '../../models/Setting';
+import Resource from '../../models/Resource';
 const EventEmitter = require('events');
 const chokidar = require('chokidar');
 const bridge = require('electron').remote.require('./bridge').default;
 
 interface WatchedItem {
-	resourceId: string,
-	lastFileUpdatedTime: number,
-	lastResourceUpdatedTime: number,
-	path:string,
-	asyncSaveQueue: AsyncActionQueue,
-	size: number,
+	resourceId: string;
+	lastFileUpdatedTime: number;
+	lastResourceUpdatedTime: number;
+	path: string;
+	asyncSaveQueue: AsyncActionQueue;
+	size: number;
 }
 
 interface WatchedItems {
-	[key:string]: WatchedItem,
+	[key: string]: WatchedItem;
 }
 
 export default class ResourceEditWatcher {
 
-	private static instance_:ResourceEditWatcher;
+	private static instance_: ResourceEditWatcher;
 
-	private logger_:any;
-	private dispatch:Function;
-	private watcher_:any;
-	private chokidar_:any;
-	private watchedItems_:WatchedItems = {};
-	private eventEmitter_:any;
-	private tempDir_:string = '';
+	private logger_: any;
+	private dispatch: Function;
+	private watcher_: any;
+	private chokidar_: any;
+	private watchedItems_: WatchedItems = {};
+	private eventEmitter_: any;
+	private tempDir_: string = '';
 
 	constructor() {
 		this.logger_ = new Logger();
@@ -41,7 +42,7 @@ export default class ResourceEditWatcher {
 		this.eventEmitter_ = new EventEmitter();
 	}
 
-	initialize(logger:any, dispatch:Function) {
+	initialize(logger: any, dispatch: Function) {
 		this.logger_ = logger;
 		this.dispatch = dispatch;
 	}
@@ -65,35 +66,35 @@ export default class ResourceEditWatcher {
 		return this.logger_;
 	}
 
-	on(eventName:string, callback:Function) {
+	on(eventName: string, callback: Function) {
 		return this.eventEmitter_.on(eventName, callback);
 	}
 
-	off(eventName:string, callback:Function) {
+	off(eventName: string, callback: Function) {
 		return this.eventEmitter_.removeListener(eventName, callback);
 	}
 
 	externalApi() {
 		return {
-			openAndWatch: async ({ resourceId }:any) => {
+			openAndWatch: async ({ resourceId }: any) => {
 				return this.openAndWatch(resourceId);
 			},
-			watch: async ({ resourceId }:any) => {
+			watch: async ({ resourceId }: any) => {
 				await this.watch(resourceId);
 			},
-			stopWatching: async ({ resourceId }:any) => {
+			stopWatching: async ({ resourceId }: any) => {
 				return this.stopWatching(resourceId);
 			},
-			isWatched: async ({ resourceId }:any) => {
+			isWatched: async ({ resourceId }: any) => {
 				return !!this.watchedItemByResourceId(resourceId);
 			},
 		};
 	}
 
-	private watchFile(fileToWatch:string) {
+	private watchFile(fileToWatch: string) {
 		if (!this.chokidar_) return;
 
-		const makeSaveAction = (resourceId:string, path:string) => {
+		const makeSaveAction = (resourceId: string, path: string) => {
 			return async () => {
 				this.logger().info(`ResourceEditWatcher: Saving resource ${resourceId}`);
 				const resource = await Resource.load(resourceId);
@@ -113,7 +114,7 @@ export default class ResourceEditWatcher {
 			};
 		};
 
-		const handleChangeEvent = async (path:string) => {
+		const handleChangeEvent = async (path: string) => {
 			this.logger().debug(`ResourceEditWatcher: handleChangeEvent: ${path}`);
 
 			const watchedItem = this.watchedItemByPath(path);
@@ -155,8 +156,15 @@ export default class ResourceEditWatcher {
 		};
 
 		if (!this.watcher_) {
-			this.watcher_ = this.chokidar_.watch(fileToWatch);
-			this.watcher_.on('all', async (event:any, path:string) => {
+			this.watcher_ = this.chokidar_.watch(fileToWatch, {
+				// Need to turn off fs-events because when it's on Chokidar
+				// keeps emitting "modified" events (on "raw" handler), several
+				// times per seconds, even when nothing is changed.
+				useFsEvents: false,
+			});
+			this.watcher_.on('all', (event: any, path: string) => {
+				path = path ? toSystemSlashes(path, 'linux') : '';
+
 				this.logger().info(`ResourceEditWatcher: Event: ${event}: ${path}`);
 
 				if (event === 'unlink') {
@@ -167,7 +175,7 @@ export default class ResourceEditWatcher {
 					// See: https://github.com/laurent22/joplin/issues/710#issuecomment-420997167
 					// this.watcher_.unwatch(path);
 				} else if (event === 'change') {
-					handleChangeEvent(path);
+					void handleChangeEvent(path);
 				} else if (event === 'error') {
 					this.logger().error('ResourceEditWatcher: error');
 				}
@@ -182,12 +190,14 @@ export default class ResourceEditWatcher {
 			// https://github.com/laurent22/joplin/issues/3407
 			//
 			// @ts-ignore Leave unused path variable
-			this.watcher_.on('raw', async (event:string, path:string, options:any) => {
-				this.logger().debug(`ResourceEditWatcher: Raw event: ${event}: ${options.watchedPath}`);
+			this.watcher_.on('raw', (event: string, path: string, options: any) => {
+				const watchedPath = options.watchedPath ? toSystemSlashes(options.watchedPath, 'linux') : '';
+
+				this.logger().debug(`ResourceEditWatcher: Raw event: ${event}: ${watchedPath}`);
 				if (event === 'rename') {
-					this.watcher_.unwatch(options.watchedPath);
-					this.watcher_.add(options.watchedPath);
-					handleChangeEvent(options.watchedPath);
+					this.watcher_.unwatch(watchedPath);
+					this.watcher_.add(watchedPath);
+					void handleChangeEvent(watchedPath);
 				}
 			});
 		} else {
@@ -197,7 +207,7 @@ export default class ResourceEditWatcher {
 		return this.watcher_;
 	}
 
-	private async watch(resourceId:string):Promise<WatchedItem> {
+	private async watch(resourceId: string): Promise<WatchedItem> {
 		let watchedItem = this.watchedItemByResourceId(resourceId);
 
 		if (!watchedItem) {
@@ -218,7 +228,7 @@ export default class ResourceEditWatcher {
 			if (!(await Resource.isReady(resource))) throw new Error(_('This attachment is not downloaded or not decrypted yet'));
 			const sourceFilePath = Resource.fullPath(resource);
 			const tempDir = await this.tempDir();
-			const editFilePath = await shim.fsDriver().findUniqueFilename(`${tempDir}/${Resource.friendlySafeFilename(resource)}`);
+			const editFilePath = toSystemSlashes(await shim.fsDriver().findUniqueFilename(`${tempDir}/${Resource.friendlySafeFilename(resource)}`), 'linux');
 			await shim.fsDriver().copy(sourceFilePath, editFilePath);
 			const stat = await shim.fsDriver().stat(editFilePath);
 
@@ -241,12 +251,12 @@ export default class ResourceEditWatcher {
 		return watchedItem;
 	}
 
-	public async openAndWatch(resourceId:string) {
+	public async openAndWatch(resourceId: string) {
 		const watchedItem = await this.watch(resourceId);
 		bridge().openItem(watchedItem.path);
 	}
 
-	async stopWatching(resourceId:string) {
+	async stopWatching(resourceId: string) {
 		if (!resourceId) return;
 
 		const item = this.watchedItemByResourceId(resourceId);
@@ -287,11 +297,11 @@ export default class ResourceEditWatcher {
 		});
 	}
 
-	private watchedItemByResourceId(resourceId:string):WatchedItem {
+	private watchedItemByResourceId(resourceId: string): WatchedItem {
 		return this.watchedItems_[resourceId];
 	}
 
-	private watchedItemByPath(path:string):WatchedItem {
+	private watchedItemByPath(path: string): WatchedItem {
 		for (const resourceId in this.watchedItems_) {
 			const item = this.watchedItems_[resourceId];
 			if (item.path === path) return item;

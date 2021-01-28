@@ -4,12 +4,12 @@
 import * as QuickActions from 'react-native-quick-actions';
 import { _ } from '@joplin/lib/locale';
 const { DeviceEventEmitter } = require('react-native');
-const Note = require('@joplin/lib/models/Note.js');
+import Note from '@joplin/lib/models/Note';
 const { reg } = require('@joplin/lib/registry.js');
 
 type TData = {
-	type: string
-}
+	type: string;
+};
 
 export default (dispatch: Function, folderId: string) => {
 	const userInfo = { url: '' };
@@ -36,7 +36,7 @@ export default (dispatch: Function, folderId: string) => {
 
 		const isTodo = data.type === 'New to-do' ? 1 : 0;
 
-		Note.save({
+		void Note.save({
 			parent_id: folderId,
 			is_todo: isTodo,
 		}, { provisional: true }).then((newNote: any) => {

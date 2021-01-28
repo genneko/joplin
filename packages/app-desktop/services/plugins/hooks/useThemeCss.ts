@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import { themeStyle } from '@joplin/lib/theme';
 import shim from '@joplin/lib/shim';
-const Setting = require('@joplin/lib/models/Setting').default;
+import Setting from '@joplin/lib/models/Setting';
 const { camelCaseToDash, formatCssSize } = require('@joplin/lib/string-utils');
 
 interface HookDependencies {
-	pluginId: string,
-	themeId: number,
+	pluginId: string;
+	themeId: number;
 }
 
-function themeToCssVariables(theme:any) {
+function themeToCssVariables(theme: any) {
 	const lines = [];
 	lines.push(':root {');
 
@@ -30,7 +30,7 @@ function themeToCssVariables(theme:any) {
 	return lines.join('\n');
 }
 
-export default function useThemeCss(dep:HookDependencies) {
+export default function useThemeCss(dep: HookDependencies) {
 	const { pluginId, themeId } = dep;
 
 	const [cssFilePath, setCssFilePath] = useState('');
@@ -49,7 +49,7 @@ export default function useThemeCss(dep:HookDependencies) {
 			setCssFilePath(filePath);
 		}
 
-		createThemeStyleSheet();
+		void createThemeStyleSheet();
 
 		return () => {
 			cancelled = true;

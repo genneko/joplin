@@ -2,11 +2,7 @@
 
 
 const { extractExecutablePath, quotePath, unquotePath, friendlySafeFilename, toFileProtocolPath } = require('@joplin/lib/path-utils');
-const { asyncTest, fileContentEqual, setupDatabase, setupDatabaseAndSynchronizer, db, synchronizer, fileApi, sleep, clearDatabase, switchClient, syncTargetId, objectsEqual, checkThrowAsync } = require('./test-utils.js');
-
-process.on('unhandledRejection', (reason, p) => {
-	console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
-});
+const { fileContentEqual, setupDatabase, setupDatabaseAndSynchronizer, db, synchronizer, fileApi, sleep, clearDatabase, switchClient, syncTargetId, objectsEqual, checkThrowAsync } = require('./test-utils.js');
 
 describe('pathUtils', function() {
 
@@ -14,7 +10,7 @@ describe('pathUtils', function() {
 		done();
 	});
 
-	it('should create friendly safe filename', asyncTest(async () => {
+	it('should create friendly safe filename', (async () => {
 		const testCases = [
 			['生活', '生活'],
 			['not/good', 'not_good'],
@@ -35,7 +31,7 @@ describe('pathUtils', function() {
 		expect(!!friendlySafeFilename('...')).toBe(true);
 	}));
 
-	it('should quote and unquote paths', asyncTest(async () => {
+	it('should quote and unquote paths', (async () => {
 		const testCases = [
 			['', ''],
 			['/my/path', '/my/path'],
@@ -52,7 +48,7 @@ describe('pathUtils', function() {
 		}
 	}));
 
-	it('should extract executable path from command', asyncTest(async () => {
+	it('should extract executable path from command', (async () => {
 		const testCases = [
 			['', ''],
 			['/my/cmd -some -args', '/my/cmd'],
@@ -68,16 +64,16 @@ describe('pathUtils', function() {
 		}
 	}));
 
-	it('should create correct fileURL syntax', asyncTest(async () => {
+	it('should create correct fileURL syntax', (async () => {
 		const testCases_win32 = [
-			['C:\\handle\\space test', 'file:///C:/handle/space+test'],
+			['C:\\handle\\space test', 'file:///C:/handle/space%20test'],
 			['C:\\escapeplus\\+', 'file:///C:/escapeplus/%2B'],
-			['C:\\handle\\single quote\'', 'file:///C:/handle/single+quote%27'],
+			['C:\\handle\\single quote\'', 'file:///C:/handle/single%20quote%27'],
 		];
 		const testCases_unixlike = [
-			['/handle/space test', 'file:///handle/space+test'],
+			['/handle/space test', 'file:///handle/space%20test'],
 			['/escapeplus/+', 'file:///escapeplus/%2B'],
-			['/handle/single quote\'', 'file:///handle/single+quote%27'],
+			['/handle/single quote\'', 'file:///handle/single%20quote%27'],
 		];
 
 		for (let i = 0; i < testCases_win32.length; i++) {

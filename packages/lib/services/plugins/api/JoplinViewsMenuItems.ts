@@ -14,7 +14,7 @@ export default class JoplinViewsMenuItems {
 	private store: any;
 	private plugin: Plugin;
 
-	constructor(plugin: Plugin, store: any) {
+	public constructor(plugin: Plugin, store: any) {
 		this.store = store;
 		this.plugin = plugin;
 	}
@@ -22,13 +22,30 @@ export default class JoplinViewsMenuItems {
 	/**
 	 * Creates a new menu item and associate it with the given command. You can specify under which menu the item should appear using the `location` parameter.
 	 */
-	async create(commandName:string, location:MenuItemLocation = MenuItemLocation.Tools, options:CreateMenuItemOptions = null) {
-		const handle = createViewHandle(this.plugin);
+	public async create(id: string, commandName: string, location: MenuItemLocation = MenuItemLocation.Tools, options: CreateMenuItemOptions = null) {
+		if (typeof location !== 'string') {
+			this.plugin.deprecationNotice('1.5', 'Creating a view without an ID is deprecated. To fix it, change your call to `joplin.views.menuItem.create("my-unique-id", ...)`');
+			options = location as any;
+			location = commandName as any || MenuItemLocation.Tools;
+			commandName = id as any;
+			id = `${this.plugin.viewCount}`;
+		}
+
+		const handle = createViewHandle(this.plugin, id);
 		const controller = new MenuItemController(handle, this.plugin.id, this.store, commandName, location);
 		this.plugin.addViewController(controller);
 
+		// Register the command with the keymap service - not that if no
+		// accelerator is provided, we still register the command, so that
+		// it appears in the keymap editor, which will allow the user to
+		// set a custom shortcut.
+		//
+		// https://discourse.joplinapp.org/t/plugin-note-tabs/12752/39
+
 		if (options && options.accelerator) {
 			KeymapService.instance().registerCommandAccelerator(commandName, options.accelerator);
+		} else {
+			KeymapService.instance().registerCommandAccelerator(commandName, null);
 		}
 	}
 

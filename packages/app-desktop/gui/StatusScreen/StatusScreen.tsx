@@ -4,16 +4,16 @@ import ButtonBar from '../ConfigScreen/ButtonBar';
 import { _ } from '@joplin/lib/locale';
 
 const { connect } = require('react-redux');
-const Setting = require('@joplin/lib/models/Setting').default;
+import Setting from '@joplin/lib/models/Setting';
 const bridge = require('electron').remote.require('./bridge').default;
 const { themeStyle } = require('@joplin/lib/theme');
-const { ReportService } = require('@joplin/lib/services/report.js');
+import ReportService from '@joplin/lib/services/ReportService';
 const fs = require('fs-extra');
 
 interface Props {
-	themeId: string,
-	style: any,
-	dispatch: Function,
+	themeId: string;
+	style: any;
+	dispatch: Function;
 }
 
 async function exportDebugReportClick() {
@@ -31,7 +31,7 @@ async function exportDebugReportClick() {
 	await fs.writeFileSync(filePath, csv);
 }
 
-function StatusScreen(props:Props) {
+function StatusScreen(props: Props) {
 	const [report, setReport] = useState<any[]>([]);
 
 	async function resfreshScreen() {
@@ -41,7 +41,7 @@ function StatusScreen(props:Props) {
 	}
 
 	useEffect(() => {
-		resfreshScreen();
+		void resfreshScreen();
 	}, []);
 
 	const theme = themeStyle(props.themeId);
@@ -60,7 +60,7 @@ function StatusScreen(props:Props) {
 		flex: 1,
 	});
 
-	function renderSectionTitleHtml(key:string, title:string) {
+	function renderSectionTitleHtml(key: string, title: string) {
 		return (
 			<h2 key={`section_${key}`} style={theme.h2Style}>
 				{title}
@@ -68,7 +68,7 @@ function StatusScreen(props:Props) {
 		);
 	}
 
-	function renderSectionRetryAllHtml(key:string, retryAllHandler:any) {
+	function renderSectionRetryAllHtml(key: string, retryAllHandler: any) {
 		return (
 			<a key={`retry_all_${key}`} href="#" onClick={retryAllHandler} style={retryAllStyle}>
 				{_('Retry All')}
@@ -76,7 +76,7 @@ function StatusScreen(props:Props) {
 		);
 	}
 
-	const renderSectionHtml = (key:string, section:any) => {
+	const renderSectionHtml = (key: string, section: any) => {
 		const itemsHtml = [];
 
 		itemsHtml.push(renderSectionTitleHtml(section.title, section.title));
@@ -91,7 +91,7 @@ function StatusScreen(props:Props) {
 				if (item.canRetry) {
 					const onClick = async () => {
 						await item.retryHandler();
-						resfreshScreen();
+						void resfreshScreen();
 					};
 
 					retryLink = (
@@ -122,7 +122,7 @@ function StatusScreen(props:Props) {
 		return <div key={key}>{itemsHtml}</div>;
 	};
 
-	function renderBodyHtml(report:any) {
+	function renderBodyHtml(report: any) {
 		const sectionsHtml = [];
 
 		for (let i = 0; i < report.length; i++) {
@@ -151,7 +151,7 @@ function StatusScreen(props:Props) {
 	);
 }
 
-const mapStateToProps = (state:any) => {
+const mapStateToProps = (state: any) => {
 	return {
 		themeId: state.settings.theme,
 		settings: state.settings,

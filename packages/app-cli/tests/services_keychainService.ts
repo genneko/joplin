@@ -2,33 +2,35 @@ import KeychainService from '@joplin/lib/services/keychain/KeychainService';
 import shim from '@joplin/lib/shim';
 import Setting from '@joplin/lib/models/Setting';
 
-const { db, asyncTest, setupDatabaseAndSynchronizer, switchClient } = require('./test-utils.js');
+const { db, setupDatabaseAndSynchronizer, switchClient } = require('./test-utils.js');
 
-function describeIfCompatible(name:string, fn:any) {
+function describeIfCompatible(name: string, fn: any, elseFn: any) {
 	if (['win32', 'darwin'].includes(shim.platformName())) {
 		return describe(name, fn);
+	} else {
+		elseFn();
 	}
 }
 
 describeIfCompatible('services_KeychainService', function() {
 
-	beforeEach(async (done:Function) => {
+	beforeEach(async (done: Function) => {
 		await setupDatabaseAndSynchronizer(1, { keychainEnabled: true });
 		await switchClient(1, { keychainEnabled: true });
 		await Setting.deleteKeychainPasswords();
 		done();
 	});
 
-	afterEach(async (done:Function) => {
+	afterEach(async (done: Function) => {
 		await Setting.deleteKeychainPasswords();
 		done();
 	});
 
-	it('should be enabled on macOS and Windows', asyncTest(async () => {
+	it('should be enabled on macOS and Windows', (async () => {
 		expect(Setting.value('keychain.supported')).toBe(1);
 	}));
 
-	it('should set, get and delete passwords', asyncTest(async () => {
+	it('should set, get and delete passwords', (async () => {
 		const service = KeychainService.instance();
 
 		const isSet = await service.setPassword('zz_testunit', 'password');
@@ -42,7 +44,7 @@ describeIfCompatible('services_KeychainService', function() {
 		expect(await service.password('zz_testunit')).toBe(null);
 	}));
 
-	it('should save and load secure settings', asyncTest(async () => {
+	it('should save and load secure settings', (async () => {
 		Setting.setObjectValue('encryption.passwordCache', 'testing', '123456');
 		await Setting.saveAll();
 		await Setting.load();
@@ -50,7 +52,7 @@ describeIfCompatible('services_KeychainService', function() {
 		expect(passwords.testing).toBe('123456');
 	}));
 
-	it('should delete db settings if they have been saved in keychain', asyncTest(async () => {
+	it('should delete db settings if they have been saved in keychain', (async () => {
 		// First save some secure settings and make sure it ends up in the databse
 		KeychainService.instance().enabled = false;
 
@@ -90,5 +92,11 @@ describeIfCompatible('services_KeychainService', function() {
 			expect(row).toBe(undefined);
 		}
 	}));
+
+}, () => {
+
+	it('will pass', () => {
+		expect(true).toBe(true);
+	});
 
 });

@@ -1,18 +1,18 @@
 import { ImportExportResult } from './types';
 import { _ } from '../../locale';
 
-const InteropService_Importer_Base = require('./InteropService_Importer_Base').default;
-const Folder = require('../../models/Folder.js');
-const Note = require('../../models/Note.js');
+import InteropService_Importer_Base from './InteropService_Importer_Base';
+import Folder from '../../models/Folder';
+import Note from '../../models/Note';
 const { basename, filename, rtrimSlashes, fileExtension, dirname } = require('../../path-utils');
-const shim = require('../../shim').default;
-const { extractImageUrls } = require('../../markdownUtils').default;
+import shim from '../../shim';
+import markdownUtils from '../../markdownUtils';
 const { unique } = require('../../ArrayUtils');
 const { pregQuote } = require('../../string-utils-common');
 const { MarkupToHtml } = require('@joplin/renderer');
 
 export default class InteropService_Importer_Md extends InteropService_Importer_Base {
-	async exec(result:ImportExportResult) {
+	async exec(result: ImportExportResult) {
 		let parentFolderId = null;
 
 		const sourcePath = rtrimSlashes(this.sourcePath_);
@@ -27,7 +27,7 @@ export default class InteropService_Importer_Md extends InteropService_Importer_
 				parentFolderId = this.options_.destinationFolder.id;
 			}
 
-			this.importDirectory(sourcePath, parentFolderId);
+			await this.importDirectory(sourcePath, parentFolderId);
 		} else {
 			if (!this.options_.destinationFolder) throw new Error(_('Please specify the notebook where the notes should be imported to.'));
 			parentFolderId = this.options_.destinationFolder.id;
@@ -41,7 +41,7 @@ export default class InteropService_Importer_Md extends InteropService_Importer_
 		return result;
 	}
 
-	async importDirectory(dirPath:string, parentFolderId:string) {
+	async importDirectory(dirPath: string, parentFolderId: string) {
 		console.info(`Import: ${dirPath}`);
 
 		const supportedFileExtension = this.metadata().fileExtensions;
@@ -52,9 +52,9 @@ export default class InteropService_Importer_Md extends InteropService_Importer_
 			if (stat.isDirectory()) {
 				const folderTitle = await Folder.findUniqueItemTitle(basename(stat.path));
 				const folder = await Folder.save({ title: folderTitle, parent_id: parentFolderId });
-				this.importDirectory(`${dirPath}/${basename(stat.path)}`, folder.id);
+				await this.importDirectory(`${dirPath}/${basename(stat.path)}`, folder.id);
 			} else if (supportedFileExtension.indexOf(fileExtension(stat.path).toLowerCase()) >= 0) {
-				this.importFile(`${dirPath}/${stat.path}`, parentFolderId);
+				await this.importFile(`${dirPath}/${stat.path}`, parentFolderId);
 			}
 		}
 	}
@@ -63,13 +63,13 @@ export default class InteropService_Importer_Md extends InteropService_Importer_
 	 * Parse text for links, attempt to find local file, if found create Joplin resource
 	 * and update link accordingly.
 	 */
-	async importLocalImages(filePath:string, md:string) {
+	async importLocalImages(filePath: string, md: string) {
 		let updated = md;
-		const imageLinks = unique(extractImageUrls(md));
-		await Promise.all(imageLinks.map(async (encodedLink:string) => {
+		const imageLinks = unique(markdownUtils.extractImageUrls(md));
+		await Promise.all(imageLinks.map(async (encodedLink: string) => {
 			const link = decodeURI(encodedLink);
 			const attachmentPath = filename(`${dirname(filePath)}/${link}`, true);
-			const pathWithExtension =  `${attachmentPath}.${fileExtension(link)}`;
+			const pathWithExtension = `${attachmentPath}.${fileExtension(link)}`;
 			const stat = await shim.fsDriver().stat(pathWithExtension);
 			const isDir = stat ? stat.isDirectory() : false;
 			if (stat && !isDir) {
@@ -83,7 +83,7 @@ export default class InteropService_Importer_Md extends InteropService_Importer_
 		return updated;
 	}
 
-	async importFile(filePath:string, parentFolderId:string) {
+	async importFile(filePath: string, parentFolderId: string) {
 		const stat = await shim.fsDriver().stat(filePath);
 		if (!stat) throw new Error(`Cannot read ${filePath}`);
 		const title = filename(filePath);

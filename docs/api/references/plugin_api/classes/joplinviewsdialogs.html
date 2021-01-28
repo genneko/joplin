@@ -67,11 +67,33 @@
 			<section class="tsd-panel tsd-comment">
 				<div class="tsd-comment tsd-typography">
 					<div class="lead">
-						<p>Allows creating and managing dialogs. A dialog is modal window that contains a webview and a row of buttons. You can update the update the webview using the <code>setHtml</code> method.
-							Dialogs are hidden by default and you need to call <code>open()</code> to open them. Once the user clicks on a button, the <code>open</code> call will return and provide the button ID that was
-						clicked on. There is currently no &quot;close&quot; method since the dialog should be thought as a modal one and thus can only be closed by clicking on one of the buttons.</p>
+						<p>Allows creating and managing dialogs. A dialog is modal window that
+							contains a webview and a row of buttons. You can update the update the
+							webview using the <code>setHtml</code> method. Dialogs are hidden by default and
+							you need to call <code>open()</code> to open them. Once the user clicks on a
+							button, the <code>open</code> call will return an object indicating what button was
+						clicked on.</p>
 					</div>
-					<p><a href="https://github.com/laurent22/joplin/tree/dev/packages/app-cli/tests/support/plugins/dialog">View the demo plugin</a></p>
+					<a href="#retrieving-form-values" id="retrieving-form-values" style="color: inherit; text-decoration: none;">
+						<h2>Retrieving form values</h2>
+					</a>
+					<p>If your HTML content included one or more forms, a <code>formData</code> object
+					will also be included with the key/value for each form.</p>
+					<a href="#special-button-ids" id="special-button-ids" style="color: inherit; text-decoration: none;">
+						<h2>Special button IDs</h2>
+					</a>
+					<p>The following buttons IDs have a special meaning:</p>
+					<ul>
+						<li><code>ok</code>, <code>yes</code>, <code>submit</code>, <code>confirm</code>: They are considered &quot;submit&quot; buttons</li>
+						<li><code>cancel</code>, <code>no</code>, <code>reject</code>: They are considered &quot;dismiss&quot; buttons</li>
+					</ul>
+					<p>This information is used by the application to determine what action
+						should be done when the user presses &quot;Enter&quot; or &quot;Escape&quot; within the
+						dialog. If they press &quot;Enter&quot;, the first &quot;submit&quot; button will be
+						automatically clicked. If they press &quot;Escape&quot; the first &quot;dismiss&quot; button
+					will be automatically clicked.</p>
+					<p><a href="https://github.com/laurent22/joplin/tree/dev/packages/app-cli/tests/support/plugins/dialog">View the demo
+					plugin</a></p>
 				</div>
 			</section>
 			<!--
@@ -95,6 +117,7 @@
 						<section class="tsd-index-section ">
 							<h3>Methods</h3>
 							<ul class="tsd-index-list">
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="joplinviewsdialogs.html#addscript" class="tsd-kind-icon">add<wbr>Script</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="joplinviewsdialogs.html#create" class="tsd-kind-icon">create</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="joplinviewsdialogs.html#open" class="tsd-kind-icon">open</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="joplinviewsdialogs.html#setbuttons" class="tsd-kind-icon">set<wbr>Buttons</a></li>
@@ -110,10 +133,42 @@
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Methods</h2>
 				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="addscript" class="tsd-anchor"></a>
+					<h3>add<wbr>Script</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">add<wbr>Script<span class="tsd-signature-symbol">(</span>handle<span class="tsd-signature-symbol">: </span><a href="../globals.html#viewhandle" class="tsd-signature-type">ViewHandle</a>, scriptPath<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Adds and loads a new JS or CSS files into the dialog.</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>handle: <a href="../globals.html#viewhandle" class="tsd-signature-type">ViewHandle</a></h5>
+								</li>
+								<li>
+									<h5>scriptPath: <span class="tsd-signature-type">string</span></h5>
+								</li>
+							</ul>
+							<!-- JOPLINCHANGE
+    <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4>
+
+
+-->
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
 					<a name="create" class="tsd-anchor"></a>
 					<h3>create</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">create<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../globals.html#viewhandle" class="tsd-signature-type">ViewHandle</a><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">create<span class="tsd-signature-symbol">(</span>id<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../globals.html#viewhandle" class="tsd-signature-type">ViewHandle</a><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
@@ -124,6 +179,12 @@
 									<p>Creates a new dialog</p>
 								</div>
 							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>id: <span class="tsd-signature-type">string</span></h5>
+								</li>
+							</ul>
 							<!-- JOPLINCHANGE
     <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../globals.html#viewhandle" class="tsd-signature-type">ViewHandle</a><span class="tsd-signature-symbol">&gt;</span></h4>
 
@@ -136,7 +197,7 @@
 					<a name="open" class="tsd-anchor"></a>
 					<h3>open</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">open<span class="tsd-signature-symbol">(</span>handle<span class="tsd-signature-symbol">: </span><a href="../globals.html#viewhandle" class="tsd-signature-type">ViewHandle</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../globals.html#buttonid" class="tsd-signature-type">ButtonId</a><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">open<span class="tsd-signature-symbol">(</span>handle<span class="tsd-signature-symbol">: </span><a href="../globals.html#viewhandle" class="tsd-signature-type">ViewHandle</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/dialogresult.html" class="tsd-signature-type">DialogResult</a><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
@@ -154,7 +215,7 @@
 								</li>
 							</ul>
 							<!-- JOPLINCHANGE
-    <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../globals.html#buttonid" class="tsd-signature-type">ButtonId</a><span class="tsd-signature-symbol">&gt;</span></h4>
+    <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/dialogresult.html" class="tsd-signature-type">DialogResult</a><span class="tsd-signature-symbol">&gt;</span></h4>
 
 
 -->
@@ -268,45 +329,6 @@
             -->
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
-					<li class=" tsd-kind-enum">
-						<a href="../enums/contentscripttype.html" class="tsd-kind-icon">ContentScriptType</a>
-					</li>
-					<li class=" tsd-kind-enum">
-						<a href="../enums/filesystemitem.html" class="tsd-kind-icon">FileSystemItem</a>
-					</li>
-					<li class=" tsd-kind-enum">
-						<a href="../enums/importmoduleoutputformat.html" class="tsd-kind-icon">ImportModuleOutputFormat</a>
-					</li>
-					<li class=" tsd-kind-enum">
-						<a href="../enums/menuitemlocation.html" class="tsd-kind-icon">MenuItemLocation</a>
-					</li>
-					<li class=" tsd-kind-enum">
-						<a href="../enums/settingitemtype.html" class="tsd-kind-icon">SettingItemType</a>
-					</li>
-					<li class=" tsd-kind-enum">
-						<a href="../enums/toolbarbuttonlocation.html" class="tsd-kind-icon">ToolbarButtonLocation</a>
-					</li>
-					<li class=" tsd-kind-class">
-						<a href="joplin.html" class="tsd-kind-icon">joplin</a>
-					</li>
-					<li class=" tsd-kind-class">
-						<a href="joplincommands.html" class="tsd-kind-icon">joplin.commands</a>
-					</li>
-					<li class=" tsd-kind-class">
-						<a href="joplindata.html" class="tsd-kind-icon">joplin.data</a>
-					</li>
-					<li class=" tsd-kind-class">
-						<a href="joplininterop.html" class="tsd-kind-icon">joplin.interop</a>
-					</li>
-					<li class=" tsd-kind-class">
-						<a href="joplinplugins.html" class="tsd-kind-icon">joplin.plugins</a>
-					</li>
-					<li class=" tsd-kind-class">
-						<a href="joplinsettings.html" class="tsd-kind-icon">joplin.settings</a>
-					</li>
-					<li class=" tsd-kind-class">
-						<a href="joplinviews.html" class="tsd-kind-icon">joplin.views</a>
-					</li>
 				</ul>
 				<ul class="current">
 					<li class="current tsd-kind-class">
@@ -314,6 +336,9 @@
 						<ul>
 							<li class=" tsd-kind-constructor tsd-parent-kind-class">
 								<a href="joplinviewsdialogs.html#constructor" class="tsd-kind-icon">constructor</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="joplinviewsdialogs.html#addscript" class="tsd-kind-icon">add<wbr>Script</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="joplinviewsdialogs.html#create" class="tsd-kind-icon">create</a>
@@ -334,69 +359,6 @@
 					</li>
 				</ul>
 				<ul class="after-current">
-					<li class=" tsd-kind-class">
-						<a href="joplinviewsmenuitems.html" class="tsd-kind-icon">joplin.views.menuItems</a>
-					</li>
-					<li class=" tsd-kind-class">
-						<a href="joplinviewsmenus.html" class="tsd-kind-icon">joplin.views.menus</a>
-					</li>
-					<li class=" tsd-kind-class">
-						<a href="joplinviewspanels.html" class="tsd-kind-icon">joplin.views.panels</a>
-					</li>
-					<li class=" tsd-kind-class">
-						<a href="joplinviewstoolbarbuttons.html" class="tsd-kind-icon">joplin.views.toolbarButtons</a>
-					</li>
-					<li class=" tsd-kind-class">
-						<a href="joplinworkspace.html" class="tsd-kind-icon">joplin.workspace</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="../interfaces/buttonspec.html" class="tsd-kind-icon">ButtonSpec</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="../interfaces/command.html" class="tsd-kind-icon">Command</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="../interfaces/createmenuitemoptions.html" class="tsd-kind-icon">CreateMenuItemOptions</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="../interfaces/editorcommand.html" class="tsd-kind-icon">EditorCommand</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="../interfaces/exportcontext.html" class="tsd-kind-icon">ExportContext</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="../interfaces/exportmodule.html" class="tsd-kind-icon">ExportModule</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="../interfaces/exportoptions.html" class="tsd-kind-icon">ExportOptions</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="../interfaces/importcontext.html" class="tsd-kind-icon">ImportContext</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="../interfaces/importmodule.html" class="tsd-kind-icon">ImportModule</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="../interfaces/menuitem.html" class="tsd-kind-icon">MenuItem</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="../interfaces/script.html" class="tsd-kind-icon">Script</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="../interfaces/settingitem.html" class="tsd-kind-icon">SettingItem</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="../interfaces/settingsection.html" class="tsd-kind-icon">SettingSection</a>
-					</li>
-					<li class=" tsd-kind-type-alias">
-						<a href="../globals.html#buttonid" class="tsd-kind-icon">ButtonId</a>
-					</li>
-					<li class=" tsd-kind-type-alias">
-						<a href="../globals.html#path" class="tsd-kind-icon">Path</a>
-					</li>
-					<li class=" tsd-kind-type-alias">
-						<a href="../globals.html#viewhandle" class="tsd-kind-icon">ViewHandle</a>
-					</li>
 				</ul>
 			</nav>
 		</div>

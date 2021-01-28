@@ -12,24 +12,24 @@ import versionInfo from '@joplin/lib/versionInfo';
 import { Module } from '@joplin/lib/services/interop/types';
 import InteropServiceHelper from '../InteropServiceHelper';
 import { _ } from '@joplin/lib/locale';
-import { MenuItem, MenuItemLocation } from '@joplin/lib/services/plugins/api/types';
-import stateToWhenClauseContext from '@joplin/lib/services/commands/stateToWhenClauseContext';
+import { isContextMenuItemLocation, MenuItem, MenuItemLocation } from '@joplin/lib/services/plugins/api/types';
 import SpellCheckerService from '@joplin/lib/services/spellChecker/SpellCheckerService';
 import menuCommandNames from './menuCommandNames';
+import stateToWhenClauseContext from '../services/commands/stateToWhenClauseContext';
+import bridge from '../services/bridge';
 
 const { connect } = require('react-redux');
 const { reg } = require('@joplin/lib/registry.js');
 const packageInfo = require('../packageInfo.js');
-const bridge = require('electron').remote.require('./bridge').default;
-const { shell, clipboard } = require('electron');
+const { clipboard } = require('electron');
 const Menu = bridge().Menu;
 const PluginManager = require('@joplin/lib/services/PluginManager');
 const TemplateUtils = require('@joplin/lib/TemplateUtils');
 
 const menuUtils = new MenuUtils(CommandService.instance());
 
-function pluginMenuItemsCommandNames(menuItems:MenuItem[]):string[] {
-	let output:string[] = [];
+function pluginMenuItemsCommandNames(menuItems: MenuItem[]): string[] {
+	let output: string[] = [];
 	for (const menuItem of menuItems) {
 		if (menuItem.submenu) {
 			output = output.concat(pluginMenuItemsCommandNames(menuItem.submenu));
@@ -40,8 +40,8 @@ function pluginMenuItemsCommandNames(menuItems:MenuItem[]):string[] {
 	return output;
 }
 
-function pluginCommandNames(plugins:PluginStates):string[] {
-	let output:string[] = [];
+function pluginCommandNames(plugins: PluginStates): string[] {
+	let output: string[] = [];
 
 	for (const view of pluginUtils.viewsByType(plugins, 'menu')) {
 		output = output.concat(pluginMenuItemsCommandNames(view.menuItems));
@@ -54,8 +54,8 @@ function pluginCommandNames(plugins:PluginStates):string[] {
 	return output;
 }
 
-function createPluginMenuTree(label:string, menuItems:MenuItem[], onMenuItemClick:Function) {
-	const output:any = {
+function createPluginMenuTree(label: string, menuItems: MenuItem[], onMenuItemClick: Function) {
+	const output: any = {
 		label: label,
 		submenu: [],
 	};
@@ -72,50 +72,51 @@ function createPluginMenuTree(label:string, menuItems:MenuItem[], onMenuItemClic
 }
 
 interface Props {
-	dispatch: Function,
-	menuItemProps: any,
-	routeName: string,
-	selectedFolderId: string,
-	layoutButtonSequence: number,
-	['notes.sortOrder.field']: string,
-	['folders.sortOrder.field']: string,
-	['notes.sortOrder.reverse']: boolean,
-	['folders.sortOrder.reverse']: boolean,
-	showNoteCounts: boolean,
-	uncompletedTodosOnTop: boolean,
-	showCompletedTodos: boolean,
-	pluginMenuItems: any[],
-	pluginMenus: any[],
-	['spellChecker.enabled']: boolean,
-	['spellChecker.language']: string,
+	dispatch: Function;
+	menuItemProps: any;
+	routeName: string;
+	selectedFolderId: string;
+	layoutButtonSequence: number;
+	['notes.sortOrder.field']: string;
+	['folders.sortOrder.field']: string;
+	['notes.sortOrder.reverse']: boolean;
+	['folders.sortOrder.reverse']: boolean;
+	showNoteCounts: boolean;
+	uncompletedTodosOnTop: boolean;
+	showCompletedTodos: boolean;
+	pluginMenuItems: any[];
+	pluginMenus: any[];
+	['spellChecker.enabled']: boolean;
+	['spellChecker.language']: string;
+	plugins: PluginStates;
 }
 
-const commandNames:string[] = menuCommandNames();
+const commandNames: string[] = menuCommandNames();
 
-function menuItemSetChecked(id:string, checked:boolean) {
+function menuItemSetChecked(id: string, checked: boolean) {
 	const menu = Menu.getApplicationMenu();
 	const menuItem = menu.getMenuItemById(id);
 	if (!menuItem) return;
 	menuItem.checked = checked;
 }
 
-function menuItemSetEnabled(id:string, enabled:boolean) {
+function menuItemSetEnabled(id: string, enabled: boolean) {
 	const menu = Menu.getApplicationMenu();
 	const menuItem = menu.getMenuItemById(id);
 	if (!menuItem) return;
 	menuItem.enabled = enabled;
 }
 
-function useMenu(props:Props) {
+function useMenu(props: Props) {
 	const [menu, setMenu] = useState(null);
 	const [keymapLastChangeTime, setKeymapLastChangeTime] = useState(Date.now());
 	const [modulesLastChangeTime, setModulesLastChangeTime] = useState(Date.now());
 
-	const onMenuItemClick = useCallback((commandName:string) => {
-		CommandService.instance().execute(commandName);
+	const onMenuItemClick = useCallback((commandName: string) => {
+		void CommandService.instance().execute(commandName);
 	}, []);
 
-	const onImportModuleClick = useCallback(async (module:Module, moduleSource:string) => {
+	const onImportModuleClick = useCallback(async (module: Module, moduleSource: string) => {
 		let path = null;
 
 		if (moduleSource === 'file') {
@@ -132,22 +133,27 @@ function useMenu(props:Props) {
 
 		if (Array.isArray(path)) path = path[0];
 
-		const modalMessage =  _('Importing from "%s" as "%s" format. Please wait...', path, module.format);
+		const modalMessage = _('Importing from "%s" as "%s" format. Please wait...', path, module.format);
 
-		CommandService.instance().execute('showModalMessage', modalMessage);
+		void CommandService.instance().execute('showModalMessage', modalMessage);
+
+		const errors: any[] = [];
 
 		const importOptions = {
 			path,
 			format: module.format,
 			outputFormat: module.outputFormat,
-			onProgress: (status:any) => {
-				const statusStrings:string[] = Object.keys(status).map((key:string) => {
+			onProgress: (status: any) => {
+				const statusStrings: string[] = Object.keys(status).map((key: string) => {
 					return `${key}: ${status[key]}`;
 				});
 
-				CommandService.instance().execute('showModalMessage', `${modalMessage}\n\n${statusStrings.join('\n')}`);
+				void CommandService.instance().execute('showModalMessage', `${modalMessage}\n\n${statusStrings.join('\n')}`);
 			},
-			onError: console.warn,
+			onError: (error: any) => {
+				errors.push(error);
+				console.warn(error);
+			},
 			destinationFolderId: !module.isNoteArchive && moduleSource === 'file' ? props.selectedFolderId : null,
 		};
 
@@ -159,7 +165,12 @@ function useMenu(props:Props) {
 			bridge().showErrorMessageBox(error.message);
 		}
 
-		CommandService.instance().execute('hideModalMessage');
+		if (errors.length) {
+			bridge().showErrorMessageBox('There was some errors importing the notes. Please check the console for more details.');
+			props.dispatch({ type: 'NOTE_DEVTOOLS_SET', value: true });
+		}
+
+		void CommandService.instance().execute('hideModalMessage');
 	}, [props.selectedFolderId]);
 
 	const onMenuItemClickRef = useRef(null);
@@ -171,16 +182,16 @@ function useMenu(props:Props) {
 	useEffect(() => {
 		const keymapService = KeymapService.instance();
 
-		const pluginCommandNames = props.pluginMenuItems.map((view:any) => view.commandName);
-		const menuItemDic = menuUtils.commandsToMenuItems(commandNames.concat(pluginCommandNames), (commandName:string) => onMenuItemClickRef.current(commandName));
+		const pluginCommandNames = props.pluginMenuItems.map((view: any) => view.commandName);
+		const menuItemDic = menuUtils.commandsToMenuItems(commandNames.concat(pluginCommandNames), (commandName: string) => onMenuItemClickRef.current(commandName));
 
 		const quitMenuItem = {
 			label: _('Quit'),
 			accelerator: keymapService.getAccelerator('quit'),
-			click: () => { bridge().electronApp().quit(); },
+			click: () => { void bridge().electronApp().quit(); },
 		};
 
-		const sortNoteFolderItems = (type:string) => {
+		const sortNoteFolderItems = (type: string) => {
 			const sortItems = [];
 			const sortOptions = Setting.enumOptions(`${type}.sortOrder.field`);
 			for (const field in sortOptions) {
@@ -223,7 +234,7 @@ function useMenu(props:Props) {
 
 		const importItems = [];
 		const exportItems = [];
-		const templateItems:any[] = [];
+		const templateItems: any[] = [];
 		const ioService = InteropService.instance();
 		const ioModules = ioService.modules();
 		for (let i = 0; i < ioModules.length; i++) {
@@ -233,7 +244,11 @@ function useMenu(props:Props) {
 					exportItems.push({
 						label: module.fullLabel(),
 						click: async () => {
-							await InteropServiceHelper.export((action:any) => props.dispatch(action), module);
+							await InteropServiceHelper.export(
+								(action: any) => props.dispatch(action),
+								module,
+								{ plugins: props.plugins }
+							);
 						},
 					});
 				}
@@ -284,23 +299,23 @@ function useMenu(props:Props) {
 		templateItems.push({
 			label: _('Create note from template'),
 			click: () => {
-				CommandService.instance().execute('selectTemplate', 'note');
+				void CommandService.instance().execute('selectTemplate', 'note');
 			},
 		}, {
 			label: _('Create to-do from template'),
 			click: () => {
-				CommandService.instance().execute('selectTemplate', 'todo');
+				void CommandService.instance().execute('selectTemplate', 'todo');
 			},
 		}, {
 			label: _('Insert template'),
 			accelerator: keymapService.getAccelerator('insertTemplate'),
 			click: () => {
-				CommandService.instance().execute('selectTemplate');
+				void CommandService.instance().execute('selectTemplate');
 			},
 		}, {
 			label: _('Open template directory'),
 			click: () => {
-				shell.openItem(Setting.value('templateDir'));
+				void bridge().openItem(Setting.value('templateDir'));
 			},
 		}, {
 			label: _('Refresh templates'),
@@ -314,10 +329,10 @@ function useMenu(props:Props) {
 			},
 		});
 
-		let toolsItems:any[] = [];
+		let toolsItems: any[] = [];
 
 		// we need this workaround, because on macOS the menu is different
-		const toolsItemsWindowsLinux:any[] = [
+		const toolsItemsWindowsLinux: any[] = [
 			{
 				label: _('Options'),
 				accelerator: keymapService.getAccelerator('config'),
@@ -471,7 +486,7 @@ function useMenu(props:Props) {
 					label: _('Import'),
 					submenu: importItems,
 				}, {
-					label: _('Export'),
+					label: _('Export all'),
 					submenu: exportItems,
 				}, {
 					type: 'separator',
@@ -494,7 +509,7 @@ function useMenu(props:Props) {
 			});
 		}
 
-		const rootMenus:any = {
+		const rootMenus: any = {
 			edit: {
 				id: 'edit',
 				label: _('&Edit'),
@@ -504,6 +519,9 @@ function useMenu(props:Props) {
 					menuItemDic.textPaste,
 					menuItemDic.textSelectAll,
 					separator(),
+					menuItemDic['editor.undo'],
+					menuItemDic['editor.redo'],
+					separator(),
 					menuItemDic.textBold,
 					menuItemDic.textItalic,
 					menuItemDic.textLink,
@@ -512,6 +530,14 @@ function useMenu(props:Props) {
 					menuItemDic.insertDateTime,
 					menuItemDic.attachFile,
 					separator(),
+					menuItemDic['editor.deleteLine'],
+					menuItemDic['editor.toggleComment'],
+					menuItemDic['editor.sortSelectedLines'],
+					menuItemDic['editor.indentLess'],
+					menuItemDic['editor.indentMore'],
+					menuItemDic['editor.swapLineDown'],
+					menuItemDic['editor.swapLineUp'],
+					separator(),
 					menuItemDic.focusSearch,
 					menuItemDic.showLocalSearch,
 				],
@@ -519,6 +545,8 @@ function useMenu(props:Props) {
 			view: {
 				label: _('&View'),
 				submenu: [
+					menuItemDic.toggleLayoutMoveMode,
+					separator(),
 					menuItemDic.toggleSideBar,
 					menuItemDic.toggleNoteList,
 					menuItemDic.toggleVisiblePanes,
@@ -668,7 +696,7 @@ function useMenu(props:Props) {
 		// It seems the "visible" property of separators is ignored by Electron, making
 		// it display separators that we want hidden. So this function iterates through
 		// them and remove them completely.
-		const cleanUpSeparators = (items:any[]) => {
+		const cleanUpSeparators = (items: any[]) => {
 			const output = [];
 			for (const item of items) {
 				if ('visible' in item && item.type === 'separator' && !item.visible) continue;
@@ -694,8 +722,8 @@ function useMenu(props:Props) {
 		}
 
 		for (const view of props.pluginMenuItems) {
-			const location:MenuItemLocation = view.location;
-			if (location === MenuItemLocation.Context) continue;
+			const location: MenuItemLocation = view.location;
+			if (isContextMenuItemLocation(location)) continue;
 
 			const itemParent = rootMenus[location];
 
@@ -707,13 +735,13 @@ function useMenu(props:Props) {
 		}
 
 		for (const view of props.pluginMenus) {
-			if (view.location === MenuItemLocation.Context) continue;
+			if (isContextMenuItemLocation(view.location)) continue;
 			const itemParent = rootMenus[view.location];
 
 			if (!itemParent) {
 				reg.logger().error('Menu location does not exist: ', location, view);
 			} else {
-				itemParent.submenu.push(createPluginMenuTree(view.label, view.menuItems, (commandName:string) => onMenuItemClickRef.current(commandName)));
+				itemParent.submenu.push(createPluginMenuTree(view.label, view.menuItems, (commandName: string) => onMenuItemClickRef.current(commandName)));
 			}
 		}
 
@@ -748,7 +776,7 @@ function useMenu(props:Props) {
 		} else {
 			setMenu(Menu.buildFromTemplate(template));
 		}
-	}, [props.routeName, props.pluginMenuItems, props.pluginMenus, keymapLastChangeTime, modulesLastChangeTime, props['spellChecker.language'], props['spellChecker.enabled']]);
+	}, [props.routeName, props.pluginMenuItems, props.pluginMenus, keymapLastChangeTime, modulesLastChangeTime, props['spellChecker.language'], props['spellChecker.enabled'], props.plugins]);
 
 	useEffect(() => {
 		const whenClauseContext = CommandService.instance().currentWhenClauseContext();
@@ -765,7 +793,7 @@ function useMenu(props:Props) {
 			menuItemSetChecked(`layoutButtonSequence_${value}`, props.layoutButtonSequence === Number(value));
 		}
 
-		function applySortItemCheckState(type:string) {
+		function applySortItemCheckState(type: string) {
 			const sortOptions = Setting.enumOptions(`${type}.sortOrder.field`);
 			for (const field in sortOptions) {
 				if (!sortOptions.hasOwnProperty(field)) continue;
@@ -820,13 +848,13 @@ function useMenu(props:Props) {
 	return menu;
 }
 
-function MenuBar(props:Props):any {
+function MenuBar(props: Props): any {
 	const menu = useMenu(props);
 	if (menu) Menu.setApplicationMenu(menu);
 	return null;
 }
 
-const mapStateToProps = (state:AppState) => {
+const mapStateToProps = (state: AppState) => {
 	const whenClauseContext = stateToWhenClauseContext(state);
 
 	return {
@@ -845,6 +873,7 @@ const mapStateToProps = (state:AppState) => {
 		pluginMenus: stateUtils.selectArrayShallow({ array: pluginUtils.viewsByType(state.pluginService.plugins, 'menu') }, 'menuBar.pluginMenus'),
 		['spellChecker.language']: state.settings['spellChecker.language'],
 		['spellChecker.enabled']: state.settings['spellChecker.enabled'],
+		plugins: state.pluginService.plugins,
 	};
 };
 

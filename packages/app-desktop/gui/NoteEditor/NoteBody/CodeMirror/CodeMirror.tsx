@@ -9,7 +9,7 @@ import { useScrollHandler, usePrevious, cursorPositionToTextOffset, useRootSize 
 import Toolbar from './Toolbar';
 import styles_ from './styles';
 import { RenderedBody, defaultRenderedBody } from './utils/types';
-import NoteTextViewer  from '../../../NoteTextViewer';
+import NoteTextViewer from '../../../NoteTextViewer';
 import Editor from './Editor';
 import usePluginServiceRegistration from '../../utils/usePluginServiceRegistration';
 import Setting from '@joplin/lib/models/Setting';
@@ -17,15 +17,22 @@ import { _ } from '@joplin/lib/locale';
 import bridge from '../../../../services/bridge';
 import markdownUtils from '@joplin/lib/markdownUtils';
 import shim from '@joplin/lib/shim';
-
-const Note = require('@joplin/lib/models/Note.js');
+import { MenuItemLocation } from '@joplin/lib/services/plugins/api/types';
+import MenuUtils from '@joplin/lib/services/commands/MenuUtils';
+import CommandService from '@joplin/lib/services/CommandService';
+import { themeStyle } from '@joplin/lib/theme';
+import { ThemeAppearance } from '@joplin/lib/themes/type';
+import SpellCheckerService from '@joplin/lib/services/spellChecker/SpellCheckerService';
+import dialogs from '../../../dialogs';
+import convertToScreenCoordinates from '../../../utils/convertToScreenCoordinates';
+import { MarkupToHtml } from '@joplin/renderer';
 const { clipboard } = require('electron');
 const shared = require('@joplin/lib/components/shared/note-screen-shared.js');
 const Menu = bridge().Menu;
 const MenuItem = bridge().MenuItem;
 const { reg } = require('@joplin/lib/registry.js');
-const dialogs = require('../../../dialogs');
-const { themeStyle } = require('@joplin/lib/theme');
+
+const menuUtils = new MenuUtils(CommandService.instance());
 
 function markupRenderOptions(override: any = null) {
 	return { ...override };
@@ -78,7 +85,6 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 			}
 			editorRef.current.setSelections(newSelections);
 		}
-		editorRef.current.focus();
 	}, []);
 
 	const addListItem = useCallback((string1, defaultText = '') => {
@@ -90,7 +96,6 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 			} else {
 				wrapSelectionWithStrings(string1, '', defaultText);
 			}
-			editorRef.current.focus();
 		}
 	}, [wrapSelectionWithStrings]);
 
@@ -100,7 +105,7 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 			resetScroll: () => {
 				resetScroll();
 			},
-			scrollTo: (options:ScrollOptions) => {
+			scrollTo: (options: ScrollOptions) => {
 				if (options.type === ScrollOptionTypes.Hash) {
 					if (!webviewRef.current) return;
 					webviewRef.current.wrappedInstance.send('scrollToHash', options.value as string);
@@ -134,7 +139,7 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 					} else {
 						reg.logger().warn('CodeMirror: unsupported drop item: ', cmd);
 					}
-				} else if (cmd.name === 'focus') {
+				} else if (cmd.name === 'editor.focus') {
 					editorRef.current.focus();
 				} else {
 					commandProcessed = false;
@@ -156,13 +161,26 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 						selectedHtml: () => {
 							return selectedText();
 						},
-						replaceSelection: (value:any) => {
+						replaceSelection: (value: any) => {
 							return editorRef.current.replaceSelection(value);
+						},
+						textCopy: () => {
+							editorCopyText();
+						},
+						textCut: () => {
+							editorCutText();
+						},
+						textPaste: () => {
+							editorPaste();
+						},
+						textSelectAll: () => {
+							return editorRef.current.execCommand('selectAll');
 						},
 						textBold: () => wrapSelectionWithStrings('**', '**', _('strong text')),
 						textItalic: () => wrapSelectionWithStrings('*', '*', _('emphasised text')),
 						textLink: async () => {
 							const url = await dialogs.prompt(_('Insert Hyperlink'));
+							editorRef.current.focus();
 							if (url) wrapSelectionWithStrings('[', `](${url})`);
 						},
 						textCode: () => {
@@ -204,6 +222,8 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 
 					if (commands[cmd.name]) {
 						commandOutput = commands[cmd.name](cmd.value);
+					} else if (editorRef.current.supportsCommand(cmd)) {
+						commandOutput = editorRef.current.execCommandFromJoplin(cmd);
 					} else {
 						reg.logger().warn('CodeMirror: unsupported Joplin command: ', cmd);
 					}
@@ -249,53 +269,20 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 		}
 	}, []);
 
-	const onEditorContextMenu = useCallback(() => {
-		const menu = new Menu();
-
-		const hasSelectedText = editorRef.current && !!editorRef.current.getSelection() ;
+	const editorPaste = useCallback(() => {
 		const clipboardText = clipboard.readText();
 
-		menu.append(
-			new MenuItem({
-				label: _('Cut'),
-				enabled: hasSelectedText,
-				click: async () => {
-					editorCutText();
-				},
-			})
-		);
+		if (clipboardText) {
+			editorPasteText();
+		} else {
+			// To handle pasting images
+			void onEditorPaste();
+		}
+	}, [editorPasteText, onEditorPaste]);
 
-		menu.append(
-			new MenuItem({
-				label: _('Copy'),
-				enabled: hasSelectedText,
-				click: async () => {
-					editorCopyText();
-				},
-			})
-		);
-
-		menu.append(
-			new MenuItem({
-				label: _('Paste'),
-				enabled: true,
-				click: async () => {
-					if (clipboardText) {
-						editorPasteText();
-					} else {
-						// To handle pasting images
-						onEditorPaste();
-					}
-				},
-			})
-		);
-
-		menu.popup(bridge().window());
-	}, [props.content, editorCutText, editorPasteText, editorCopyText, onEditorPaste]);
-
-	const loadScript = async (script:any) => {
+	const loadScript = async (script: any) => {
 		return new Promise((resolve) => {
-			let element:any = document.createElement('script');
+			let element: any = document.createElement('script');
 			if (script.src.indexOf('.css') >= 0) {
 				element = document.createElement('link');
 				element.rel = 'stylesheet';
@@ -313,7 +300,7 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 			element.id = script.id;
 
 			element.onload = () => {
-				resolve();
+				resolve(null);
 			};
 
 			document.getElementsByTagName('head')[0].appendChild(element);
@@ -324,7 +311,7 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 		let cancelled = false;
 
 		async function loadScripts() {
-			const scriptsToLoad:{src: string, id:string, loaded: boolean}[] = [
+			const scriptsToLoad: {src: string; id: string; loaded: boolean}[] = [
 				{
 					src: 'node_modules/codemirror/addon/dialog/dialog.css',
 					id: 'codemirrorDialogStyle',
@@ -360,7 +347,7 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 			}
 		}
 
-		loadScripts();
+		void loadScripts();
 
 		return () => {
 			cancelled = true;
@@ -369,6 +356,13 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 
 	useEffect(() => {
 		const theme = themeStyle(props.themeId);
+
+		// Selection in dark mode is hard to see so make it brighter.
+		// https://discourse.joplinapp.org/t/dragging-in-dark-theme/12433/4?u=laurent
+		const selectionColorCss = theme.appearance === ThemeAppearance.Dark ?
+			`.CodeMirror-selected {
+				background: #6b6b6b !important;
+			}` : '';
 
 		const element = document.createElement('style');
 		element.setAttribute('id', 'codemirrorStyle');
@@ -390,6 +384,18 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 				/* This is used to enable the scroll-past end behaviour. The same height should */
 				/* be applied to the viewer. */
 				padding-bottom: 400px !important;
+			}
+
+			/* Left padding is applied at the editor component level, so we should remove it from the lines */
+			.CodeMirror pre.CodeMirror-line,
+			.CodeMirror pre.CodeMirror-line-like {
+				padding-left: 0;
+			}
+
+			.CodeMirror-sizer {
+				/* Add a fixed right padding to account for the appearance (and disappearance) */
+				/* of the sidebar */
+				padding-right: 10px !important;
 			}
 
 			.cm-header-1 {
@@ -456,6 +462,8 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 			.cm-s-solarized.cm-s-dark span.cm-comment {
 				color: #8ba1a7 !important;
 			}
+
+			${selectionColorCss}
 		`));
 
 		return () => {
@@ -604,6 +612,85 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 		editorRef.current.refresh();
 	}, [rootSize, styles.editor, props.visiblePanes]);
 
+	// The below code adds support for spellchecking when it is enabled
+	// It might be buggy, refer to the below issue
+	// https://github.com/laurent22/joplin/pull/3974#issuecomment-718936703
+	useEffect(() => {
+		function pointerInsideEditor(x: number, y: number) {
+			const elements = document.getElementsByClassName('codeMirrorEditor');
+			if (!elements.length) return null;
+			const rect = convertToScreenCoordinates(Setting.value('windowContentZoomFactor'), elements[0].getBoundingClientRect());
+			return rect.x < x && rect.y < y && rect.right > x && rect.bottom > y;
+		}
+
+		function onContextMenu(_event: any, params: any) {
+			if (!pointerInsideEditor(params.x, params.y)) return;
+
+			const menu = new Menu();
+
+			const hasSelectedText = editorRef.current && !!editorRef.current.getSelection() ;
+
+			menu.append(
+				new MenuItem({
+					label: _('Cut'),
+					enabled: hasSelectedText,
+					click: async () => {
+						editorCutText();
+					},
+				})
+			);
+
+			menu.append(
+				new MenuItem({
+					label: _('Copy'),
+					enabled: hasSelectedText,
+					click: async () => {
+						editorCopyText();
+					},
+				})
+			);
+
+			menu.append(
+				new MenuItem({
+					label: _('Paste'),
+					enabled: true,
+					click: async () => {
+						editorPaste();
+					},
+				})
+			);
+
+			const spellCheckerMenuItems = SpellCheckerService.instance().contextMenuItems(params.misspelledWord, params.dictionarySuggestions);
+
+			for (const item of spellCheckerMenuItems) {
+				menu.append(new MenuItem(item));
+			}
+
+			// Typically CodeMirror handles all interactions itself (highlighting etc.)
+			// But in the case of clicking a mispelled word, we need electron to handle the click
+			// The result is that CodeMirror doesn't know what's been selected and doesn't
+			// move the cursor into the correct location.
+			// and when the user selects a new spelling it will be inserted in the wrong location
+			// So in this situation, we use must manually align the internal codemirror selection
+			// to the contextmenu selection
+			if (editorRef.current && spellCheckerMenuItems.length > 0) {
+				editorRef.current.alignSelection(params);
+			}
+
+			menuUtils.pluginContextMenuItems(props.plugins, MenuItemLocation.EditorContextMenu).forEach((item: any) => {
+				menu.append(new MenuItem(item));
+			});
+
+			menu.popup();
+		}
+
+		bridge().window().webContents.on('context-menu', onContextMenu);
+
+		return () => {
+			bridge().window().webContents.off('context-menu', onContextMenu);
+		};
+	}, [props.plugins]);
+
 	function renderEditor() {
 
 		return (
@@ -612,15 +699,15 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 					value={props.content}
 					searchMarkers={props.searchMarkers}
 					ref={editorRef}
-					mode={props.contentMarkupLanguage === Note.MARKUP_LANGUAGE_HTML ? 'xml' : 'joplin-markdown'}
+					mode={props.contentMarkupLanguage === MarkupToHtml.MARKUP_LANGUAGE_HTML ? 'xml' : 'joplin-markdown'}
 					codeMirrorTheme={styles.editor.codeMirrorTheme}
 					style={styles.editor}
 					readOnly={props.visiblePanes.indexOf('editor') < 0}
 					autoMatchBraces={Setting.value('editor.autoMatchingBraces')}
 					keyMap={props.keyboardMode}
+					plugins={props.plugins}
 					onChange={codeMirror_change}
 					onScroll={editor_scroll}
-					onEditorContextMenu={onEditorContextMenu}
 					onEditorPaste={onEditorPaste}
 				/>
 			</div>
@@ -643,11 +730,7 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 	return (
 		<div style={styles.root} ref={rootRef}>
 			<div style={styles.rowToolbar}>
-				<Toolbar
-					themeId={props.themeId}
-					// dispatch={props.dispatch}
-					// plugins={props.plugins}
-				/>
+				<Toolbar themeId={props.themeId} />
 				{props.noteToolbar}
 			</div>
 			<div style={styles.rowEditorViewer}>

@@ -3,28 +3,29 @@ import { FormNote, defaultFormNote, ResourceInfos } from './types';
 import { clearResourceCache, attachedResources } from './resourceHandling';
 import AsyncActionQueue from '@joplin/lib/AsyncActionQueue';
 import { handleResourceDownloadMode } from './resourceHandling';
+import HtmlToHtml from '@joplin/renderer/HtmlToHtml';
+import Setting from '@joplin/lib/models/Setting';
+import usePrevious from '../../hooks/usePrevious';
+import ResourceEditWatcher from '@joplin/lib/services/ResourceEditWatcher/index';
+
 const { MarkupToHtml } = require('@joplin/renderer');
-const HtmlToHtml = require('@joplin/renderer/HtmlToHtml');
-const usePrevious = require('../../hooks/usePrevious').default;
-const Note = require('@joplin/lib/models/Note');
-const Setting = require('@joplin/lib/models/Setting').default;
+import Note from '@joplin/lib/models/Note';
 const { reg } = require('@joplin/lib/registry.js');
-const ResourceFetcher = require('@joplin/lib/services/ResourceFetcher.js');
-const DecryptionWorker = require('@joplin/lib/services/DecryptionWorker.js');
-const ResourceEditWatcher = require('@joplin/lib/services/ResourceEditWatcher/index').default;
+import ResourceFetcher from '@joplin/lib/services/ResourceFetcher';
+import DecryptionWorker from '@joplin/lib/services/DecryptionWorker';
 
 export interface OnLoadEvent {
-	formNote: FormNote,
+	formNote: FormNote;
 }
 
 interface HookDependencies {
-	syncStarted: boolean,
-	noteId: string,
-	isProvisional: boolean,
-	titleInputRef: any,
-	editorRef: any,
-	onBeforeLoad(event:OnLoadEvent):void,
-	onAfterLoad(event:OnLoadEvent):void,
+	syncStarted: boolean;
+	noteId: string;
+	isProvisional: boolean;
+	titleInputRef: any;
+	editorRef: any;
+	onBeforeLoad(event: OnLoadEvent): void;
+	onAfterLoad(event: OnLoadEvent): void;
 }
 
 function installResourceChangeHandler(onResourceChangeHandler: Function) {
@@ -41,7 +42,7 @@ function uninstallResourceChangeHandler(onResourceChangeHandler: Function) {
 	ResourceEditWatcher.instance().off('resourceChange', onResourceChangeHandler);
 }
 
-function resourceInfosChanged(a:ResourceInfos, b:ResourceInfos):boolean {
+function resourceInfosChanged(a: ResourceInfos, b: ResourceInfos): boolean {
 	if (Object.keys(a).length !== Object.keys(b).length) return true;
 
 	for (const id in a) {
@@ -57,7 +58,7 @@ function resourceInfosChanged(a:ResourceInfos, b:ResourceInfos):boolean {
 	return false;
 }
 
-export default function useFormNote(dependencies:HookDependencies) {
+export default function useFormNote(dependencies: HookDependencies) {
 	const { syncStarted, noteId, isProvisional, titleInputRef, editorRef, onBeforeLoad, onAfterLoad } = dependencies;
 
 	const [formNote, setFormNote] = useState<FormNote>(defaultFormNote());
@@ -132,7 +133,7 @@ export default function useFormNote(dependencies:HookDependencies) {
 			await initNoteState(n);
 		};
 
-		loadNote();
+		void loadNote();
 
 		return () => {
 			cancelled = true;
@@ -140,7 +141,10 @@ export default function useFormNote(dependencies:HookDependencies) {
 	}, [prevSyncStarted, syncStarted, formNote]);
 
 	useEffect(() => {
-		if (!noteId) return () => {};
+		if (!noteId) {
+			if (formNote.id) setFormNote(defaultFormNote());
+			return () => {};
+		}
 
 		if (formNote.id === noteId) return () => {};
 
@@ -157,7 +161,7 @@ export default function useFormNote(dependencies:HookDependencies) {
 				if (Setting.value(focusSettingName) === 'title') {
 					if (titleInputRef.current) titleInputRef.current.focus();
 				} else {
-					if (editorRef.current) editorRef.current.execCommand({ name: 'focus' });
+					if (editorRef.current) editorRef.current.execCommand({ name: 'editor.focus' });
 				}
 			});
 		}
@@ -179,14 +183,14 @@ export default function useFormNote(dependencies:HookDependencies) {
 			handleAutoFocus(!!n.is_todo);
 		}
 
-		loadNote();
+		void loadNote();
 
 		return () => {
 			cancelled = true;
 		};
 	}, [noteId, isProvisional, formNote]);
 
-	const onResourceChange = useCallback(async function(event:any = null) {
+	const onResourceChange = useCallback(async function(event: any = null) {
 		const resourceIds = await Note.linkedResourceIds(formNote.body);
 		if (!event || resourceIds.indexOf(event.id) >= 0) {
 			clearResourceCache();
@@ -203,7 +207,7 @@ export default function useFormNote(dependencies:HookDependencies) {
 
 	useEffect(() => {
 		if (previousNoteId !== formNote.id) {
-			onResourceChange();
+			void onResourceChange();
 		}
 	}, [previousNoteId, formNote.id, onResourceChange]);
 
@@ -213,12 +217,12 @@ export default function useFormNote(dependencies:HookDependencies) {
 		async function runEffect() {
 			const r = await attachedResources(formNote.body);
 			if (cancelled) return;
-			setResourceInfos((previous:ResourceInfos) => {
+			setResourceInfos((previous: ResourceInfos) => {
 				return resourceInfosChanged(previous, r) ? r : previous;
 			});
 		}
 
-		runEffect();
+		void runEffect();
 
 		return () => {
 			cancelled = true;

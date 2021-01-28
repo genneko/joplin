@@ -1,24 +1,30 @@
 import * as React from 'react';
-import SideBar from './SideBar';
+import Sidebar from './Sidebar';
 import ButtonBar from './ButtonBar';
 import Button, { ButtonLevel } from '../Button/Button';
 import { _ } from '@joplin/lib/locale';
+import bridge from '../../services/bridge';
+import Setting from '@joplin/lib/models/Setting';
+import control_PluginsStates from './controls/plugins/PluginsStates';
+
 const { connect } = require('react-redux');
-const Setting = require('@joplin/lib/models/Setting').default;
 const { themeStyle } = require('@joplin/lib/theme');
 const pathUtils = require('@joplin/lib/path-utils');
 const SyncTargetRegistry = require('@joplin/lib/SyncTargetRegistry');
 const shared = require('@joplin/lib/components/shared/config-shared.js');
-const bridge = require('electron').remote.require('./bridge').default;
 const { EncryptionConfigScreen } = require('../EncryptionConfigScreen.min');
 const { ClipperConfigScreen } = require('../ClipperConfigScreen.min');
 const { KeymapConfigScreen } = require('../KeymapConfig/KeymapConfigScreen');
 
+const settingKeyToControl: any = {
+	'plugins.states': control_PluginsStates,
+};
+
 class ConfigScreenComponent extends React.Component<any, any> {
 
-	rowStyle_:any = null;
+	rowStyle_: any = null;
 
-	constructor(props:any) {
+	constructor(props: any) {
 		super(props);
 
 		shared.init(this);
@@ -27,13 +33,14 @@ class ConfigScreenComponent extends React.Component<any, any> {
 			selectedSectionName: 'general',
 			screenName: '',
 			changedSettingKeys: [],
+			needRestart: false,
 		};
 
 		this.rowStyle_ = {
 			marginBottom: 10,
 		};
 
-		this.sideBar_selectionChange = this.sideBar_selectionChange.bind(this);
+		this.sidebar_selectionChange = this.sidebar_selectionChange.bind(this);
 		this.checkSyncConfig_ = this.checkSyncConfig_.bind(this);
 		this.checkNextcloudAppButton_click = this.checkNextcloudAppButton_click.bind(this);
 		this.showLogButton_click = this.showLogButton_click.bind(this);
@@ -41,6 +48,9 @@ class ConfigScreenComponent extends React.Component<any, any> {
 		this.onCancelClick = this.onCancelClick.bind(this);
 		this.onSaveClick = this.onSaveClick.bind(this);
 		this.onApplyClick = this.onApplyClick.bind(this);
+		this.renderLabel = this.renderLabel.bind(this);
+		this.renderDescription = this.renderDescription.bind(this);
+		this.renderHeader = this.renderHeader.bind(this);
 	}
 
 	async checkSyncConfig_() {
@@ -72,7 +82,7 @@ class ConfigScreenComponent extends React.Component<any, any> {
 		}
 	}
 
-	sectionByName(name:string) {
+	sectionByName(name: string) {
 		const sections = shared.settingsSections({ device: 'desktop', settings: this.state.settings });
 		for (const section of sections) {
 			if (section.name === name) return section;
@@ -81,7 +91,7 @@ class ConfigScreenComponent extends React.Component<any, any> {
 		throw new Error(`Invalid section name: ${name}`);
 	}
 
-	screenFromName(screenName:string) {
+	screenFromName(screenName: string) {
 		if (screenName === 'encryption') return <EncryptionConfigScreen themeId={this.props.themeId}/>;
 		if (screenName === 'server') return <ClipperConfigScreen themeId={this.props.themeId}/>;
 		if (screenName === 'keymap') return <KeymapConfigScreen themeId={this.props.themeId}/>;
@@ -89,7 +99,7 @@ class ConfigScreenComponent extends React.Component<any, any> {
 		throw new Error(`Invalid screen name: ${screenName}`);
 	}
 
-	switchSection(name:string) {
+	switchSection(name: string) {
 		const section = this.sectionByName(name);
 		let screenName = '';
 		if (section.isScreen) {
@@ -104,11 +114,11 @@ class ConfigScreenComponent extends React.Component<any, any> {
 		this.setState({ selectedSectionName: section.name, screenName: screenName });
 	}
 
-	sideBar_selectionChange(event:any) {
+	sidebar_selectionChange(event: any) {
 		this.switchSection(event.section.name);
 	}
 
-	keyValueToArray(kv:any) {
+	keyValueToArray(kv: any) {
 		const output = [];
 		for (const k in kv) {
 			if (!kv.hasOwnProperty(k)) continue;
@@ -121,7 +131,7 @@ class ConfigScreenComponent extends React.Component<any, any> {
 		return output;
 	}
 
-	renderSectionDescription(section:any) {
+	renderSectionDescription(section: any) {
 		const description = Setting.sectionDescription(section.name);
 		if (!description) return null;
 
@@ -133,11 +143,12 @@ class ConfigScreenComponent extends React.Component<any, any> {
 		);
 	}
 
-	sectionToComponent(key:string, section:any, settings:any, selected:boolean) {
+	sectionToComponent(key: string, section: any, settings: any, selected: boolean) {
 		const theme = themeStyle(this.props.themeId);
 
-		const createSettingComponents = (advanced:boolean) => {
+		const createSettingComponents = (advanced: boolean) => {
 			const output = [];
+
 			for (let i = 0; i < section.metadatas.length; i++) {
 				const md = section.metadatas[i];
 				if (!!md.advanced !== advanced) continue;
@@ -150,10 +161,14 @@ class ConfigScreenComponent extends React.Component<any, any> {
 		const settingComps = createSettingComponents(false);
 		const advancedSettingComps = createSettingComponents(true);
 
-		const sectionStyle:any = {
+		const sectionWidths: Record<string, any> = {
+			plugins: '100%',
+		};
+
+		const sectionStyle: any = {
 			marginTop: 20,
 			marginBottom: 20,
-			maxWidth: 640,
+			maxWidth: sectionWidths[section.name] ? sectionWidths[section.name] : 640,
 		};
 
 		if (!selected) sectionStyle.display = 'none';
@@ -261,22 +276,69 @@ class ConfigScreenComponent extends React.Component<any, any> {
 		);
 	}
 
-	settingToComponent(key:string, value:any) {
-		const theme = themeStyle(this.props.themeId);
-
-		const output:any = null;
-
-		const rowStyle = {
-			marginBottom: theme.mainPadding,
-		};
-
-		const labelStyle = Object.assign({}, theme.textStyle, {
+	private labelStyle(themeId: number) {
+		const theme = themeStyle(themeId);
+		return Object.assign({}, theme.textStyle, {
 			display: 'block',
 			color: theme.color,
 			fontSize: theme.fontSize * 1.083333,
 			fontWeight: 500,
-			marginBottom: theme.mainPadding / 4,
+			marginBottom: theme.mainPadding / 2,
 		});
+	}
+
+	private descriptionStyle(themeId: number) {
+		const theme = themeStyle(themeId);
+		return Object.assign({}, theme.textStyle, {
+			color: theme.colorFaded,
+			fontStyle: 'italic',
+			maxWidth: '70em',
+			marginTop: 5,
+		});
+	}
+
+	private renderLabel(themeId: number, label: string) {
+		const labelStyle = this.labelStyle(themeId);
+		return (
+			<div style={labelStyle}>
+				<label>{label}</label>
+			</div>
+		);
+	}
+
+	private renderHeader(themeId: number, label: string, style: any = null) {
+		const theme = themeStyle(themeId);
+
+		const labelStyle = Object.assign({}, theme.textStyle, {
+			display: 'block',
+			color: theme.color,
+			fontSize: theme.fontSize * 1.25,
+			fontWeight: 500,
+			marginBottom: theme.mainPadding,
+			...style,
+		});
+
+		return (
+			<div style={labelStyle}>
+				<label>{label}</label>
+			</div>
+		);
+	}
+
+	private renderDescription(themeId: number, description: string) {
+		return description ? <div style={this.descriptionStyle(themeId)}>{description}</div> : null;
+	}
+
+	settingToComponent(key: string, value: any) {
+		const theme = themeStyle(this.props.themeId);
+
+		const output: any = null;
+
+		const rowStyle = {
+			marginBottom: theme.mainPadding * 1.5,
+		};
+
+		const labelStyle = this.labelStyle(this.props.themeId);
 
 		const subLabel = Object.assign({}, labelStyle, {
 			display: 'block',
@@ -297,13 +359,6 @@ class ConfigScreenComponent extends React.Component<any, any> {
 			backgroundColor: theme.backgroundColor,
 		};
 
-		const descriptionStyle = Object.assign({}, theme.textStyle, {
-			color: theme.colorFaded,
-			marginTop: 5,
-			fontStyle: 'italic',
-			maxWidth: '70em',
-		});
-
 		const textInputBaseStyle = Object.assign({}, controlStyle, {
 			fontFamily: theme.fontFamily,
 			border: '1px solid',
@@ -317,19 +372,44 @@ class ConfigScreenComponent extends React.Component<any, any> {
 			paddingBottom: 4,
 		});
 
-		const updateSettingValue = (key:string, value:any) => {
-			// console.info(key + ' = ' + value);
-			return shared.updateSettingValue(this, key, value);
-		};
+		const updateSettingValue = (key: string, value: any) => {
+			const md = Setting.settingMetadata(key);
+			if (md.needRestart) {
+				this.setState({ needRestart: true });
+			}
+			shared.updateSettingValue(this, key, value);
 
-		// Component key needs to be key+value otherwise it doesn't update when the settings change.
+			if (md.autoSave) {
+				shared.scheduleSaveSettings(this);
+			}
+		};
 
 		const md = Setting.settingMetadata(key);
 
 		const descriptionText = Setting.keyDescription(key, 'desktop');
-		const descriptionComp = descriptionText ? <div style={descriptionStyle}>{descriptionText}</div> : null;
+		const descriptionComp = this.renderDescription(this.props.themeId, descriptionText);
 
-		if (md.isEnum) {
+		if (settingKeyToControl[key]) {
+			const SettingComponent = settingKeyToControl[key];
+			const label = md.label ? this.renderLabel(this.props.themeId, md.label()) : null;
+			return (
+				<div key={key} style={rowStyle}>
+					{label}
+					{this.renderDescription(this.props.themeId, md.description ? md.description() : null)}
+					<SettingComponent
+						metadata={md}
+						value={value}
+						themeId={this.props.themeId}
+						onChange={(event: any) => {
+							updateSettingValue(key, event.value);
+						}}
+						renderLabel={this.renderLabel}
+						renderDescription={this.renderDescription}
+						renderHeader={this.renderHeader}
+					/>
+				</div>
+			);
+		} else if (md.isEnum) {
 			const items = [];
 			const settingOptions = md.options();
 			const array = this.keyValueToArray(settingOptions);
@@ -359,7 +439,7 @@ class ConfigScreenComponent extends React.Component<any, any> {
 					<select
 						value={value}
 						style={selectStyle}
-						onChange={(event:any) => {
+						onChange={(event: any) => {
 							updateSettingValue(key, event.target.value);
 						}}
 					>
@@ -379,7 +459,7 @@ class ConfigScreenComponent extends React.Component<any, any> {
 			// There's probably a better way to do this but can't figure it out.
 
 			return (
-				<div key={key + value.toString()} style={rowStyle}>
+				<div key={key + (`${value}`).toString()} style={rowStyle}>
 					<div style={{ ...controlStyle, backgroundColor: 'transparent', display: 'flex', alignItems: 'center' }}>
 						<input
 							id={`setting_checkbox_${key}`}
@@ -404,7 +484,7 @@ class ConfigScreenComponent extends React.Component<any, any> {
 				</div>
 			);
 		} else if (md.type === Setting.TYPE_STRING) {
-			const inputStyle:any = Object.assign({}, textInputBaseStyle, {
+			const inputStyle: any = Object.assign({}, textInputBaseStyle, {
 				width: '50%',
 				minWidth: '20em',
 			});
@@ -413,13 +493,13 @@ class ConfigScreenComponent extends React.Component<any, any> {
 			if (md.subType === 'file_path_and_args') {
 				inputStyle.marginBottom = subLabel.marginBottom;
 
-				const splitCmd = (cmdString:string) => {
+				const splitCmd = (cmdString: string) => {
 					const path = pathUtils.extractExecutablePath(cmdString);
 					const args = cmdString.substr(path.length + 1);
 					return [pathUtils.unquotePath(path), args];
 				};
 
-				const joinCmd = (cmdArray:string[]) => {
+				const joinCmd = (cmdArray: string[]) => {
 					if (!cmdArray[0] && !cmdArray[1]) return '';
 					let cmdString = pathUtils.quotePath(cmdArray[0]);
 					if (!cmdString) cmdString = '""';
@@ -427,13 +507,13 @@ class ConfigScreenComponent extends React.Component<any, any> {
 					return cmdString;
 				};
 
-				const onPathChange = (event:any) => {
+				const onPathChange = (event: any) => {
 					const cmd = splitCmd(this.state.settings[key]);
 					cmd[0] = event.target.value;
 					updateSettingValue(key, joinCmd(cmd));
 				};
 
-				const onArgsChange = (event:any) => {
+				const onArgsChange = (event: any) => {
 					const cmd = splitCmd(this.state.settings[key]);
 					cmd[1] = event.target.value;
 					updateSettingValue(key, joinCmd(cmd));
@@ -457,15 +537,16 @@ class ConfigScreenComponent extends React.Component<any, any> {
 						<div style={{ display: 'flex' }}>
 							<div style={{ flex: 1 }}>
 								<div style={{ ...rowStyle, marginBottom: 5 }}>
-									<div style={subLabel}>Path:</div>
+									<div style={subLabel}>{_('Path:')}</div>
 									<div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', marginBottom: inputStyle.marginBottom }}>
 										<input
 											type={inputType}
 											style={Object.assign({}, inputStyle, { marginBottom: 0, marginRight: 5 })}
-											onChange={(event:any) => {
+											onChange={(event: any) => {
 												onPathChange(event);
 											}}
 											value={cmd[0]}
+											spellCheck={false}
 										/>
 										<Button
 											level={ButtonLevel.Secondary}
@@ -475,16 +556,17 @@ class ConfigScreenComponent extends React.Component<any, any> {
 									</div>
 								</div>
 								<div style={{ ...rowStyle, marginBottom: 5 }}>
-									<div style={subLabel}>Arguments:</div>
+									<div style={subLabel}>{_('Arguments:')}</div>
 									<input
 										type={inputType}
 										style={inputStyle}
-										onChange={(event:any) => {
+										onChange={(event: any) => {
 											onArgsChange(event);
 										}}
 										value={cmd[1]}
+										spellCheck={false}
 									/>
-									<div style={{ width: inputStyle.width }}>
+									<div style={{ width: inputStyle.width, minWidth: inputStyle.minWidth }}>
 										{descriptionComp}
 									</div>
 								</div>
@@ -495,7 +577,7 @@ class ConfigScreenComponent extends React.Component<any, any> {
 					</div>
 				);
 			} else {
-				const onTextChange = (event:any) => {
+				const onTextChange = (event: any) => {
 					updateSettingValue(key, event.target.value);
 				};
 
@@ -508,25 +590,26 @@ class ConfigScreenComponent extends React.Component<any, any> {
 							type={inputType}
 							style={inputStyle}
 							value={this.state.settings[key]}
-							onChange={(event:any) => {
+							onChange={(event: any) => {
 								onTextChange(event);
 							}}
+							spellCheck={false}
 						/>
-						<div style={{ width: inputStyle.width }}>
+						<div style={{ width: inputStyle.width, minWidth: inputStyle.minWidth }}>
 							{descriptionComp}
 						</div>
 					</div>
 				);
 			}
 		} else if (md.type === Setting.TYPE_INT) {
-			const onNumChange = (event:any) => {
+			const onNumChange = (event: any) => {
 				updateSettingValue(key, event.target.value);
 			};
 
 			const label = [md.label()];
 			if (md.unitLabel) label.push(`(${md.unitLabel()})`);
 
-			const inputStyle:any = Object.assign({}, textInputBaseStyle);
+			const inputStyle: any = Object.assign({}, textInputBaseStyle);
 
 			return (
 				<div key={key} style={rowStyle}>
@@ -537,12 +620,13 @@ class ConfigScreenComponent extends React.Component<any, any> {
 						type="number"
 						style={inputStyle}
 						value={this.state.settings[key]}
-						onChange={(event:any) => {
+						onChange={(event: any) => {
 							onNumChange(event);
 						}}
 						min={md.minimum}
 						max={md.maximum}
 						step={md.step}
+						spellCheck={false}
 					/>
 					{descriptionComp}
 				</div>
@@ -564,12 +648,33 @@ class ConfigScreenComponent extends React.Component<any, any> {
 		return output;
 	}
 
-	onApplyClick() {
-		shared.saveSettings(this);
+	private restartMessage() {
+		return _('The application must be restarted for these changes to take effect.');
 	}
 
-	onSaveClick() {
+	private async restartApp() {
+		await Setting.saveAll();
+		bridge().restart();
+	}
+
+	private async checkNeedRestart() {
+		if (this.state.needRestart) {
+			const doItNow = await bridge().showConfirmMessageBox(this.restartMessage(), {
+				buttons: [_('Do it now'), _('Later')],
+			});
+
+			if (doItNow) await this.restartApp();
+		}
+	}
+
+	async onApplyClick() {
 		shared.saveSettings(this);
+		await this.checkNeedRestart();
+	}
+
+	async onSaveClick() {
+		shared.saveSettings(this);
+		await this.checkNeedRestart();
 		this.props.dispatch({ type: 'NAV_BACK' });
 	}
 
@@ -617,15 +722,23 @@ class ConfigScreenComponent extends React.Component<any, any> {
 
 		const sections = shared.settingsSections({ device: 'desktop', settings });
 
+		const needRestartComp: any = this.state.needRestart ? (
+			<div style={{ ...theme.textStyle, padding: 10, paddingLeft: 24, backgroundColor: theme.warningBackgroundColor, color: theme.color }}>
+				{this.restartMessage()}
+				<a style={{ ...theme.urlStyle, marginLeft: 10 }} href="#" onClick={() => { void this.restartApp(); }}>{_('Restart now')}</a>
+			</div>
+		) : null;
+
 		return (
 			<div style={{ display: 'flex', flexDirection: 'row' }}>
-				<SideBar
+				<Sidebar
 					selection={this.state.selectedSectionName}
-					onSelectionChange={this.sideBar_selectionChange}
+					onSelectionChange={this.sidebar_selectionChange}
 					sections={sections}
 				/>
 				<div style={style}>
 					{screenComp}
+					{needRestartComp}
 					<div style={containerStyle}>{settingComps}</div>
 					<ButtonBar
 						hasChanges={hasChanges}
@@ -640,7 +753,7 @@ class ConfigScreenComponent extends React.Component<any, any> {
 	}
 }
 
-const mapStateToProps = (state:any) => {
+const mapStateToProps = (state: any) => {
 	return {
 		themeId: state.settings.theme,
 		settings: state.settings,

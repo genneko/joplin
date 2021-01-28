@@ -1,7 +1,7 @@
 {
     "name": "@joplin/fork-htmlparser2",
     "description": "Fast & forgiving HTML/XML/RSS parser",
-    "version": "4.1.8",
+    "version": "4.1.21",
     "author": "Felix Boehm <me@feedic.com>",
     "publishConfig": {
         "access": "public"
@@ -52,7 +52,7 @@
         "coveralls": "^3.0.1",
         "eslint": "^6.0.0",
         "eslint-config-prettier": "^6.0.0",
-        "jest": "^24.8.0",
+        "jest": "^26.6.3",
         "prettier": "^1.18.2",
         "ts-jest": "^24.0.2",
         "typescript": "^3.5.3"
@@ -64,5 +64,6 @@
     "license": "MIT",
     "prettier": {
         "tabWidth": 4
-    }
+    },
+    "gitHead": "80c0089d2c52aff608b2bea74389de5a7f12f2e2"
 }

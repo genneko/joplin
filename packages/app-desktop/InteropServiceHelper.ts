@@ -4,29 +4,32 @@ import shim from '@joplin/lib/shim';
 import { ExportOptions, FileSystemItem, Module } from '@joplin/lib/services/interop/types';
 
 import { _ } from '@joplin/lib/locale';
+import { PluginStates } from '@joplin/lib/services/plugins/reducer';
 const bridge = require('electron').remote.require('./bridge').default;
-const Setting = require('@joplin/lib/models/Setting').default;
-const Note = require('@joplin/lib/models/Note.js');
+import Setting from '@joplin/lib/models/Setting';
+import Note from '@joplin/lib/models/Note';
 const { friendlySafeFilename } = require('@joplin/lib/path-utils');
-const time = require('@joplin/lib/time').default;
+import time from '@joplin/lib/time';
 const md5 = require('md5');
 const url = require('url');
 
 interface ExportNoteOptions {
-	customCss?: string,
-	sourceNoteIds?: string[],
-	sourceFolderIds?: string[],
-	printBackground?: boolean,
-	pageSize?: string,
-	landscape?: boolean,
+	customCss?: string;
+	sourceNoteIds?: string[];
+	sourceFolderIds?: string[];
+	printBackground?: boolean;
+	pageSize?: string;
+	landscape?: boolean;
+	includeConflicts?: boolean;
+	plugins?: PluginStates;
 }
 
 export default class InteropServiceHelper {
 
-	private static async exportNoteToHtmlFile(noteId:string, exportOptions:ExportNoteOptions) {
+	private static async exportNoteToHtmlFile(noteId: string, exportOptions: ExportNoteOptions) {
 		const tempFile = `${Setting.value('tempDir')}/${md5(Date.now() + Math.random())}.html`;
 
-		const fullExportOptions:ExportOptions = Object.assign({}, {
+		const fullExportOptions: ExportOptions = Object.assign({}, {
 			path: tempFile,
 			format: 'html',
 			target: FileSystemItem.File,
@@ -41,9 +44,9 @@ export default class InteropServiceHelper {
 		return tempFile;
 	}
 
-	private static async exportNoteTo_(target:string, noteId:string, options:ExportNoteOptions = {}) {
-		let win:any = null;
-		let htmlFile:string = null;
+	private static async exportNoteTo_(target: string, noteId: string, options: ExportNoteOptions = {}) {
+		let win: any = null;
+		let htmlFile: string = null;
 
 		const cleanup = () => {
 			if (win) win.destroy();
@@ -53,6 +56,7 @@ export default class InteropServiceHelper {
 		try {
 			const exportOptions = {
 				customCss: options.customCss ? options.customCss : '',
+				plugins: options.plugins,
 			};
 
 			htmlFile = await this.exportNoteToHtmlFile(noteId, exportOptions);
@@ -87,7 +91,7 @@ export default class InteropServiceHelper {
 							// Maybe can be fixed by doing everything from main process?
 							// i.e. creating a function `print()` that takes the `htmlFile` variable as input.
 
-							win.webContents.print(options, (success:boolean, reason:string) => {
+							win.webContents.print(options, (success: boolean, reason: string) => {
 								// TODO: This is correct but broken in Electron 4. Need to upgrade to 5+
 								// It calls the callback right away with "false" even if the document hasn't be print yet.
 
@@ -112,15 +116,15 @@ export default class InteropServiceHelper {
 		}
 	}
 
-	public static async exportNoteToPdf(noteId:string, options:ExportNoteOptions = {}) {
+	public static async exportNoteToPdf(noteId: string, options: ExportNoteOptions = {}) {
 		return this.exportNoteTo_('pdf', noteId, options);
 	}
 
-	public static async printNote(noteId:string, options:ExportNoteOptions = {}) {
+	public static async printNote(noteId: string, options: ExportNoteOptions = {}) {
 		return this.exportNoteTo_('printer', noteId, options);
 	}
 
-	public static async defaultFilename(noteId:string, fileExtension:string) {
+	public static async defaultFilename(noteId: string, fileExtension: string) {
 		// Default filename is just the date
 		const date = time.formatMsToLocal(new Date().getTime(), time.dateFormat());
 		let filename = friendlySafeFilename(`${date}`, 100);
@@ -134,7 +138,7 @@ export default class InteropServiceHelper {
 		return `${filename}.${fileExtension}`;
 	}
 
-	public static async export(_dispatch:Function, module:Module, options:ExportNoteOptions = null) {
+	public static async export(_dispatch: Function, module: Module, options: ExportNoteOptions = null) {
 		if (!options) options = {};
 
 		let path = null;
@@ -155,13 +159,15 @@ export default class InteropServiceHelper {
 
 		if (Array.isArray(path)) path = path[0];
 
-		CommandService.instance().execute('showModalMessage', _('Exporting to "%s" as "%s" format. Please wait...', path, module.format));
+		void CommandService.instance().execute('showModalMessage', _('Exporting to "%s" as "%s" format. Please wait...', path, module.format));
 
-		const exportOptions:ExportOptions = {};
+		const exportOptions: ExportOptions = {};
 		exportOptions.path = path;
 		exportOptions.format = module.format;
-		exportOptions.modulePath = module.path;
+		// exportOptions.modulePath = module.path;
+		if (options.plugins) exportOptions.plugins = options.plugins;
 		exportOptions.target = module.target;
+		exportOptions.includeConflicts = !!options.includeConflicts;
 		if (options.sourceFolderIds) exportOptions.sourceFolderIds = options.sourceFolderIds;
 		if (options.sourceNoteIds) exportOptions.sourceNoteIds = options.sourceNoteIds;
 
@@ -175,7 +181,7 @@ export default class InteropServiceHelper {
 			bridge().showErrorMessageBox(_('Could not export notes: %s', error.message));
 		}
 
-		CommandService.instance().execute('hideModalMessage');
+		void CommandService.instance().execute('hideModalMessage');
 	}
 
 }

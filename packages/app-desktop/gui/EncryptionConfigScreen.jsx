@@ -1,12 +1,12 @@
 const React = require('react');
 const { connect } = require('react-redux');
 const Setting = require('@joplin/lib/models/Setting').default;
-const EncryptionService = require('@joplin/lib/services/EncryptionService');
+const EncryptionService = require('@joplin/lib/services/EncryptionService').default;
 const { themeStyle } = require('@joplin/lib/theme');
 const { _ } = require('@joplin/lib/locale');
 const time = require('@joplin/lib/time').default;
 const shim = require('@joplin/lib/shim').default;
-const dialogs = require('./dialogs');
+const dialogs = require('./dialogs').default;
 const shared = require('@joplin/lib/components/shared/encryption-config-shared.js');
 const bridge = require('electron').remote.require('./bridge').default;
 

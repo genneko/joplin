@@ -1,31 +1,29 @@
 import { PluginStates } from '@joplin/lib/services/plugins/reducer';
-import contentScriptsToRendererRules from '@joplin/lib/services/plugins/utils/contentScriptsToRendererRules';
 import { useCallback, useMemo } from 'react';
 import { ResourceInfos } from './types';
 import markupLanguageUtils from '@joplin/lib/markupLanguageUtils';
 import Setting from '@joplin/lib/models/Setting';
 
 const { themeStyle } = require('@joplin/lib/theme');
-const Note = require('@joplin/lib/models/Note');
+import Note from '@joplin/lib/models/Note';
 
 interface HookDependencies {
-	themeId: number,
-	customCss: string,
-	plugins: PluginStates,
+	themeId: number;
+	customCss: string;
+	plugins: PluginStates;
 }
 
 interface MarkupToHtmlOptions {
-	replaceResourceInternalToExternalLinks?: boolean,
-	resourceInfos?: ResourceInfos,
+	replaceResourceInternalToExternalLinks?: boolean;
+	resourceInfos?: ResourceInfos;
 }
 
-export default function useMarkupToHtml(deps:HookDependencies) {
+export default function useMarkupToHtml(deps: HookDependencies) {
 	const { themeId, customCss, plugins } = deps;
 
 	const markupToHtml = useMemo(() => {
-		return markupLanguageUtils.newMarkupToHtml({
+		return markupLanguageUtils.newMarkupToHtml(deps.plugins, {
 			resourceBaseUrl: `file://${Setting.value('resourceDir')}/`,
-			extraRendererRules: contentScriptsToRendererRules(plugins),
 		});
 	}, [plugins]);
 

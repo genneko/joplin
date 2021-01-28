@@ -6,15 +6,11 @@ const { dirname } = require('@joplin/lib/path-utils');
 const { DatabaseDriverNode } = require('@joplin/lib/database-driver-node.js');
 const { JoplinDatabase } = require('@joplin/lib/joplin-database.js');
 const BaseModel = require('@joplin/lib/BaseModel').default;
-const Folder = require('@joplin/lib/models/Folder.js');
-const Note = require('@joplin/lib/models/Note.js');
+const Folder = require('@joplin/lib/models/Folder').default;
+const Note = require('@joplin/lib/models/Note').default;
 const Setting = require('@joplin/lib/models/Setting').default;
 const { sprintf } = require('sprintf-js');
 const exec = require('child_process').exec;
-
-process.on('unhandledRejection', (reason, p) => {
-	console.error('Unhandled promise rejection', p, 'reason:', reason);
-});
 
 const baseDir = `${dirname(__dirname)}/tests/cli-integration`;
 const joplinAppPath = `${__dirname}/main.js`;

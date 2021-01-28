@@ -1,24 +1,38 @@
+import PostMessageService, { MessageResponse, ResponderComponentType } from '@joplin/lib/services/PostMessageService';
 import * as React from 'react';
 const { connect } = require('react-redux');
 const { reg } = require('@joplin/lib/registry.js');
 
 interface Props {
-	onDomReady: Function,
-	onIpcMessage: Function,
-	viewerStyle: any,
+	onDomReady: Function;
+	onIpcMessage: Function;
+	viewerStyle: any;
 }
 
 class NoteTextViewerComponent extends React.Component<Props, any> {
 
-	private initialized_:boolean = false;
-	private domReady_:boolean = false;
-	private webviewRef_:any;
-	private webviewListeners_:any = null;
+	private initialized_: boolean = false;
+	private domReady_: boolean = false;
+	private webviewRef_: any;
+	private webviewListeners_: any = null;
 
-	constructor(props:any) {
+	constructor(props: any) {
 		super(props);
 
 		this.webviewRef_ = React.createRef();
+
+		PostMessageService.instance().registerResponder(ResponderComponentType.NoteTextViewer, '', (message: MessageResponse) => {
+			if (!this.webviewRef_?.current?.contentWindow) {
+				reg.logger().warn('Cannot respond to message because target is gone', message);
+				return;
+			}
+
+			this.webviewRef_.current.contentWindow.postMessage({
+				target: 'webview',
+				name: 'postMessageService.response',
+				data: message,
+			}, '*');
+		});
 
 		this.webview_domReady = this.webview_domReady.bind(this);
 		this.webview_ipcMessage = this.webview_ipcMessage.bind(this);
@@ -26,12 +40,12 @@ class NoteTextViewerComponent extends React.Component<Props, any> {
 		this.webview_message = this.webview_message.bind(this);
 	}
 
-	webview_domReady(event:any) {
+	webview_domReady(event: any) {
 		this.domReady_ = true;
 		if (this.props.onDomReady) this.props.onDomReady(event);
 	}
 
-	webview_ipcMessage(event:any) {
+	webview_ipcMessage(event: any) {
 		if (this.props.onIpcMessage) this.props.onIpcMessage(event);
 	}
 
@@ -39,7 +53,7 @@ class NoteTextViewerComponent extends React.Component<Props, any> {
 		this.webview_domReady({});
 	}
 
-	webview_message(event:any) {
+	webview_message(event: any) {
 		if (!event.data || event.data.target !== 'main') return;
 
 		const callName = event.data.name;
@@ -123,7 +137,7 @@ class NoteTextViewerComponent extends React.Component<Props, any> {
 	// Wrap WebView functions
 	// ----------------------------------------------------------------
 
-	send(channel:string, arg0:any = null, arg1:any = null) {
+	send(channel: string, arg0: any = null, arg1: any = null) {
 		const win = this.webviewRef_.current.contentWindow;
 
 		if (channel === 'setHtml') {
@@ -153,7 +167,7 @@ class NoteTextViewerComponent extends React.Component<Props, any> {
 	}
 }
 
-const mapStateToProps = (state:any) => {
+const mapStateToProps = (state: any) => {
 	return {
 		themeId: state.settings.theme,
 	};

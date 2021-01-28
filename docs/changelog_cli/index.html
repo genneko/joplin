@@ -81,7 +81,7 @@ https://github.com/laurent22/joplin/blob/dev/readme/changelog_cli.md
 		background-color: #eee;
 		border: 1px solid #ccc;
 		font-size: .85em;
-		word-break: break-all;
+	/*	word-break: break-all; */
 	}
 	pre code {
 		border: none;
@@ -347,17 +347,25 @@ https://github.com/laurent22/joplin/blob/dev/readme/changelog_cli.md
 <li><a href="https://joplinapp.org/e2ee/">How to enable end-to-end encryption</a></li>
 <li><a href="https://joplinapp.org/conflict/">What is a conflict?</a></li>
 <li><a href="https://joplinapp.org/debugging/">How to enable debug mode</a></li>
+<li><a href="https://joplinapp.org/rich_text_editor/">About the Rich Text editor limitations</a></li>
 <li><a href="https://joplinapp.org/faq/">FAQ</a></li>
 </ul>
 </li>
 <li>
-<p>Joplin API</p>
+<p>Joplin API - Get Started</p>
 <ul>
 <li><a href="https://joplinapp.org/api/overview/">Joplin API Overview</a></li>
 <li><a href="https://joplinapp.org/api/get_started/plugins/">Plugin development</a></li>
 <li><a href="https://joplinapp.org/api/tutorials/toc_plugin/">Plugin tutorial</a></li>
+</ul>
+</li>
+<li>
+<p>Joplin API - References</p>
+<ul>
 <li><a href="https://joplinapp.org/api/references/plugin_api/classes/joplin.html">Plugin API</a></li>
-<li><a href="https://joplinapp.org/api/references/rest_api/">Data API documentation</a></li>
+<li><a href="https://joplinapp.org/api/references/rest_api/">Data API</a></li>
+<li><a href="https://joplinapp.org/api/references/plugin_manifest/">Plugin manifest</a></li>
+<li><a href="https://joplinapp.org/api/references/plugin_loading_rules/">Plugin loading rules</a></li>
 </ul>
 </li>
 <li>
@@ -369,6 +377,8 @@ https://github.com/laurent22/joplin/blob/dev/readme/changelog_cli.md
 <li><a href="https://joplinapp.org/spec/sync_lock/">Sync Lock spec</a></li>
 <li><a href="https://joplinapp.org/spec/plugins/">Plugin Architecture spec</a></li>
 <li><a href="https://joplinapp.org/spec/search_sorting/">Search Sorting spec</a></li>
+<li><a href="https://joplinapp.org/spec/server_file_url_format/">Server: File URL Format</a></li>
+<li><a href="https://joplinapp.org/spec/server_delta_sync/">Server: Delta Sync</a></li>
 </ul>
 </li>
 <li>
@@ -392,6 +402,56 @@ https://github.com/laurent22/joplin/blob/dev/readme/changelog_cli.md
 
 	<div class="main">
 <h1>Joplin terminal app changelog<a name="joplin-terminal-app-changelog" href="#joplin-terminal-app-changelog" class="heading-anchor">🔗</a></h1>
+<h2><a href="https://github.com/laurent22/joplin/releases/tag/cli-v1.6.4">cli-v1.6.4</a> - 2021-01-21T10:01:15Z<a name="cli-v1-6-4-https-github-com-laurent22-joplin-releases-tag-cli-v1-6-4-2021-01-21t10-01-15z" href="#cli-v1-6-4-https-github-com-laurent22-joplin-releases-tag-cli-v1-6-4-2021-01-21t10-01-15z" class="heading-anchor">🔗</a></h2>
+<ul>
+<li>Fixed: Fixed infinite sync issue with OneDrive (#4305)</li>
+</ul>
+<h2><a href="https://github.com/laurent22/joplin/releases/tag/cli-v1.6.3">cli-v1.6.3</a> - 2021-01-11T11:52:11Z<a name="cli-v1-6-3-https-github-com-laurent22-joplin-releases-tag-cli-v1-6-3-2021-01-11t11-52-11z" href="#cli-v1-6-3-https-github-com-laurent22-joplin-releases-tag-cli-v1-6-3-2021-01-11t11-52-11z" class="heading-anchor">🔗</a></h2>
+<ul>
+<li>New: Add more log info when a revision cannot be deleted due to still-encrypted itel</li>
+<li>Improved: Do not display error message when fixing ENEX resource mime type (#4310)</li>
+<li>Improved: Improve support for SVG images when importing ENEX files</li>
+<li>Improved: Improved support for bold and italic format when importing ENEX file (#4316)</li>
+<li>Improved: Support natural sorting by title (#4272 by <a href="https://github.com/volatilevar">@volatilevar</a>)</li>
+<li>Improved: Upload Big Notes to Onedrive (#4120) (#3528 by Jonathan Heard)</li>
+<li>Fixed: Fixed OneDrive issue that would require a full resync every time (#4324) (#4313 by Jonathan Heard)</li>
+<li>Fixed: Fixed importing ENEX files that contain hidden sections</li>
+</ul>
+<h2><a href="https://github.com/laurent22/joplin/releases/tag/cli-v1.6.2">cli-v1.6.2</a> - 2021-01-11T11:41:56Z<a name="cli-v1-6-2-https-github-com-laurent22-joplin-releases-tag-cli-v1-6-2-2021-01-11t11-41-56z" href="#cli-v1-6-2-https-github-com-laurent22-joplin-releases-tag-cli-v1-6-2-2021-01-11t11-41-56z" class="heading-anchor">🔗</a></h2>
+<ul>
+<li>New: Add more log info when a revision cannot be deleted due to still-encrypted item</li>
+<li>Improved: Do not display error message when fixing ENEX resource mime type (#4310)</li>
+<li>Improved: Improve support for SVG images when importing ENEX files</li>
+<li>Improved: Improved support for bold and italic format when importing ENEX file (#4316)</li>
+<li>Improved: Support natural sorting by title (#4272 by <a href="https://github.com/volatilevar">@volatilevar</a>)</li>
+<li>Improved: Upload Big Notes to Onedrive (#4120) (#3528 by Jonathan Heard)</li>
+<li>Fixed: Fixed OneDrive issue that would require a full resync every time (#4324) (#4313 by Jonathan Heard)</li>
+<li>Fixed: Fixed importing ENEX files that contain hidden sections</li>
+</ul>
+<h2><a href="https://github.com/laurent22/joplin/releases/tag/cli-v1.5.1">cli-v1.5.1</a> - 2020-12-26T00:46:31Z<a name="cli-v1-5-1-https-github-com-laurent22-joplin-releases-tag-cli-v1-5-1-2020-12-26t00-46-31z" href="#cli-v1-5-1-https-github-com-laurent22-joplin-releases-tag-cli-v1-5-1-2020-12-26t00-46-31z" class="heading-anchor">🔗</a></h2>
+<ul>
+<li>New: Add table captions when importing ENEX files</li>
+<li>Improved: Allow exporting conflict notes (#4095)</li>
+<li>Improved: Allow lowercase filters when doing search</li>
+<li>Improved: Improved error handling when importing ENEX files</li>
+<li>Improved: Partially reverts #3975 (link rendering)</li>
+<li>Fixed: Fix sorting by title in a case insensitive way</li>
+<li>Fixed: Fixed basic search when executing a query in Chinese (#4034 by Naveen M V)</li>
+<li>Fixed: Fixed importing ENEX files that contain empty resources</li>
+<li>Fixed: Fixed importing ENEX files that contain resources with invalid mime type</li>
+<li>Fixed: Fixed importing certain ENEX files that contain invalid dates</li>
+<li>Fixed: Fixed importing certain code blocks from ENEX</li>
+<li>Fixed: Fixed issue when searching for text that contains diacritic (#4152) (#4025 by Roman Musin)</li>
+<li>Fixed: Fixed issues when importing hidden tables within hidden sections in Enex files</li>
+</ul>
+<h2><a href="https://github.com/laurent22/joplin/releases/tag/cli-v1.4.9">cli-v1.4.9</a> - 2020-11-26T15:00:37Z<a name="cli-v1-4-9-https-github-com-laurent22-joplin-releases-tag-cli-v1-4-9-2020-11-26t15-00-37z" href="#cli-v1-4-9-https-github-com-laurent22-joplin-releases-tag-cli-v1-4-9-2020-11-26t15-00-37z" class="heading-anchor">🔗</a></h2>
+<ul>
+<li>Improved: Allow exporting conflict notes (#4095)</li>
+<li>Improved: Allow lowercase filters when doing search</li>
+<li>Improved: Refresh sidebar and notes when moving note outside of conflict folder</li>
+<li>Fixed: Fix handling of new line escaping when using external edit</li>
+<li>Fixed: Fixed importing certain ENEX files that contain invalid dates</li>
+</ul>
 <h2><a href="https://github.com/laurent22/joplin/releases/tag/cli-v1.4.3">cli-v1.4.3</a> - 2020-11-06T21:19:29Z<a name="cli-v1-4-3-https-github-com-laurent22-joplin-releases-tag-cli-v1-4-3-2020-11-06t21-19-29z" href="#cli-v1-4-3-https-github-com-laurent22-joplin-releases-tag-cli-v1-4-3-2020-11-06t21-19-29z" class="heading-anchor">🔗</a></h2>
 <p>IMPORTANT: If you use the web API, please note that there are a few breaking changes in this release. See here for more information: <a href="https://github.com/laurent22/joplin/pull/3983#issue-509624899">https://github.com/laurent22/joplin/pull/3983#issue-509624899</a></p>
 <ul>
@@ -655,7 +715,7 @@ https://github.com/laurent22/joplin/blob/dev/readme/changelog_cli.md
 </div></div>
 
 <div class="footer">
-Copyright (C) 2016-2020 Laurent Cozic
+Copyright (C) 2016-2021 Laurent Cozic
 </div>
 </body>
 </html>

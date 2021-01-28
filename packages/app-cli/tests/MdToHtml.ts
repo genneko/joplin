@@ -1,11 +1,11 @@
 import MdToHtml from '@joplin/renderer/MdToHtml';
 const os = require('os');
 const { filename } = require('@joplin/lib/path-utils');
-const { asyncTest, setupDatabaseAndSynchronizer, switchClient } = require('./test-utils.js');
-const shim = require('@joplin/lib/shim').default;
+const { setupDatabaseAndSynchronizer, switchClient } = require('./test-utils.js');
+import shim from '@joplin/lib/shim';
 const { themeStyle } = require('@joplin/lib/theme');
 
-function newTestMdToHtml(options:any = null) {
+function newTestMdToHtml(options: any = null) {
 	options = {
 		ResourceModel: {
 			isResourceUrl: () => false,
@@ -14,18 +14,18 @@ function newTestMdToHtml(options:any = null) {
 		...options,
 	};
 
-	return  new MdToHtml(options);
+	return new MdToHtml(options);
 }
 
 describe('MdToHtml', function() {
 
-	beforeEach(async (done:Function) => {
+	beforeEach(async (done: Function) => {
 		await setupDatabaseAndSynchronizer(1);
 		await switchClient(1);
 		done();
 	});
 
-	it('should convert from Markdown to Html', asyncTest(async () => {
+	it('should convert from Markdown to Html', (async () => {
 		const basePath = `${__dirname}/md_to_html`;
 		const files = await shim.fsDriver().readDirStats(basePath);
 		const mdToHtml = newTestMdToHtml();
@@ -39,7 +39,7 @@ describe('MdToHtml', function() {
 
 			// if (mdFilename !== 'sanitize_9.md') continue;
 
-			const mdToHtmlOptions:any = {
+			const mdToHtmlOptions: any = {
 				bodyOnly: true,
 			};
 
@@ -82,8 +82,8 @@ describe('MdToHtml', function() {
 		}
 	}));
 
-	it('should return enabled plugin assets', asyncTest(async () => {
-		const pluginOptions:any = {};
+	it('should return enabled plugin assets', (async () => {
+		const pluginOptions: any = {};
 		const pluginNames = MdToHtml.pluginNames();
 
 		for (const n of pluginNames) pluginOptions[n] = { enabled: false };
@@ -107,7 +107,7 @@ describe('MdToHtml', function() {
 		}
 	}));
 
-	it('should wrapped the rendered Markdown', asyncTest(async () => {
+	it('should wrapped the rendered Markdown', (async () => {
 		const mdToHtml = newTestMdToHtml();
 
 		// In this case, the HTML contains both the style and
@@ -117,7 +117,7 @@ describe('MdToHtml', function() {
 		expect(result.html.indexOf('rendered-md') >= 0).toBe(true);
 	}));
 
-	it('should return the rendered body only', asyncTest(async () => {
+	it('should return the rendered body only', (async () => {
 		const mdToHtml = newTestMdToHtml();
 
 		// In this case, the HTML contains only the rendered markdown, with
@@ -137,7 +137,7 @@ describe('MdToHtml', function() {
 		}
 	}));
 
-	it('should split HTML and CSS', asyncTest(async () => {
+	it('should split HTML and CSS', (async () => {
 		const mdToHtml = newTestMdToHtml();
 
 		// It is similar to the bodyOnly option, excepts that the rendered
@@ -147,26 +147,85 @@ describe('MdToHtml', function() {
 		expect(result.html.trim()).toBe('<div id="rendered-md"><p>just <strong>testing</strong></p>\n</div>');
 	}));
 
-	it('should render links correctly', asyncTest(async () => {
-		const mdToHtml = newTestMdToHtml();
-
+	it('should render links correctly', (async () => {
 		const testCases = [
-			// None of these should result in a link
-			['https://example.com', 'https://example.com'],
-			['file://C:\\AUTOEXEC.BAT', 'file://C:\\AUTOEXEC.BAT'],
-			['example.com', 'example.com'],
-			['oo.ps', 'oo.ps'],
-			['test@example.com', 'test@example.com'],
-
-			// Those should be converted to links
-			['<https://example.com>', '<a data-from-md title=\'https://example.com\' href=\'https://example.com\'>https://example.com</a>'],
-			['[ok](https://example.com)', '<a data-from-md title=\'https://example.com\' href=\'https://example.com\'>ok</a>'],
+			// 0: input
+			// 1: output with linkify = off
+			// 2: output with linkify = on
+			[
+				'https://example.com',
+				'https://example.com',
+				'<a data-from-md title=\'https://example.com\' href=\'https://example.com\'>https://example.com</a>',
+			],
+			[
+				'file://C:\\AUTOEXEC.BAT',
+				'file://C:\\AUTOEXEC.BAT',
+				'<a data-from-md title=\'file://C:%5CAUTOEXEC.BAT\' href=\'file://C:%5CAUTOEXEC.BAT\'>file://C:\\AUTOEXEC.BAT</a>',
+			],
+			[
+				'example.com',
+				'example.com',
+				'example.com',
+			],
+			[
+				'oo.ps',
+				'oo.ps',
+				'oo.ps',
+			],
+			[
+				'test@example.com',
+				'test@example.com',
+				'test@example.com',
+			],
+			[
+				'<https://example.com>',
+				'<a data-from-md title=\'https://example.com\' href=\'https://example.com\'>https://example.com</a>',
+				'<a data-from-md title=\'https://example.com\' href=\'https://example.com\'>https://example.com</a>',
+			],
+			[
+				'[ok](https://example.com)',
+				'<a data-from-md title=\'https://example.com\' href=\'https://example.com\'>ok</a>',
+				'<a data-from-md title=\'https://example.com\' href=\'https://example.com\'>ok</a>',
+			],
+			[
+				'[bla.pdf](file:///Users/tessus/Downloads/bla.pdf)',
+				'<a data-from-md title=\'file:///Users/tessus/Downloads/bla.pdf\' href=\'file:///Users/tessus/Downloads/bla.pdf\'>bla.pdf</a>',
+				'<a data-from-md title=\'file:///Users/tessus/Downloads/bla.pdf\' href=\'file:///Users/tessus/Downloads/bla.pdf\'>bla.pdf</a>',
+			],
 		];
 
+		const mdToHtmlLinkifyOn = newTestMdToHtml({
+			pluginOptions: {
+				linkify: { enabled: true },
+			},
+		});
+
+		const mdToHtmlLinkifyOff = newTestMdToHtml({
+			pluginOptions: {
+				linkify: { enabled: false },
+			},
+		});
+
 		for (const testCase of testCases) {
-			const [input, expected] = testCase;
-			const actual = await mdToHtml.render(input, null, { bodyOnly: true, plainResourceRendering: true });
-			expect(actual.html).toBe(expected);
+			const [input, expectedLinkifyOff, expectedLinkifyOn] = testCase;
+
+			{
+				const actual = await mdToHtmlLinkifyOn.render(input, null, {
+					bodyOnly: true,
+					plainResourceRendering: true,
+				});
+
+				expect(actual.html).toBe(expectedLinkifyOn);
+			}
+
+			{
+				const actual = await mdToHtmlLinkifyOff.render(input, null, {
+					bodyOnly: true,
+					plainResourceRendering: true,
+				});
+
+				expect(actual.html).toBe(expectedLinkifyOff);
+			}
 		}
 	}));
 

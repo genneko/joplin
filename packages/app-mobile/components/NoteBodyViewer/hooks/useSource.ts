@@ -1,29 +1,29 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import shim from '@joplin/lib/shim';
 import Setting from '@joplin/lib/models/Setting';
 const { themeStyle } = require('../../global-style.js');
-const markupLanguageUtils = require('@joplin/lib/markupLanguageUtils').default;
+import markupLanguageUtils from '@joplin/lib/markupLanguageUtils';
 const { assetsToHeaders } = require('@joplin/renderer');
 
 interface Source {
-	uri: string,
-	baseUrl: string,
+	uri: string;
+	baseUrl: string;
 }
 
 interface UseSourceResult {
-	source: Source,
-	injectedJs: string[],
+	source: Source;
+	injectedJs: string[];
 }
 
-let markupToHtml_:any = null;
-
-function markupToHtml() {
-	if (markupToHtml_) return markupToHtml_;
-	markupToHtml_ = markupLanguageUtils.newMarkupToHtml();
-	return markupToHtml_;
+function usePrevious(value: any, initialValue: any = null): any {
+	const ref = useRef(initialValue);
+	useEffect(() => {
+		ref.current = value;
+	});
+	return ref.current;
 }
 
-export default function useSource(noteBody:string, noteMarkupLanguage:number, themeId:number, highlightedKeywords:string[], noteResources:any, paddingBottom:number, noteHash:string):UseSourceResult {
+export default function useSource(noteBody: string, noteMarkupLanguage: number, themeId: number, highlightedKeywords: string[], noteResources: any, paddingBottom: number, noteHash: string): UseSourceResult {
 	const [source, setSource] = useState<Source>(undefined);
 	const [injectedJs, setInjectedJs] = useState<string[]>([]);
 	const [resourceLoadedTime, setResourceLoadedTime] = useState(0);
@@ -37,7 +37,36 @@ export default function useSource(noteBody:string, noteMarkupLanguage:number, th
 		};
 	}, [themeId, paddingBottom]);
 
+	const markupToHtml = useMemo(() => {
+		return markupLanguageUtils.newMarkupToHtml({});
+	}, [isFirstRender]);
+
+	// To address https://github.com/laurent22/joplin/issues/433
+	//
+	// If a checkbox in a note is ticked, the body changes, which normally
+	// would trigger a re-render of this component, which has the
+	// unfortunate side effect of making the view scroll back to the top.
+	// This re-rendering however is uncessary since the component is
+	// already visually updated via JS. So here, if the note has not
+	// changed, we prevent the component from updating. This fixes the
+	// above issue. A drawback of this is if the note is updated via sync,
+	// this change will not be displayed immediately.
+	//
+	// IMPORTANT: KEEP noteBody AS THE FIRST dependency in the array as the
+	// below logic rely on this.
+	const effectDependencies = [noteBody, resourceLoadedTime, noteMarkupLanguage, themeId, rendererTheme, highlightedKeywords, noteResources, noteHash, isFirstRender, markupToHtml];
+	const previousDeps = usePrevious(effectDependencies, []);
+	const changedDeps = effectDependencies.reduce((accum: any, dependency: any, index: any) => {
+		if (dependency !== previousDeps[index]) {
+			return { ...accum, [index]: true };
+		}
+		return accum;
+	}, {});
+	const onlyNoteBodyHasChanged = Object.keys(changedDeps).length === 1 && changedDeps[0];
+
 	useEffect(() => {
+		if (onlyNoteBodyHasChanged) return () => {};
+
 		let cancelled = false;
 
 		async function renderNote() {
@@ -54,7 +83,6 @@ export default function useSource(noteBody:string, noteMarkupLanguage:number, th
 				codeTheme: theme.codeThemeCss,
 				postMessageSyntax: 'window.joplinPostMessage_',
 				enableLongPress: shim.mobilePlatform() === 'android', // On iOS, there's already a built-on open/share menu
-				longPressDelay: 500, // TODO use system value
 			};
 
 			// Whenever a resource state changes, for example when it goes from "not downloaded" to "downloaded", the "noteResources"
@@ -62,9 +90,9 @@ export default function useSource(noteBody:string, noteMarkupLanguage:number, th
 			// it doesn't contain info about the resource download state. Because of that, if we were to use the markupToHtml() cache
 			// it wouldn't re-render at all. We don't need this cache in any way because this hook is only triggered when we know
 			// something has changed.
-			markupToHtml().clearCache(noteMarkupLanguage);
+			markupToHtml.clearCache(noteMarkupLanguage);
 
-			const result = await markupToHtml().render(
+			const result = await markupToHtml.render(
 				noteMarkupLanguage,
 				bodyToRender,
 				rendererTheme,
@@ -154,13 +182,13 @@ export default function useSource(noteBody:string, noteMarkupLanguage:number, th
 			setSource(undefined);
 			setInjectedJs([]);
 		} else {
-			renderNote();
+			void renderNote();
 		}
 
 		return () => {
 			cancelled = true;
 		};
-	}, [resourceLoadedTime, noteBody, noteMarkupLanguage, themeId, rendererTheme, highlightedKeywords, noteResources, noteHash, isFirstRender]);
+	}, effectDependencies);
 
 	return { source, injectedJs };
 }

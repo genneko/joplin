@@ -1,5 +1,55 @@
 # Joplin terminal app changelog
 
+## [cli-v1.6.4](https://github.com/laurent22/joplin/releases/tag/cli-v1.6.4) - 2021-01-21T10:01:15Z
+
+- Fixed: Fixed infinite sync issue with OneDrive (#4305)
+
+## [cli-v1.6.3](https://github.com/laurent22/joplin/releases/tag/cli-v1.6.3) - 2021-01-11T11:52:11Z
+
+- New: Add more log info when a revision cannot be deleted due to still-encrypted itel
+- Improved: Do not display error message when fixing ENEX resource mime type (#4310)
+- Improved: Improve support for SVG images when importing ENEX files
+- Improved: Improved support for bold and italic format when importing ENEX file (#4316)
+- Improved: Support natural sorting by title (#4272 by [@volatilevar](https://github.com/volatilevar))
+- Improved: Upload Big Notes to Onedrive (#4120) (#3528 by Jonathan Heard)
+- Fixed: Fixed OneDrive issue that would require a full resync every time (#4324) (#4313 by Jonathan Heard)
+- Fixed: Fixed importing ENEX files that contain hidden sections
+
+## [cli-v1.6.2](https://github.com/laurent22/joplin/releases/tag/cli-v1.6.2) - 2021-01-11T11:41:56Z
+
+- New: Add more log info when a revision cannot be deleted due to still-encrypted item
+- Improved: Do not display error message when fixing ENEX resource mime type (#4310)
+- Improved: Improve support for SVG images when importing ENEX files
+- Improved: Improved support for bold and italic format when importing ENEX file (#4316)
+- Improved: Support natural sorting by title (#4272 by [@volatilevar](https://github.com/volatilevar))
+- Improved: Upload Big Notes to Onedrive (#4120) (#3528 by Jonathan Heard)
+- Fixed: Fixed OneDrive issue that would require a full resync every time (#4324) (#4313 by Jonathan Heard)
+- Fixed: Fixed importing ENEX files that contain hidden sections
+
+## [cli-v1.5.1](https://github.com/laurent22/joplin/releases/tag/cli-v1.5.1) - 2020-12-26T00:46:31Z
+
+- New: Add table captions when importing ENEX files
+- Improved: Allow exporting conflict notes (#4095)
+- Improved: Allow lowercase filters when doing search
+- Improved: Improved error handling when importing ENEX files
+- Improved: Partially reverts #3975 (link rendering)
+- Fixed: Fix sorting by title in a case insensitive way
+- Fixed: Fixed basic search when executing a query in Chinese (#4034 by Naveen M V)
+- Fixed: Fixed importing ENEX files that contain empty resources
+- Fixed: Fixed importing ENEX files that contain resources with invalid mime type
+- Fixed: Fixed importing certain ENEX files that contain invalid dates
+- Fixed: Fixed importing certain code blocks from ENEX
+- Fixed: Fixed issue when searching for text that contains diacritic (#4152) (#4025 by Roman Musin)
+- Fixed: Fixed issues when importing hidden tables within hidden sections in Enex files
+
+## [cli-v1.4.9](https://github.com/laurent22/joplin/releases/tag/cli-v1.4.9) - 2020-11-26T15:00:37Z
+
+- Improved: Allow exporting conflict notes (#4095)
+- Improved: Allow lowercase filters when doing search
+- Improved: Refresh sidebar and notes when moving note outside of conflict folder
+- Fixed: Fix handling of new line escaping when using external edit
+- Fixed: Fixed importing certain ENEX files that contain invalid dates
+
 ## [cli-v1.4.3](https://github.com/laurent22/joplin/releases/tag/cli-v1.4.3) - 2020-11-06T21:19:29Z
 
 IMPORTANT: If you use the web API, please note that there are a few breaking changes in this release. See here for more information: https://github.com/laurent22/joplin/pull/3983#issue-509624899

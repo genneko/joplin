@@ -8,9 +8,9 @@
 // So we modify the code below to allow highlight() to return an object that tells how to render
 // the code.
 
-function plugin(markdownIt:any) {
+function plugin(markdownIt: any) {
 	// @ts-ignore: Keep the function signature as-is despite unusued arguments
-	markdownIt.renderer.rules.fence = function(tokens:any[], idx:number, options:any, env:any, slf:any) {
+	markdownIt.renderer.rules.fence = function(tokens: any[], idx: number, options: any, env: any, slf: any) {
 		let token = tokens[idx],
 			info = token.info ? markdownIt.utils.unescapeAll(token.info).trim() : '',
 			langName = '',
@@ -37,7 +37,7 @@ function plugin(markdownIt:any) {
 		// May be, one day we will add .clone() for token and simplify this part, but
 		// now we prefer to keep things local.
 		if (info) {
-			i        = token.attrIndex('class');
+			i = token.attrIndex('class');
 			tmpAttrs = token.attrs ? token.attrs.slice() : [];
 
 			if (i < 0) {
@@ -51,13 +51,13 @@ function plugin(markdownIt:any) {
 				attrs: tmpAttrs,
 			};
 
-			return  `<pre><code${slf.renderAttrs(tmpToken)}>${
+			return `<pre><code${slf.renderAttrs(tmpToken)}>${
 				highlighted
 			}</code></pre>\n`;
 		}
 
 
-		return  `<pre><code${slf.renderAttrs(token)}>${
+		return `<pre><code${slf.renderAttrs(token)}>${
 			highlighted
 		}</code></pre>\n`;
 	};

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-const Folder = require('@joplin/lib/models/Folder');
+import Folder from '@joplin/lib/models/Folder';
 
 interface HookDependencies {
-	folderId: string,
+	folderId: string;
 }
 
-export default function(dependencies:HookDependencies) {
+export default function(dependencies: HookDependencies) {
 	const { folderId } = dependencies;
 	const [folder, setFolder] = useState(null);
 
@@ -18,7 +18,7 @@ export default function(dependencies:HookDependencies) {
 			setFolder(f);
 		}
 
-		loadFolder();
+		void loadFolder();
 
 		return function() {
 			cancelled = true;

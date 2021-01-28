@@ -18,37 +18,44 @@ import SpellCheckerService from '@joplin/lib/services/spellChecker/SpellCheckerS
 import SpellCheckerServiceDriverNative from './services/spellChecker/SpellCheckerServiceDriverNative';
 import bridge from './services/bridge';
 import menuCommandNames from './gui/menuCommandNames';
+import { LayoutItem } from './gui/ResizableLayout/utils/types';
+import stateToWhenClauseContext from './services/commands/stateToWhenClauseContext';
+import ResourceService from '@joplin/lib/services/ResourceService';
+import ExternalEditWatcher from '@joplin/lib/services/ExternalEditWatcher';
+import produce from 'immer';
+import iterateItems from './gui/ResizableLayout/utils/iterateItems';
+import validateLayout from './gui/ResizableLayout/utils/validateLayout';
 
 const { FoldersScreenUtils } = require('@joplin/lib/folders-screen-utils.js');
-const MasterKey = require('@joplin/lib/models/MasterKey');
-const Folder = require('@joplin/lib/models/Folder');
+import MasterKey from '@joplin/lib/models/MasterKey';
+import Folder from '@joplin/lib/models/Folder';
 const fs = require('fs-extra');
-const Tag = require('@joplin/lib/models/Tag.js');
+import Tag from '@joplin/lib/models/Tag';
 const { reg } = require('@joplin/lib/registry.js');
 const packageInfo = require('./packageInfo.js');
-const DecryptionWorker = require('@joplin/lib/services/DecryptionWorker');
-const ResourceService = require('@joplin/lib/services/ResourceService').default;
+import DecryptionWorker from '@joplin/lib/services/DecryptionWorker';
 const ClipperServer = require('@joplin/lib/ClipperServer');
-const ExternalEditWatcher = require('@joplin/lib/services/ExternalEditWatcher');
 const { webFrame } = require('electron');
 const Menu = bridge().Menu;
 const PluginManager = require('@joplin/lib/services/PluginManager');
-const RevisionService = require('@joplin/lib/services/RevisionService');
-const MigrationService = require('@joplin/lib/services/MigrationService');
+import RevisionService from '@joplin/lib/services/RevisionService';
+import MigrationService from '@joplin/lib/services/MigrationService';
 const TemplateUtils = require('@joplin/lib/TemplateUtils');
 const CssUtils = require('@joplin/lib/CssUtils');
-// const populateDatabase = require('@joplin/lib/services/debug/populateDatabase').default;
+// import  populateDatabase from '@joplin/lib/services/debug/populateDatabase';
 
 const commands = [
-	require('./gui/NoteListControls/commands/focusSearch'),
 	require('./gui/MainScreen/commands/editAlarm'),
 	require('./gui/MainScreen/commands/exportPdf'),
 	require('./gui/MainScreen/commands/hideModalMessage'),
 	require('./gui/MainScreen/commands/moveToFolder'),
-	require('./gui/MainScreen/commands/newNote'),
 	require('./gui/MainScreen/commands/newFolder'),
+	require('./gui/MainScreen/commands/newNote'),
 	require('./gui/MainScreen/commands/newSubFolder'),
 	require('./gui/MainScreen/commands/newTodo'),
+	require('./gui/MainScreen/commands/openFolder'),
+	require('./gui/MainScreen/commands/openNote'),
+	require('./gui/MainScreen/commands/openTag'),
 	require('./gui/MainScreen/commands/print'),
 	require('./gui/MainScreen/commands/renameFolder'),
 	require('./gui/MainScreen/commands/renameTag'),
@@ -60,65 +67,66 @@ const commands = [
 	require('./gui/MainScreen/commands/showNoteProperties'),
 	require('./gui/MainScreen/commands/showShareNoteDialog'),
 	require('./gui/MainScreen/commands/showSpellCheckerMenu'),
+	require('./gui/MainScreen/commands/toggleEditors'),
+	require('./gui/MainScreen/commands/toggleLayoutMoveMode'),
 	require('./gui/MainScreen/commands/toggleNoteList'),
 	require('./gui/MainScreen/commands/toggleSideBar'),
 	require('./gui/MainScreen/commands/toggleVisiblePanes'),
-	require('./gui/MainScreen/commands/toggleEditors'),
-	require('./gui/MainScreen/commands/openNote'),
-	require('./gui/MainScreen/commands/openFolder'),
-	require('./gui/MainScreen/commands/openTag'),
 	require('./gui/NoteEditor/commands/focusElementNoteBody'),
 	require('./gui/NoteEditor/commands/focusElementNoteTitle'),
 	require('./gui/NoteEditor/commands/showLocalSearch'),
 	require('./gui/NoteEditor/commands/showRevisions'),
 	require('./gui/NoteList/commands/focusElementNoteList'),
-	require('./gui/SideBar/commands/focusElementSideBar'),
+	require('./gui/NoteListControls/commands/focusSearch'),
+	require('./gui/Sidebar/commands/focusElementSideBar'),
 ];
 
 // Commands that are not tied to any particular component.
 // The runtime for these commands can be loaded when the app starts.
 const globalCommands = [
+	require('./commands/copyDevCommand'),
+	require('./commands/exportFolders'),
+	require('./commands/exportNotes'),
 	require('./commands/focusElement'),
+	require('./commands/openProfileDirectory'),
 	require('./commands/startExternalEditing'),
 	require('./commands/stopExternalEditing'),
 	require('./commands/toggleExternalEditing'),
-	require('./commands/copyDevCommand'),
-	require('./commands/openProfileDirectory'),
-	require('@joplin/lib/commands/synchronize'),
 	require('@joplin/lib/commands/historyBackward'),
 	require('@joplin/lib/commands/historyForward'),
+	require('@joplin/lib/commands/synchronize'),
 ];
 
-const editorCommandDeclarations = require('./gui/NoteEditor/commands/editorCommandDeclarations').default;
+import editorCommandDeclarations from './gui/NoteEditor/commands/editorCommandDeclarations';
 
 const pluginClasses = [
 	require('./plugins/GotoAnything').default,
 ];
 
 interface AppStateRoute {
-	type: string,
-	routeName: string,
-	props: any,
+	type: string;
+	routeName: string;
+	props: any;
 }
 
 export interface AppState extends State {
-	route: AppStateRoute,
-	navHistory: any[],
-	noteVisiblePanes: string[],
-	sidebarVisibility: boolean,
-	noteListVisibility: boolean,
-	windowContentSize: any,
-	watchedNoteFiles: string[],
-	lastEditorScrollPercents: any,
-	devToolsVisible: boolean,
-	visibleDialogs: any, // empty object if no dialog is visible. Otherwise contains the list of visible dialogs.
-	focusedField: string,
+	route: AppStateRoute;
+	navHistory: any[];
+	noteVisiblePanes: string[];
+	windowContentSize: any;
+	watchedNoteFiles: string[];
+	lastEditorScrollPercents: any;
+	devToolsVisible: boolean;
+	visibleDialogs: any; // empty object if no dialog is visible. Otherwise contains the list of visible dialogs.
+	focusedField: string;
+	layoutMoveMode: boolean;
 
 	// Extra reducer keys go here
-	watchedResources: any,
+	watchedResources: any;
+	mainLayout: LayoutItem;
 }
 
-const appDefaultState:AppState = {
+const appDefaultState: AppState = {
 	...defaultState,
 	route: {
 		type: 'NAV_GO',
@@ -127,14 +135,14 @@ const appDefaultState:AppState = {
 	},
 	navHistory: [],
 	noteVisiblePanes: ['editor', 'viewer'],
-	sidebarVisibility: true,
-	noteListVisibility: true,
 	windowContentSize: bridge().windowContentSize(),
 	watchedNoteFiles: [],
 	lastEditorScrollPercents: {},
 	devToolsVisible: false,
 	visibleDialogs: {}, // empty object if no dialog is visible. Otherwise contains the list of visible dialogs.
 	focusedField: null,
+	layoutMoveMode: false,
+	mainLayout: null,
 	...resourceEditWatcherDefaultState,
 };
 
@@ -154,7 +162,7 @@ class Application extends BaseApplication {
 		return `${Setting.value('profileDir')}/log-autoupdater.txt`;
 	}
 
-	reducer(state:AppState = appDefaultState, action:any) {
+	reducer(state: AppState = appDefaultState, action: any) {
 		let newState = state;
 
 		try {
@@ -200,7 +208,7 @@ class Application extends BaseApplication {
 			case 'NOTE_VISIBLE_PANES_TOGGLE':
 
 				{
-					const getNextLayout = (currentLayout:any) => {
+					const getNextLayout = (currentLayout: any) => {
 						currentLayout = panes.length === 2 ? 'both' : currentLayout[0];
 
 						let paneOptions;
@@ -234,25 +242,35 @@ class Application extends BaseApplication {
 				newState.noteVisiblePanes = action.panes;
 				break;
 
-			case 'SIDEBAR_VISIBILITY_TOGGLE':
+			case 'MAIN_LAYOUT_SET':
 
-				newState = Object.assign({}, state);
-				newState.sidebarVisibility = !state.sidebarVisibility;
+				newState = {
+					...state,
+					mainLayout: action.value,
+				};
 				break;
 
-			case 'SIDEBAR_VISIBILITY_SET':
-				newState = Object.assign({}, state);
-				newState.sidebarVisibility = action.visibility;
-				break;
+			case 'MAIN_LAYOUT_SET_ITEM_PROP':
 
-			case 'NOTELIST_VISIBILITY_TOGGLE':
-				newState = Object.assign({}, state);
-				newState.noteListVisibility = !state.noteListVisibility;
-				break;
+				{
+					let newLayout = produce(state.mainLayout, (draftLayout: LayoutItem) => {
+						iterateItems(draftLayout, (_itemIndex: number, item: LayoutItem, _parent: LayoutItem) => {
+							if (item.key === action.itemKey) {
+								(item as any)[action.propName] = action.propValue;
+								return false;
+							}
+							return true;
+						});
+					});
 
-			case 'NOTELIST_VISIBILITY_SET':
-				newState = Object.assign({}, state);
-				newState.noteListVisibility = action.visibility;
+					if (newLayout !== state.mainLayout) newLayout = validateLayout(newLayout);
+
+					newState = {
+						...state,
+						mainLayout: newLayout,
+					};
+				}
+
 				break;
 
 			case 'NOTE_FILE_WATCHER_ADD':
@@ -333,6 +351,14 @@ class Application extends BaseApplication {
 				}
 				break;
 
+			case 'LAYOUT_MOVE_MODE_SET':
+
+				newState = {
+					...state,
+					layoutMoveMode: action.value,
+				};
+				break;
+
 			}
 		} catch (error) {
 			error.message = `In reducer: ${error.message} Action: ${JSON.stringify(action)}`;
@@ -345,7 +371,7 @@ class Application extends BaseApplication {
 		return newState;
 	}
 
-	toggleDevTools(visible:boolean) {
+	toggleDevTools(visible: boolean) {
 		if (visible) {
 			bridge().openDevTools();
 		} else {
@@ -353,7 +379,7 @@ class Application extends BaseApplication {
 		}
 	}
 
-	async generalMiddleware(store:any, next:any, action:any) {
+	async generalMiddleware(store: any, next: any, action: any) {
 		if (action.type == 'SETTING_UPDATE_ONE' && action.key == 'locale' || action.type == 'SETTING_UPDATE_ALL') {
 			setLocale(Setting.value('locale'));
 			// The bridge runs within the main process, with its own instance of locale.js
@@ -382,14 +408,6 @@ class Application extends BaseApplication {
 
 		if (['NOTE_VISIBLE_PANES_TOGGLE', 'NOTE_VISIBLE_PANES_SET'].indexOf(action.type) >= 0) {
 			Setting.setValue('noteVisiblePanes', newState.noteVisiblePanes);
-		}
-
-		if (['SIDEBAR_VISIBILITY_TOGGLE', 'SIDEBAR_VISIBILITY_SET'].indexOf(action.type) >= 0) {
-			Setting.setValue('sidebarVisibility', newState.sidebarVisibility);
-		}
-
-		if (['NOTELIST_VISIBILITY_TOGGLE', 'NOTELIST_VISIBILITY_SET'].indexOf(action.type) >= 0) {
-			Setting.setValue('noteListVisibility', newState.noteListVisibility);
 		}
 
 		if (['NOTE_DEVTOOLS_TOGGLE', 'NOTE_DEVTOOLS_SET'].indexOf(action.type) >= 0) {
@@ -432,7 +450,7 @@ class Application extends BaseApplication {
 			const contextMenu = Menu.buildFromTemplate([
 				{ label: _('Open %s', app.electronApp().name), click: () => { app.window().show(); } },
 				{ type: 'separator' },
-				{ label: _('Quit'), click: () => { app.quit(); } },
+				{ label: _('Quit'), click: () => { void app.quit(); } },
 			]);
 			app.createTray(contextMenu);
 		}
@@ -459,14 +477,14 @@ class Application extends BaseApplication {
 		// The context menu must be setup in renderer process because that's where
 		// the spell checker service lives.
 		require('electron-context-menu')({
-			shouldShowMenu: (_event:any, params:any) => {
+			shouldShowMenu: (_event: any, params: any) => {
 				// params.inputFieldType === 'none' when right-clicking the text editor. This is a bit of a hack to detect it because in this
 				// case we don't want to use the built-in context menu but a custom one.
 				return params.isEditable && params.inputFieldType !== 'none';
 			},
 
-			menu: (actions:any, props:any) => {
-				const spellCheckerMenuItems = SpellCheckerService.instance().contextMenuItems(props.misspelledWord, props.dictionarySuggestions).map((item:any) => new MenuItem(item));
+			menu: (actions: any, props: any) => {
+				const spellCheckerMenuItems = SpellCheckerService.instance().contextMenuItems(props.misspelledWord, props.dictionarySuggestions).map((item: any) => new MenuItem(item));
 
 				const output = [
 					actions.cut(),
@@ -480,7 +498,7 @@ class Application extends BaseApplication {
 		});
 	}
 
-	async loadCustomCss(filePath:string) {
+	async loadCustomCss(filePath: string) {
 		let cssString = '';
 		if (await fs.pathExists(filePath)) {
 			try {
@@ -497,7 +515,45 @@ class Application extends BaseApplication {
 		return cssString;
 	}
 
-	async start(argv:string[]):Promise<any> {
+	private async initPluginService() {
+		const service = PluginService.instance();
+
+		const pluginRunner = new PluginRunner();
+		service.initialize(packageInfo.version, PlatformImplementation.instance(), pluginRunner, this.store());
+
+		const pluginSettings = service.unserializePluginSettings(Setting.value('plugins.states'));
+
+		// Users can add and remove plugins from the config screen at any
+		// time, however we only effectively uninstall the plugin the next
+		// time the app is started. What plugin should be uninstalled is
+		// stored in the settings.
+		const newSettings = service.clearUpdateState(await service.uninstallPlugins(pluginSettings));
+		Setting.setValue('plugins.states', newSettings);
+
+		try {
+			if (await shim.fsDriver().exists(Setting.value('pluginDir'))) {
+				await service.loadAndRunPlugins(Setting.value('pluginDir'), pluginSettings);
+			}
+		} catch (error) {
+			this.logger().error(`There was an error loading plugins from ${Setting.value('pluginDir')}:`, error);
+		}
+
+		try {
+			if (Setting.value('plugins.devPluginPaths')) {
+				const paths = Setting.value('plugins.devPluginPaths').split(',').map((p: string) => p.trim());
+				await service.loadAndRunPlugins(paths, pluginSettings, true);
+			}
+
+			// Also load dev plugins that have passed via command line arguments
+			if (Setting.value('startupDevPlugins')) {
+				await service.loadAndRunPlugins(Setting.value('startupDevPlugins'), pluginSettings, true);
+			}
+		} catch (error) {
+			this.logger().error(`There was an error loading plugins from ${Setting.value('plugins.devPluginPaths')}:`, error);
+		}
+	}
+
+	async start(argv: string[]): Promise<any> {
 		const electronIsDev = require('electron-is-dev');
 
 		// If running inside a package, the command line, instead of being "node.exe <path> <flags>" is "joplin.exe <flags>" so
@@ -527,7 +583,7 @@ class Application extends BaseApplication {
 		AlarmService.setDriver(new AlarmServiceDriverNode({ appName: packageInfo.build.appId }));
 		AlarmService.setLogger(reg.logger());
 
-		reg.setShowErrorMessageBoxHandler((message:string) => { bridge().showErrorMessageBox(message); });
+		reg.setShowErrorMessageBoxHandler((message: string) => { bridge().showErrorMessageBox(message); });
 
 		if (Setting.value('flagOpenDevTools')) {
 			bridge().openDevTools();
@@ -539,7 +595,7 @@ class Application extends BaseApplication {
 
 		this.initRedux();
 
-		CommandService.instance().initialize(this.store(), Setting.value('env') == 'dev');
+		CommandService.instance().initialize(this.store(), Setting.value('env') == 'dev', stateToWhenClauseContext);
 
 		for (const command of commands) {
 			CommandService.instance().registerDeclaration(command.declaration);
@@ -634,7 +690,7 @@ class Application extends BaseApplication {
 		this.updateTray();
 
 		shim.setTimeout(() => {
-			AlarmService.garbageCollect();
+			void AlarmService.garbageCollect();
 		}, 1000 * 60 * 60);
 
 		if (Setting.value('startMinimized') && Setting.value('showTrayIcon')) {
@@ -646,14 +702,14 @@ class Application extends BaseApplication {
 		ResourceService.runInBackground();
 
 		if (Setting.value('env') === 'dev') {
-			AlarmService.updateAllNotifications();
+			void AlarmService.updateAllNotifications();
 		} else {
 			reg.scheduleSync(1000).then(() => {
 				// Wait for the first sync before updating the notifications, since synchronisation
 				// might change the notifications.
-				AlarmService.updateAllNotifications();
+				void AlarmService.updateAllNotifications();
 
-				DecryptionWorker.instance().scheduleStart();
+				void DecryptionWorker.instance().scheduleStart();
 			});
 		}
 
@@ -670,9 +726,9 @@ class Application extends BaseApplication {
 		}
 
 		ExternalEditWatcher.instance().setLogger(reg.logger());
-		ExternalEditWatcher.instance().dispatch = this.store().dispatch;
+		ExternalEditWatcher.instance().initialize(bridge, this.store().dispatch);
 
-		ResourceEditWatcher.instance().initialize(reg.logger(), (action:any) => { this.store().dispatch(action); });
+		ResourceEditWatcher.instance().initialize(reg.logger(), (action: any) => { this.store().dispatch(action); });
 
 		RevisionService.instance().runInBackground();
 
@@ -682,40 +738,14 @@ class Application extends BaseApplication {
 				revisionService: RevisionService.instance(),
 				migrationService: MigrationService.instance(),
 				decryptionWorker: DecryptionWorker.instance(),
+				commandService: CommandService.instance(),
 				bridge: bridge(),
 			};
 		};
 
 		bridge().addEventListener('nativeThemeUpdated', this.bridge_nativeThemeUpdated);
 
-		const pluginLogger = new Logger();
-		pluginLogger.addTarget(TargetType.File, { path: `${Setting.value('profileDir')}/log-plugins.txt` });
-		pluginLogger.addTarget(TargetType.Console, { prefix: 'Plugin Service:' });
-		pluginLogger.setLevel(Setting.value('env') == 'dev' ? Logger.LEVEL_DEBUG : Logger.LEVEL_INFO);
-
-		const pluginRunner = new PluginRunner();
-		PluginService.instance().setLogger(pluginLogger);
-		PluginService.instance().initialize(PlatformImplementation.instance(), pluginRunner, this.store());
-
-		try {
-			if (await shim.fsDriver().exists(Setting.value('pluginDir'))) await PluginService.instance().loadAndRunPlugins(Setting.value('pluginDir'));
-		} catch (error) {
-			this.logger().error(`There was an error loading plugins from ${Setting.value('pluginDir')}:`, error);
-		}
-
-		try {
-			if (Setting.value('plugins.devPluginPaths')) {
-				const paths = Setting.value('plugins.devPluginPaths').split(',').map((p:string) => p.trim());
-				await PluginService.instance().loadAndRunPlugins(paths);
-			}
-
-			// Also load dev plugins that have passed via command line arguments
-			if (Setting.value('startupDevPlugins')) {
-				await PluginService.instance().loadAndRunPlugins(Setting.value('startupDevPlugins'));
-			}
-		} catch (error) {
-			this.logger().error(`There was an error loading plugins from ${Setting.value('plugins.devPluginPaths')}:`, error);
-		}
+		await this.initPluginService();
 
 		this.setupContextMenu();
 
@@ -727,12 +757,22 @@ class Application extends BaseApplication {
 		// 	console.info(CommandService.instance().commandsToMarkdownTable(this.store().getState()));
 		// }, 2000);
 
+		// setTimeout(() => {
+		// 	this.dispatch({
+		// 		type: 'NAV_GO',
+		// 		routeName: 'Config',
+		// 		props: {
+		// 			defaultSection: 'plugins',
+		// 		},
+		// 	});
+		// }, 5000);
+
 		return null;
 	}
 
 }
 
-let application_:Application = null;
+let application_: Application = null;
 
 function app() {
 	if (!application_) application_ = new Application();

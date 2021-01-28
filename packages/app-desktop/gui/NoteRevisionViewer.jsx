@@ -5,10 +5,10 @@ const { _ } = require('@joplin/lib/locale');
 const NoteTextViewer = require('./NoteTextViewer').default;
 const HelpButton = require('./HelpButton.min');
 const BaseModel = require('@joplin/lib/BaseModel').default;
-const Revision = require('@joplin/lib/models/Revision');
+const Revision = require('@joplin/lib/models/Revision').default;
 const urlUtils = require('@joplin/lib/urlUtils');
 const Setting = require('@joplin/lib/models/Setting').default;
-const RevisionService = require('@joplin/lib/services/RevisionService');
+const RevisionService = require('@joplin/lib/services/RevisionService').default;
 const shared = require('@joplin/lib/components/shared/note-screen-shared.js');
 const { MarkupToHtml } = require('@joplin/renderer');
 const time = require('@joplin/lib/time').default;
@@ -116,7 +116,7 @@ class NoteRevisionViewerComponent extends React.PureComponent {
 
 		const theme = themeStyle(this.props.themeId);
 
-		const markupToHtml = markupLanguageUtils.newMarkupToHtml({
+		const markupToHtml = markupLanguageUtils.newMarkupToHtml({}, {
 			resourceBaseUrl: `file://${Setting.value('resourceDir')}/`,
 		});
 

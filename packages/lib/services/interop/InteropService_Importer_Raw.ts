@@ -1,26 +1,26 @@
 import { ImportExportResult } from './types';
 
-const InteropService_Importer_Base = require('./InteropService_Importer_Base').default;
-const BaseItem = require('../../models/BaseItem.js');
-const BaseModel = require('../../BaseModel').default;
-const Resource = require('../../models/Resource.js');
-const Folder = require('../../models/Folder.js');
-const NoteTag = require('../../models/NoteTag.js');
-const Note = require('../../models/Note.js');
-const Tag = require('../../models/Tag.js');
+import InteropService_Importer_Base from './InteropService_Importer_Base';
+import BaseItem from '../../models/BaseItem';
+import BaseModel from '../../BaseModel';
+import Resource from '../../models/Resource';
+import Folder from '../../models/Folder';
+import NoteTag from '../../models/NoteTag';
+import Note from '../../models/Note';
+import Tag from '../../models/Tag';
 const { sprintf } = require('sprintf-js');
-const shim = require('../../shim').default;
+import shim from '../../shim';
 const { fileExtension } = require('../../path-utils');
-const uuid = require('../../uuid').default;
+import uuid from '../../uuid';
 
 export default class InteropService_Importer_Raw extends InteropService_Importer_Base {
-	async exec(result:ImportExportResult) {
-		const itemIdMap:any = {};
-		const createdResources:any = {};
+	async exec(result: ImportExportResult) {
+		const itemIdMap: any = {};
+		const createdResources: any = {};
 		const noteTagsToCreate = [];
 		const destinationFolderId = this.options_.destinationFolderId;
 
-		const replaceLinkedItemIds = async (noteBody:string) => {
+		const replaceLinkedItemIds = async (noteBody: string) => {
 			let output = noteBody;
 			const itemIds = Note.linkedItemIds(noteBody);
 
@@ -35,7 +35,7 @@ export default class InteropService_Importer_Raw extends InteropService_Importer
 
 		const stats = await shim.fsDriver().readDirStats(this.sourcePath_);
 
-		const folderExists = function(stats:any[], folderId:string) {
+		const folderExists = function(stats: any[], folderId: string) {
 			folderId = folderId.toLowerCase();
 			for (let i = 0; i < stats.length; i++) {
 				const stat = stats[i];
@@ -45,7 +45,7 @@ export default class InteropService_Importer_Raw extends InteropService_Importer
 			return false;
 		};
 
-		let defaultFolder_:any = null;
+		let defaultFolder_: any = null;
 		const defaultFolder = async () => {
 			if (defaultFolder_) return defaultFolder_;
 			const folderTitle = await Folder.findUniqueItemTitle(this.options_.defaultFolderTitle ? this.options_.defaultFolderTitle : 'Imported', '');
@@ -54,7 +54,7 @@ export default class InteropService_Importer_Raw extends InteropService_Importer
 			return defaultFolder_;
 		};
 
-		const setFolderToImportTo = async (itemParentId:string) => {
+		const setFolderToImportTo = async (itemParentId: string) => {
 			// Logic is a bit complex here:
 			// - If a destination folder was specified, move the note to it.
 			// - Otherwise, if the associated folder exists, use this.

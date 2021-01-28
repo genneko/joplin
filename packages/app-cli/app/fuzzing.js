@@ -2,7 +2,7 @@
 
 const time = require('@joplin/lib/time').default;
 const Logger = require('@joplin/lib/Logger').default;
-const Resource = require('@joplin/lib/models/Resource.js');
+const Resource = require('@joplin/lib/models/Resource').default;
 const { dirname } = require('@joplin/lib/path-utils');
 const FsDriverNode = require('@joplin/lib/fs-driver-node').default;
 const lodash = require('lodash');
@@ -21,10 +21,6 @@ Resource.fsDriver_ = fsDriver;
 const logger = new Logger();
 logger.addTarget('console');
 logger.setLevel(Logger.LEVEL_DEBUG);
-
-process.on('unhandledRejection', (reason, p) => {
-	console.error('Unhandled promise rejection', p, 'reason:', reason);
-});
 
 function createClient(id) {
 	return {

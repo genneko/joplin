@@ -6,7 +6,21 @@ import bridge from '../bridge';
 import Setting from '@joplin/lib/models/Setting';
 import { EventHandlers } from '@joplin/lib/services/plugins/utils/mapEventHandlersToIds';
 import shim from '@joplin/lib/shim';
+import Logger from '@joplin/lib/Logger';
 const ipcRenderer = require('electron').ipcRenderer;
+
+const logger = Logger.create('PluginRunner');
+
+// Electron error messages are useless so wrap the renderer call and print
+// additional information when an error occurs.
+function ipcRendererSend(message: string, args: any) {
+	try {
+		return ipcRenderer.send(message, args);
+	} catch (error) {
+		logger.error('Could not send IPC message:', message, ': ', args, error);
+		throw error;
+	}
+}
 
 enum PluginMessageTarget {
 	MainWindow = 'mainWindow',
@@ -14,20 +28,20 @@ enum PluginMessageTarget {
 }
 
 export interface PluginMessage {
-	target: PluginMessageTarget,
-	pluginId: string,
-	callbackId?: string,
-	path?: string,
-	args?: any[],
-	result?: any,
-	error?: any,
-	mainWindowCallbackId?: string,
+	target: PluginMessageTarget;
+	pluginId: string;
+	callbackId?: string;
+	path?: string;
+	args?: any[];
+	result?: any;
+	error?: any;
+	mainWindowCallbackId?: string;
 }
 
 let callbackIndex = 1;
-const callbackPromises:any = {};
+const callbackPromises: any = {};
 
-function mapEventIdsToHandlers(pluginId:string, arg:any) {
+function mapEventIdsToHandlers(pluginId: string, arg: any) {
 	if (Array.isArray(arg)) {
 		for (let i = 0; i < arg.length; i++) {
 			arg[i] = mapEventIdsToHandlers(pluginId, arg[i]);
@@ -36,14 +50,14 @@ function mapEventIdsToHandlers(pluginId:string, arg:any) {
 	} else if (typeof arg === 'string' && arg.indexOf('___plugin_event_') === 0) {
 		const eventId = arg;
 
-		return async (...args:any[]) => {
+		return async (...args: any[]) => {
 			const callbackId = `cb_${pluginId}_${Date.now()}_${callbackIndex++}`;
 
 			const promise = new Promise((resolve, reject) => {
 				callbackPromises[callbackId] = { resolve, reject };
 			});
 
-			ipcRenderer.send('pluginMessage', {
+			ipcRendererSend('pluginMessage', {
 				callbackId: callbackId,
 				target: PluginMessageTarget.Plugin,
 				pluginId: pluginId,
@@ -68,7 +82,7 @@ function mapEventIdsToHandlers(pluginId:string, arg:any) {
 
 export default class PluginRunner extends BasePluginRunner {
 
-	protected eventHandlers_:EventHandlers = {};
+	protected eventHandlers_: EventHandlers = {};
 
 	constructor() {
 		super();
@@ -76,12 +90,12 @@ export default class PluginRunner extends BasePluginRunner {
 		this.eventHandler = this.eventHandler.bind(this);
 	}
 
-	private async eventHandler(eventHandlerId:string, args:any[]) {
+	private async eventHandler(eventHandlerId: string, args: any[]) {
 		const cb = this.eventHandlers_[eventHandlerId];
 		return cb(...args);
 	}
 
-	async run(plugin:Plugin, pluginApi:Global) {
+	async run(plugin: Plugin, pluginApi: Global) {
 		const scriptPath = `${Setting.value('tempDir')}/plugin_${plugin.id}.js`;
 		await shim.fsDriver().writeFile(scriptPath, plugin.scriptText, 'utf8');
 
@@ -100,11 +114,13 @@ export default class PluginRunner extends BasePluginRunner {
 			slashes: true,
 		})}?pluginId=${encodeURIComponent(plugin.id)}&pluginScript=${encodeURIComponent(`file://${scriptPath}`)}`);
 
-		pluginWindow.webContents.once('dom-ready', () => {
-			pluginWindow.webContents.openDevTools({ mode: 'detach' });
-		});
+		if (plugin.devMode) {
+			pluginWindow.webContents.once('dom-ready', () => {
+				pluginWindow.webContents.openDevTools({ mode: 'detach' });
+			});
+		}
 
-		ipcRenderer.on('pluginMessage', async (_event:any, message:PluginMessage) => {
+		ipcRenderer.on('pluginMessage', async (_event: any, message: PluginMessage) => {
 			if (message.target !== PluginMessageTarget.MainWindow) return;
 			if (message.pluginId !== plugin.id) return;
 
@@ -125,17 +141,19 @@ export default class PluginRunner extends BasePluginRunner {
 				const mappedArgs = mapEventIdsToHandlers(plugin.id, message.args);
 				const fullPath = `joplin.${message.path}`;
 
-				this.logger().debug(`PluginRunner: execute call: ${fullPath}: ${mappedArgs}`);
+				// Don't log complete HTML code, which can be long, for setHtml calls
+				const debugMappedArgs = fullPath.includes('setHtml') ? '<hidden>' : mappedArgs;
+				logger.debug(`Got message (3): ${fullPath}`, debugMappedArgs);
 
-				let result:any = null;
-				let error:any = null;
+				let result: any = null;
+				let error: any = null;
 				try {
 					result = await executeSandboxCall(plugin.id, pluginApi, fullPath, mappedArgs, this.eventHandler);
 				} catch (e) {
 					error = e ? e : new Error('Unknown error');
 				}
 
-				ipcRenderer.send('pluginMessage', {
+				ipcRendererSend('pluginMessage', {
 					target: PluginMessageTarget.Plugin,
 					pluginId: plugin.id,
 					pluginCallbackId: message.callbackId,
