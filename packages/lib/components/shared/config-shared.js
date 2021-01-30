@@ -4,7 +4,6 @@ const ObjectUtils = require('../../ObjectUtils');
 const { _ } = require('../../locale');
 const { shim } = require('../../shim');
 const { createSelector } = require('reselect');
-const { reg } = require('../../registry');
 
 const shared = {};
 
@@ -35,7 +34,7 @@ shared.checkSyncConfig = async function(comp, settings) {
 	comp.setState({ checkSyncConfigResult: result });
 
 	if (result.ok) {
-		await shared.checkNextcloudApp(comp, settings);
+		// await shared.checkNextcloudApp(comp, settings);
 		// Users often expect config to be auto-saved at this point, if the config check was successful
 		shared.saveSettings(comp);
 	}
@@ -55,30 +54,6 @@ shared.checkSyncConfigMessages = function(comp) {
 	}
 
 	return output;
-};
-
-shared.checkNextcloudApp = async function(comp, settings) {
-	if (settings['sync.target'] !== 5) return;
-
-	comp.setState({ checkNextcloudAppResult: 'checking' });
-	let result = null;
-	const appApi = await reg.syncTargetNextcloud().appApi(settings);
-
-	try {
-		result = await appApi.setupSyncTarget(settings['sync.5.path']);
-	} catch (error) {
-		reg.logger().error('Could not setup sync target:', error);
-		result = { error: error.message };
-	}
-
-	const newSyncTargets = Object.assign({}, settings['sync.5.syncTargets']);
-	newSyncTargets[settings['sync.5.path']] = result;
-	shared.updateSettingValue(comp, 'sync.5.syncTargets', newSyncTargets);
-
-	// Also immediately save the result as this is most likely what the user would expect
-	Setting.setValue('sync.5.syncTargets', newSyncTargets);
-
-	comp.setState({ checkNextcloudAppResult: 'done' });
 };
 
 shared.updateSettingValue = function(comp, key, value) {
