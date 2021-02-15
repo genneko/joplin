@@ -173,6 +173,16 @@ const shim = {
 		throw new Error('Not implemented');
 	},
 
+	fetchTimeout_: null as any,
+
+	setFetchTimeout: (v: number) => {
+		const previousTimeout = shim.fetchTimeout_ ? shim.fetchTimeout_ : null;
+		shim.fetchTimeout_ = v;
+		return previousTimeout;
+	},
+
+	fetchTimeout: () => { return shim.fetchTimeout_; },
+
 	fetchText: async (url: string, options: any = null): Promise<string> => {
 		const r = await shim.fetch(url, options || {});
 		if (!r.ok) throw new Error(`Could not fetch ${url}`);

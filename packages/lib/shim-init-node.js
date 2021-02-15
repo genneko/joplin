@@ -8,6 +8,7 @@ const { setLocale, defaultLocale, closestSupportedLocale } = require('./locale')
 const FsDriverNode = require('./fs-driver-node').default;
 const mimeUtils = require('./mime-utils.js').mime;
 const Note = require('./models/Note').default;
+const Setting = require('./models/Setting').default;
 const Resource = require('./models/Resource').default;
 const urlValidator = require('valid-url');
 const { _ } = require('./locale');
